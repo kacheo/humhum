@@ -1,0 +1,16 @@
+.api-key-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.api-key-input__field {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  font: inherit;
+}
+.api-key-input__note {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}

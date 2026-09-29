@@ -1,0 +1,22 @@
+.DS_Store
+node_modules/
+node_modules
+dist/
+target/
+src-tauri/gen/
+.beads/
+*.tsbuildinfo
+*.env
+.env*
+!.env.example
+
+# Coverage report output (regenerable via `npm run test:coverage` /
+# scripts/coverage-rust.sh)
+coverage/
+src-tauri/lcov.info
+
+# E2E: staged only for the duration of an e2e-harness build (see
+# e2e/support/stageCapability.mjs); never committed, never present for a
+# normal build.
+src-tauri/capabilities/e2e.json
+e2e/logs/

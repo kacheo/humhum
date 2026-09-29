@@ -1,0 +1,63 @@
+[package]
+name = "wipzi"
+version = "0.1.1"
+description = "Privacy-first on-device voice dictation for macOS"
+authors = ["Kalon Cheong"]
+license = "AGPL-3.0-only"
+edition = "2021"
+rust-version = "1.77.2"
+
+[features]
+default = []
+# Debug-only E2E test harness: registers an embedded WebDriver server
+# (tauri-plugin-wdio-webdriver) and two window/process-control IPC commands
+# (`e2e_show_window`, `e2e_quit_app`) used by the WebdriverIO suite under
+# `e2e/`. Absent from every real build script — never add to `default` or to
+# release CI. See `docs/manual-test-checklist.md`.
+e2e-harness = ["dep:tauri-plugin-wdio-webdriver"]
+
+[lib]
+name = "wipzi_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["macos-private-api", "tray-icon"] }
+tauri-plugin-log = "2"
+tauri-plugin-opener = "2"
+tokio = { version = "1", features = ["full"] }
+cpal = "0.15"
+whisper-rs = "0.12"
+rubato = "0.15"
+reqwest = { version = "0.12", features = ["json", "stream"] }
+# AI cleanup LLM client (Phase 12, user-authorized exception to the no-new-deps
+# default). default-features off to drop the unused embedding provider; just the
+# three cleanup providers + the language-model request API.
+aisdk = { version = "0.5", default-features = false, features = ["language-model-request", "openai", "anthropic", "openaicompatible"] }
+keyring = { version = "3", features = ["apple-native"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+nix = { version = "0.29", features = ["fs", "hostname"] }
+log = "0.4"
+tauri-plugin-wdio-webdriver = { version = "1", optional = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-foundation = "0.3"
+block2 = "0.6"
+coreaudio-sys = { version = "0.2", default-features = false, features = ["core_audio"] }
+
+[dev-dependencies]
+tempfile = "3"
+mockito = "1"
+# Enables `tauri::test::{mock_app, mock_builder}` (MockRuntime AppHandle/State)
+# for unit-testing IPC command handlers and `AppHandle`-emitter impls without a
+# real window runtime. Only active for `cargo test`/coverage builds — dev-dep
+# feature unification does not affect the release `tauri` dependency above.
+tauri = { version = "2", features = ["test"] }
+# `test-util` enables tokio's paused clock (`start_paused`, `time::advance`) for
+# deterministic timer tests (e.g. audio/cap_timer.rs).
+tokio = { version = "1", features = ["full", "test-util"] }

@@ -1,0 +1,22 @@
+.model-badge {
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.model-badge--idle {
+  background: #e5e7eb;
+  color: #374151;
+}
+.model-badge--active {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.model-badge--ready {
+  background: #dcfce7;
+  color: var(--color-success);
+}
+.model-badge--error {
+  background: #fee2e2;
+  color: var(--color-danger);
+}

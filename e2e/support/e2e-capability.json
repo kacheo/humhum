@@ -1,0 +1,12 @@
+{
+  "$schema": "../../src-tauri/gen/schemas/desktop-schema.json",
+  "identifier": "e2e",
+  "description": "Grants the embedded WebDriver plugin's permission for the WDIO E2E suite (`e2e/`). Staged into src-tauri/capabilities/e2e.json only for the duration of an e2e-harness build by stageCapability.mjs, then removed — the plugin's permission manifest doesn't exist in a normal build (the dependency is optional), so a permanently-present capability file referencing it fails cargo's permission-resolution check.",
+  "windows": [
+    "overlay",
+    "prefs"
+  ],
+  "permissions": [
+    "wdio-webdriver:default"
+  ]
+}

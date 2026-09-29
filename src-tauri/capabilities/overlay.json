@@ -1,0 +1,12 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "overlay",
+  "description": "Lets the overlay window drive its own visibility (passive HUD shown/hidden by pipeline phase).",
+  "windows": [
+    "overlay"
+  ],
+  "permissions": [
+    "core:window:allow-show",
+    "core:window:allow-hide"
+  ]
+}

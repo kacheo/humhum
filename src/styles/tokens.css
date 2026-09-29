@@ -1,0 +1,14 @@
+/* Shared color variables. Scoped narrowly to the Preferences window's
+ * components for now — see PrefsPanel restructure notes. Not a full
+ * codebase-wide design system yet. */
+:root {
+  --color-text-primary: #111827;
+  --color-text-secondary: #6b7280;
+  --color-border: #d1d5db;
+  --color-border-subtle: #e5e7eb;
+  --color-accent: #3b82f6;
+  --color-success: #166534;
+  --color-warning: #b45309;
+  --color-danger: #b91c1c;
+  --color-pro: #7c3aed;
+}

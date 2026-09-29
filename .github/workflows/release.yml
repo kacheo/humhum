@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: macos-14
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: brew install cmake
+      - run: npm ci
+      - name: Check release version
+        run: |
+          node -e 'const p=require("./package.json").version; const t=require("./src-tauri/tauri.conf.json").version; if(p!==t||process.env.GITHUB_REF_NAME!==`v${p}`) process.exit(1)'
+      - name: Build, sign, notarize and verify
+        env:
+          CI: "1"
+          NO_OPEN: "1"
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: scripts/build-release.sh
+      - name: Publish installer and exact source tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          printf 'Source: https://github.com/%s/tree/%s\n\nLicensed under AGPL-3.0-only. See LICENSE and THIRD_PARTY_NOTICES.md in the source tag.\n' \
+            "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME" > release-notes.md
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" src-tauri/target/release/bundle/dmg/*.dmg --clobber
+            gh release edit "$GITHUB_REF_NAME" --notes-file release-notes.md
+          else
+            gh release create "$GITHUB_REF_NAME" src-tauri/target/release/bundle/dmg/*.dmg \
+              --title "Wipzi $GITHUB_REF_NAME" \
+              --notes-file release-notes.md \
+              --verify-tag
+          fi

@@ -1,0 +1,7 @@
+.transcript-flash { display: flex; gap: 12px; animation: transcript-fade 2s ease-out forwards; }
+.transcript-flash__col { flex: 1; min-width: 0; }
+.transcript-flash__label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af;
+}
+.transcript-flash__text { margin: 2px 0 0; font-size: 13px; color: #f9fafb; word-break: break-word; }
+@keyframes transcript-fade { 0% { opacity: 0; } 15%, 80% { opacity: 1; } 100% { opacity: 0; } }
