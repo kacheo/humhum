@@ -4,7 +4,7 @@ Wipzi distributes source and a signed, notarized macOS `.dmg` from the same GitH
 
 ## One-time private repository setup
 
-Create the protected GitHub Actions environment `release` and configure `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD`, and `APPLE_TEAM_ID` as environment secrets. Require a maintainer review for that environment and protect `v*` tags. Never commit a certificate or password. Validate CI and a private test release before making the repository public.
+Create the GitHub Actions environment `release` and configure `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD`, and `APPLE_TEAM_ID` as secrets. Use environment secrets when the GitHub plan supports them for private repositories; repository secrets also work with the workflow. Review the exact commit before pushing a release tag. Enable `v*` tag rules and environment approvals if the repository plan offers them. GitHub's required environment reviewers are unavailable for private repositories on Free, Pro, and Team plans. Never commit a certificate or password. Validate CI and a private test release before making the repository public.
 
 ## Tag a release
 
