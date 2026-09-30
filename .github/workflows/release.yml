@@ -51,7 +51,7 @@ jobs:
           security find-identity -v -p codesigning "$keychain_path"
       - name: Build, sign, notarize and verify
         env:
-          CI: "1"
+          CI: "true"
           NO_OPEN: "1"
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
