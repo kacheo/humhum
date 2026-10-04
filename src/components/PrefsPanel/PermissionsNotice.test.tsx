@@ -89,3 +89,23 @@ test("clears the action live when permissions-changed reports a grant", async ()
   fire("permissions-changed", { microphone: true, accessibility: true, inputMonitoring: true });
   await waitFor(() => expect(screen.queryByRole("button")).toBeNull());
 });
+
+test.each([
+  { microphone: true, accessibility: false, inputMonitoring: true },
+  { microphone: true, accessibility: true, inputMonitoring: false },
+])("offers recovery for a denied keyboard permission (%j)", async (perms) => {
+  vi.mocked(ipc.checkPermissions).mockResolvedValue(perms);
+  render(<PermissionsNotice />);
+  const recovery = await screen.findByRole("note", { name: "Permission recovery" });
+  expect(recovery).toHaveTextContent("fully quit Wipzi");
+  fire("permissions-changed", { microphone: false, accessibility: true, inputMonitoring: true });
+  await waitFor(() => expect(screen.queryByRole("note", { name: "Permission recovery" })).toBeNull());
+  expect(screen.getByRole("button", { name: "Grant" })).toBeInTheDocument();
+});
+
+test("does not recommend keyboard permission recovery for a missing microphone grant", async () => {
+  vi.mocked(ipc.checkPermissions).mockResolvedValue({ microphone: false, accessibility: true, inputMonitoring: true });
+  render(<PermissionsNotice />);
+  await screen.findByRole("button", { name: "Grant" });
+  expect(screen.queryByRole("note", { name: "Permission recovery" })).toBeNull();
+});

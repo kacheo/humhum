@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ipc } from "../../lib/ipc";
 import { useTauriEvent } from "../../hooks/useTauriEvent";
 import type { PermissionsState } from "../../lib/types";
+import { PermissionRecoveryHint } from "../PermissionRecoveryHint";
 
 // Optimistic default so granted rows don't flash "Needed" before the first
 // check resolves.
@@ -25,7 +26,7 @@ interface Row {
  *  after onboarding — macOS won't let you add an app to the Microphone list
  *  manually, so it must be requested via the system prompt. Stays live via the
  *  `permissions-changed` event; the backend auto-registers the hotkey when
- *  Accessibility lands, so granting here takes effect without a restart. */
+ *  the effective grants change. Some macOS grants need a full app restart. */
 export function PermissionsNotice() {
   const [perms, setPerms] = useState<PermissionsState>(ASSUME_GRANTED);
 
@@ -60,8 +61,10 @@ export function PermissionsNotice() {
       {!allGranted && (
         <li className="prefs__perm-hint">
           Microphone is needed to record; Accessibility and Input Monitoring run the global shortcut.
-          Granting applies automatically — no restart.
         </li>
+      )}
+      {(!perms.accessibility || !perms.inputMonitoring) && (
+        <li className="prefs__perm-hint"><PermissionRecoveryHint perms={perms} /></li>
       )}
     </ul>
   );

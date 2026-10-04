@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ipc } from "../../lib/ipc";
 import { useTauriEvent } from "../../hooks/useTauriEvent";
 import type { PermissionsState } from "../../lib/types";
+import { PermissionRecoveryHint } from "../PermissionRecoveryHint";
 
 const ALL_FALSE: PermissionsState = { microphone: false, accessibility: false, inputMonitoring: false };
 
@@ -29,6 +30,7 @@ export function PermissionsStep({ onReady }: { onReady: (ready: boolean) => void
         <PermRow label="Input Monitoring" granted={perms.inputMonitoring} action="Open Settings"
           onClick={() => ipc.openInputMonitoringSettings()} />
       </ul>
+      <PermissionRecoveryHint perms={perms} />
     </section>
   );
 }
