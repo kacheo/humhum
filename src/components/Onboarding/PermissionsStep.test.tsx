@@ -46,3 +46,11 @@ test("the accessibility and input monitoring actions open their System Settings 
   await userEvent.click(inputMonitoringButton);
   expect(ipc.openInputMonitoringSettings).toHaveBeenCalled();
 });
+
+test("offers recovery while Accessibility is denied and clears it after a live grant", async () => {
+  render(<PermissionsStep onReady={() => {}} />);
+  const recovery = await screen.findByRole("note", { name: "Permission recovery" });
+  expect(recovery).toHaveTextContent("fully quit Wipzi");
+  fire("permissions-changed", { microphone: true, accessibility: true, inputMonitoring: true });
+  await waitFor(() => expect(screen.queryByRole("note", { name: "Permission recovery" })).toBeNull());
+});

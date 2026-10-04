@@ -7,7 +7,7 @@
 //!   (IOKit). This is the purpose-built API; it has no side effects, unlike
 //!   probing with a throwaway `CGEventTap`.
 
-use std::process::Command;
+use std::{ffi::c_void, process::Command, ptr};
 
 use block2::RcBlock;
 use objc2::runtime::{AnyObject, Bool};
@@ -40,6 +40,37 @@ extern "C" {
     // Declared as `u8` because Rust `bool` is only valid for 0/1 — a stray
     // non-0/1 byte would be undefined behavior.
     fn AXIsProcessTrusted() -> u8;
+    fn AXIsProcessTrustedWithOptions(options: *const c_void) -> u8;
+    static kAXTrustedCheckOptionPrompt: *const c_void;
+}
+
+#[link(name = "CoreFoundation", kind = "framework")]
+extern "C" {
+    fn CFDictionaryCreate(
+        allocator: *const c_void,
+        keys: *const *const c_void,
+        values: *const *const c_void,
+        count: isize,
+        key_callbacks: *const c_void,
+        value_callbacks: *const c_void,
+    ) -> *const c_void;
+    fn CFRelease(value: *const c_void);
+    static kCFBooleanTrue: *const c_void;
+    static kCFBooleanFalse: *const c_void;
+}
+
+/// Owned CF dictionary; the caller must release it. Null callbacks are safe
+/// because the sole key and value are immortal framework constants.
+fn accessibility_check_options(prompt: bool) -> *const c_void {
+    unsafe {
+        let key = kAXTrustedCheckOptionPrompt;
+        let value = if prompt {
+            kCFBooleanTrue
+        } else {
+            kCFBooleanFalse
+        };
+        CFDictionaryCreate(ptr::null(), &key, &value, 1, ptr::null(), ptr::null())
+    }
 }
 
 #[link(name = "IOKit", kind = "framework")]
@@ -107,6 +138,22 @@ impl Permissions for MacosPermissions {
     }
 
     fn open_accessibility_settings(&self) {
+        // Request trust for THIS executable, rather than merely opening a pane
+        // that might contain a stale entry from another build. Only the explicit
+        // user action prompts; the monitor's AXIsProcessTrusted check stays silent.
+        // Apple's prompt is asynchronous: its return value is not the eventual
+        // grant. Keep polling the effective permission and never assume success.
+        let options = accessibility_check_options(true);
+        if options.is_null() {
+            log::warn!("could not create Accessibility request options");
+        } else {
+            // SAFETY: valid CF dictionary containing the documented Boolean
+            // prompt option, retained until the synchronous call returns.
+            unsafe {
+                AXIsProcessTrustedWithOptions(options);
+                CFRelease(options);
+            }
+        }
         Self::open_pane(ACCESSIBILITY_PANE);
     }
 
@@ -140,5 +187,27 @@ mod tests {
             INPUT_MONITORING_PANE,
             "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent"
         );
+    }
+
+    #[test]
+    fn accessibility_options_encode_prompt_flag_as_cf_boolean() {
+        #[link(name = "CoreFoundation", kind = "framework")]
+        extern "C" {
+            fn CFDictionaryGetValue(dict: *const c_void, key: *const c_void) -> *const c_void;
+        }
+        for prompt in [false, true] {
+            let options = accessibility_check_options(prompt);
+            assert!(!options.is_null());
+            unsafe {
+                let expected = if prompt {
+                    kCFBooleanTrue
+                } else {
+                    kCFBooleanFalse
+                };
+                let actual = CFDictionaryGetValue(options, kAXTrustedCheckOptionPrompt);
+                CFRelease(options);
+                assert_eq!(actual, expected);
+            }
+        }
     }
 }
