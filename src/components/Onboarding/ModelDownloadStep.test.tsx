@@ -44,3 +44,11 @@ test("a failed download surfaces Error and re-enables retry", async () => {
   expect(screen.getByRole("button", { name: "Download" })).toBeEnabled();
   expect(onReady).toHaveBeenLastCalledWith(false);
 });
+
+test("marks download active before the first progress event", async () => {
+  render(<ModelDownloadStep onReady={() => {}} />);
+  await waitFor(() => expect(ipc.getModelStatus).toHaveBeenCalled());
+  await userEvent.click(screen.getByRole("button", { name: "Download" }));
+  expect(screen.getByRole("button", { name: "Download" })).toBeDisabled();
+  expect(useRecordingStore.getState().modelStatus.base_en).toEqual({ downloading: 0 });
+});

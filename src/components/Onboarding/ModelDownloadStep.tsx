@@ -39,7 +39,13 @@ export function ModelDownloadStep({ onReady }: { onReady: (ready: boolean) => vo
         <span>Base (English)</span>
         <ModelStatusBadge status={effective} />
         <button type="button" disabled={ready || downloading}
-          onClick={() => { void ipc.downloadModel("base_en").catch(() => {}); }}>
+          onClick={() => {
+            useRecordingStore.getState().setDownloadProgress("base_en", 0);
+            useRecordingStore.getState().setModelStatus("base_en", { downloading: 0 });
+            void ipc.downloadModel("base_en").catch(() => {
+              useRecordingStore.getState().setModelStatus("base_en", { error: "Could not start the download. Try again." });
+            });
+          }}>
           Download
         </button>
       </div>
