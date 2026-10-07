@@ -1,0 +1,139 @@
+[
+  {
+    "components": [
+      "alloc-stdlib@0.2.4"
+    ],
+    "file": "dropbox-rust-alloc-no-stdlib-ae42d22078b9.txt",
+    "source": "https://github.com/dropbox/rust-alloc-no-stdlib/blob/ae42d22078b98549e987d2f03d12df7b984fde47/LICENSE"
+  },
+  {
+    "components": [
+      "block2@0.6.2"
+    ],
+    "file": "madsmtm-objc2-b4167b582b2f.txt",
+    "source": "https://github.com/madsmtm/objc2/blob/b4167b582b2f75f9a1be75495c41b765344fd03c/crates/block2/Cargo.toml",
+    "additional_sources": [
+      "https://github.com/madsmtm/objc2/blob/b4167b582b2f75f9a1be75495c41b765344fd03c/LICENSE.md"
+    ],
+    "standard_mit": true
+  },
+  {
+    "components": [
+      "brotli-decompressor@5.0.3"
+    ],
+    "file": "dropbox-rust-brotli-decompressor-b56177b8eb3d.txt",
+    "source": "https://github.com/dropbox/rust-brotli-decompressor/blob/b56177b8eb3d2440536281397e5ffe06eedf1a5c/LICENSE"
+  },
+  {
+    "components": [
+      "dasp_sample@0.11.0"
+    ],
+    "file": "rustaudio-sample-97c3bb9b2363.txt",
+    "source": "https://github.com/rustaudio/sample/blob/97c3bb9b2363c0b46ac1633858bf1054fd02a980/LICENSE-MIT"
+  },
+  {
+    "components": [
+      "dispatch2@0.3.1",
+      "objc2@0.6.4"
+    ],
+    "file": "madsmtm-objc2-8852b424193c.txt",
+    "source": "https://github.com/madsmtm/objc2/blob/8852b424193ca41602281b3d7540d7c8ed51e49a/crates/dispatch2/Cargo.toml",
+    "additional_sources": [
+      "https://github.com/madsmtm/objc2/blob/8852b424193ca41602281b3d7540d7c8ed51e49a/crates/objc2/Cargo.toml",
+      "https://github.com/madsmtm/objc2/blob/8852b424193ca41602281b3d7540d7c8ed51e49a/LICENSE.md"
+    ],
+    "standard_mit": true
+  },
+  {
+    "components": [
+      "eventsource-stream@0.2.3"
+    ],
+    "file": "jpopesculian-eventsource-stream-3d46f1c758f9.txt",
+    "source": "https://github.com/jpopesculian/eventsource-stream/blob/3d46f1c758f9ee4681e9da0427556d24c53f9c01/Cargo.toml",
+    "additional_sources": [],
+    "standard_mit": true
+  },
+  {
+    "components": [
+      "objc2-app-kit@0.3.2",
+      "objc2-core-foundation@0.3.2",
+      "objc2-core-graphics@0.3.2",
+      "objc2-foundation@0.3.2",
+      "objc2-web-kit@0.3.2"
+    ],
+    "file": "madsmtm-objc2-7b1abfd750a2.txt",
+    "source": "https://github.com/madsmtm/objc2/blob/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/framework-crates/objc2-app-kit/Cargo.toml",
+    "additional_sources": [
+      "https://github.com/madsmtm/objc2/blob/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/framework-crates/objc2-core-foundation/Cargo.toml",
+      "https://github.com/madsmtm/objc2/blob/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/framework-crates/objc2-core-graphics/Cargo.toml",
+      "https://github.com/madsmtm/objc2/blob/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/framework-crates/objc2-foundation/Cargo.toml",
+      "https://github.com/madsmtm/objc2/blob/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/framework-crates/objc2-web-kit/Cargo.toml",
+      "https://github.com/madsmtm/objc2/blob/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md"
+    ],
+    "standard_mit": true
+  },
+  {
+    "components": [
+      "objc2-encode@4.1.0",
+      "objc2-exception-helper@0.1.1"
+    ],
+    "file": "madsmtm-objc2-8d214f547736.txt",
+    "source": "https://github.com/madsmtm/objc2/blob/8d214f5477365ffcbcbb7de058c86ed9a518efb7/crates/objc2-encode/Cargo.toml",
+    "additional_sources": [
+      "https://github.com/madsmtm/objc2/blob/8d214f5477365ffcbcbb7de058c86ed9a518efb7/crates/objc2-exception-helper/Cargo.toml",
+      "https://github.com/madsmtm/objc2/blob/8d214f5477365ffcbcbb7de058c86ed9a518efb7/LICENSE.md"
+    ],
+    "standard_mit": true
+  },
+  {
+    "components": [
+      "realfft@3.5.0"
+    ],
+    "file": "HEnquist-realfft-d0d4eee0525f.txt",
+    "source": "https://github.com/HEnquist/realfft/blob/d0d4eee0525fd27c96c8a046d6d107acd5ed84a6/Cargo.toml",
+    "additional_sources": [],
+    "standard_mit": true
+  },
+  {
+    "components": [
+      "reqwest-eventsource@0.6.0"
+    ],
+    "file": "jpopesculian-reqwest-eventsource-ce0b972450fd.txt",
+    "source": "https://github.com/jpopesculian/reqwest-eventsource/blob/ce0b972450fd16a417e2cfbe1cc522feef26545d/Cargo.toml",
+    "additional_sources": [],
+    "standard_mit": true
+  },
+  {
+    "components": [
+      "siphasher@1.0.3"
+    ],
+    "file": "jedisct1-rust-siphash-451f67d73a77.txt",
+    "source": "https://github.com/jedisct1/rust-siphash/blob/451f67d73a772cba325728109bbfa247750ed076/Cargo.toml",
+    "additional_sources": [],
+    "standard_mit": true
+  },
+  {
+    "components": [
+      "tauri-plugin@2.6.3"
+    ],
+    "file": "tauri-apps-tauri-6f6ab1207bb3.txt",
+    "source": "https://github.com/tauri-apps/tauri/blob/6f6ab1207bb3923c2721fbc67d2fdb1c8deb0c7a/LICENSE_MIT"
+  },
+  {
+    "components": [
+      "unic-char-property@0.9.0",
+      "unic-char-range@0.9.0",
+      "unic-common@0.9.0",
+      "unic-ucd-version@0.9.0"
+    ],
+    "file": "open-i18n-rust-unic-5878605364af.txt",
+    "source": "https://github.com/open-i18n/rust-unic/blob/5878605364af97a3358368a6eaef02104af2e016/LICENSE-MIT"
+  },
+  {
+    "components": [
+      "unic-ucd-ident@0.9.0"
+    ],
+    "file": "open-i18n-rust-unic-8a6ce83063d9.txt",
+    "source": "https://github.com/open-i18n/rust-unic/blob/8a6ce83063d90b91ae2ce59eddb803edd393fca9/LICENSE-MIT"
+  }
+]

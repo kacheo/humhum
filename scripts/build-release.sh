@@ -29,11 +29,22 @@ log() { printf '[build-release %s] %s\n' "$(date +%H:%M:%S)" "$*" >&2; }
 
 # Load local secrets if present (gitignored; copy from .env.example). CI provides
 # the APPLE_* values via environment/secrets instead, so this is skipped there.
-if [[ -f .env.local ]]; then
+if [[ -z "${CI:-}" && -f .env.local ]]; then
   set -a; . ./.env.local; set +a
 fi
 
 target="${1:-}"
+case "$target" in
+  ""|aarch64-apple-darwin|x86_64-apple-darwin|universal-apple-darwin) ;;
+  *) echo "build-release: unsupported macOS target: $target" >&2; exit 1 ;;
+esac
+bundle_root="src-tauri/target${target:+/$target}/release/bundle"
+if [[ -n "${CI:-}" ]]; then
+  [[ -z "${SKIP_NOTARIZE:-}" ]] || { echo "build-release: CI cannot skip notarization" >&2; exit 1; }
+  for credential in APPLE_SIGNING_IDENTITY APPLE_ID APPLE_TEAM_ID APPLE_PASSWORD APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD; do
+    [[ -n "${!credential:-}" ]] || { echo "build-release: missing $credential in CI" >&2; exit 1; }
+  done
+fi
 # Start the argv array with `build` so it is never empty: under macOS system bash
 # (3.2) `"${arr[@]}"` on an empty array trips `set -u` and aborts before tauri runs.
 args=(build)
@@ -59,7 +70,9 @@ else
   # Notary preflight: surface config (never the password) and fail fast on bad
   # credentials / no network, instead of hanging deep inside `tauri build`.
   log "signing identity: ${APPLE_SIGNING_IDENTITY}"
-  log "apple id: ${APPLE_ID:-<unset>}  team id: ${APPLE_TEAM_ID:-<unset>}  password: $([[ -n "${APPLE_PASSWORD:-}" ]] && echo set || echo MISSING)"
+  for credential in APPLE_ID APPLE_TEAM_ID APPLE_PASSWORD; do
+    [[ -n "${!credential:-}" ]] || { echo "build-release: missing $credential" >&2; exit 1; }
+  done
   log "notary preflight: checking credentials + reachability..."
   xcrun notarytool history --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" \
     --password "$APPLE_PASSWORD" >/dev/null \
@@ -74,13 +87,20 @@ if [[ "$notarize" == 1 ]]; then
 else
   log "starting tauri build..."
 fi
+# Keep previous bundles recoverable, but make this invocation start with an
+# empty bundle directory. A successful build that emits no DMG must fail.
+if [[ -d "$bundle_root" ]]; then
+  previous_bundle=$(mktemp -d "$(dirname "$bundle_root")/bundle.previous.XXXXXX")
+  mv "$bundle_root" "$previous_bundle/bundle"
+fi
 npx tauri "${args[@]}"
 log "tauri build finished"
 
-echo "DMG artifact(s):"
-find src-tauri/target -path '*/release/bundle/dmg/*.dmg' -print
-
-dmg=$(find src-tauri/target -path '*/release/bundle/dmg/*.dmg' -maxdepth 6 2>/dev/null | head -1)
+shopt -s nullglob
+installers=("$bundle_root"/dmg/*.dmg)
+[[ ${#installers[@]} -eq 1 ]] || { echo "build-release: expected exactly one installer in $bundle_root/dmg" >&2; exit 1; }
+dmg="${installers[0]}"
+echo "DMG artifact: $dmg"
 
 # Tauri notarizes + staples the .app but never submits the final .dmg itself
 # (upstream gap: https://github.com/tauri-apps/tauri/issues/7533), so bundle_dmg.sh
@@ -100,5 +120,8 @@ fi
 # so a mis-signed bundle is caught here instead of by users (re-granting TCC).
 # Skipped for the unsigned fallback path.
 if [[ -n "${APPLE_SIGNING_IDENTITY:-}" ]]; then
-  scripts/verify-signing.sh
+  scripts/verify-signing.sh "$bundle_root/macos/Wipzi.app" "$dmg"
+fi
+if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+  printf 'dmg=%s\n' "$dmg" >> "$GITHUB_OUTPUT"
 fi
