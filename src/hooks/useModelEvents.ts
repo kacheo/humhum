@@ -1,7 +1,8 @@
+import { useEffect } from "react";
 import { useTauriEvent } from "./useTauriEvent";
 import { useRecordingStore } from "../stores/recording";
 import { ipc } from "../lib/ipc";
-import type { ModelDownloadProgressPayload } from "../lib/types";
+import type { ModelDownloadProgressPayload, WhisperModel } from "../lib/types";
 
 /**
  * Wire model-download progress into the recording store for the prefs window.
@@ -14,9 +15,36 @@ import type { ModelDownloadProgressPayload } from "../lib/types";
  * subscribes.
  */
 export function useModelEvents(): void {
+  // The command starts a background task; a later failure does not reject IPC.
+  // Reconcile active downloads against the backend's in-flight registry/disk.
+  useEffect(() => {
+    let cancelled = false;
+    const pending = new Set<WhisperModel>();
+    const timer = setInterval(() => {
+      const store = useRecordingStore.getState();
+      for (const model of ["base_en", "small_en"] as const) {
+        const status = store.modelStatus[model];
+        const active = typeof status === "object" && "downloading" in status;
+        if (!active || pending.has(model)) continue;
+        pending.add(model);
+        void ipc.getModelStatus(model).then((next) => {
+          if (cancelled || useRecordingStore.getState().modelStatus[model] !== status) return;
+          if (typeof next === "object" && "downloading" in next) return;
+          store.setDownloadProgress(model, 0);
+          store.setModelStatus(model, next === "not_downloaded" ? {
+            error: "Download did not finish. Check your connection and available disk space, then retry.",
+          } : next);
+        }).catch(() => {}).finally(() => pending.delete(model));
+      }
+    }, 1000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, []);
+
   useTauriEvent<ModelDownloadProgressPayload>("model-download-progress", (e) => {
     const { model, pct } = e.payload;
-    useRecordingStore.getState().setDownloadProgress(model, pct);
+    const store = useRecordingStore.getState();
+    store.setDownloadProgress(model, pct);
+    store.setModelStatus(model, { downloading: pct });
     if (pct >= 100) {
       ipc
         .getModelStatus(model)

@@ -16,8 +16,8 @@ export const panelId = (id: TabId) => `prefs-panel-${id}`;
 
 /** WAI-ARIA 1.2 Tabs pattern (automated activation): the tablist is a single
  *  stop in the page Tab order (roving tabindex — only the active tab is
- *  tabbable); Left/Right/Home/End move focus and activate the corresponding
- *  panel immediately; Left/Right wrap at the ends. */
+ *  tabbable); Up/Down/Home/End move focus and activate the corresponding
+ *  panel immediately; Up/Down wrap at the ends. */
 export function PrefsTabs({ active, onSelect }: { active: TabId; onSelect: (id: TabId) => void }) {
   const btnRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -29,11 +29,11 @@ export function PrefsTabs({ active, onSelect }: { active: TabId; onSelect: (id: 
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLButtonElement>, index: number) {
     switch (e.key) {
-      case "ArrowRight":
+      case "ArrowDown":
         e.preventDefault();
         activateIndex(index + 1);
         break;
-      case "ArrowLeft":
+      case "ArrowUp":
         e.preventDefault();
         activateIndex(index - 1);
         break;
@@ -49,7 +49,7 @@ export function PrefsTabs({ active, onSelect }: { active: TabId; onSelect: (id: 
   }
 
   return (
-    <div className="prefs__tabs" role="tablist" aria-label="Preferences sections">
+    <div className="prefs__tabs" role="tablist" aria-orientation="vertical" aria-label="Preferences sections">
       {TABS.map((t, i) => {
         const isActive = active === t.id;
         return (

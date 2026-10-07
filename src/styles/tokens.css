@@ -1,14 +1,70 @@
-/* Shared color variables. Scoped narrowly to the Preferences window's
- * components for now — see PrefsPanel restructure notes. Not a full
- * codebase-wide design system yet. */
+/* Shared app palette. The HUD owns its dark surface independently. */
 :root {
-  --color-text-primary: #111827;
-  --color-text-secondary: #6b7280;
-  --color-border: #d1d5db;
-  --color-border-subtle: #e5e7eb;
-  --color-accent: #3b82f6;
-  --color-success: #166534;
-  --color-warning: #b45309;
-  --color-danger: #b91c1c;
-  --color-pro: #7c3aed;
+  --color-bg: #f5f5f7;
+  --color-surface: #ffffff;
+  --color-sidebar: #ededf0;
+  --color-hover: #e7e8ed;
+  --color-text-primary: #202124;
+  --color-text-secondary: #61636b;
+  --color-border: #c9cbd2;
+  --color-border-subtle: #dddfe5;
+  --color-accent: #005fcc;
+  --color-accent-soft: #e0edff;
+  --color-success: #216638;
+  --color-success-soft: #e6f3e9;
+  --color-warning: #865600;
+  --color-danger: #b42332;
+  --color-danger-soft: #fce8ea;
+  --color-pro: #6c43af;
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-size: 13px;
 }
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #202124;
+    --color-surface: #2b2c30;
+    --color-sidebar: #25262a;
+    --color-hover: #393b42;
+    --color-text-primary: #f1f2f5;
+    --color-text-secondary: #b6b8c1;
+    --color-border: #62656f;
+    --color-border-subtle: #42444c;
+    --color-accent: #8bbcff;
+    --color-accent-soft: #293d58;
+    --color-success: #91dba6;
+    --color-success-soft: #263d2e;
+    --color-warning: #f0cb80;
+    --color-danger: #ffabb3;
+    --color-danger-soft: #4c2d33;
+    --color-pro: #c5a6ff;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, input, select { font: inherit; }
+:where(.prefs, .onboarding) {
+  color-scheme: light dark;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+}
+:where(.prefs, .onboarding) :where(button, input:not([type="checkbox"]):not([type="radio"]), select) {
+  min-height: 32px;
+  padding: 5px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  max-width: 100%;
+}
+:where(.prefs, .onboarding) button { cursor: pointer; font-weight: 500; }
+:where(.prefs, .onboarding) button:hover:not(:disabled) { background: var(--color-hover); }
+:where(.prefs, .onboarding) button:disabled { opacity: .5; cursor: default; }
+:where(.prefs, .onboarding) :where(input[type="checkbox"], input[type="radio"]) { accent-color: var(--color-accent); flex-shrink: 0; }
+:where(.prefs, .onboarding) :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+:where(.prefs, .onboarding) input { min-width: 0; }
+:where(.prefs, .onboarding) p { overflow-wrap: anywhere; }
+:where(.prefs, .onboarding) .primary-action {
+  background: #005fcc; color: white; border-color: transparent; font-weight: 600;
+}
+:where(.prefs, .onboarding) .primary-action:hover:not(:disabled) { background: #004fa8; }

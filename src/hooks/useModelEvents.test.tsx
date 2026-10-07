@@ -44,3 +44,13 @@ test("does not re-fetch status mid-download", () => {
   fire("model-download-progress", { model: "base_en", pct: 50 });
   expect(ipc.getModelStatus).not.toHaveBeenCalled();
 });
+
+test("reconciles an async download failure so Retry becomes available", async () => {
+  vi.mocked(ipc.getModelStatus).mockResolvedValueOnce("not_downloaded");
+  useRecordingStore.getState().setModelStatus("base_en", { downloading: 0 });
+  await waitFor(() => {
+    expect(useRecordingStore.getState().modelStatus.base_en).toEqual({
+      error: "Download did not finish. Check your connection and available disk space, then retry.",
+    });
+  }, { timeout: 2000 });
+});

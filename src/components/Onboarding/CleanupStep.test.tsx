@@ -60,3 +60,10 @@ test("Test on the Cloud API key calls test_api_key with the typed key", async ()
   const { ipc } = await import("../../lib/ipc");
   expect(ipc.testApiKey).toHaveBeenCalledWith("open_ai", "sk-onb-1");
 });
+
+test("cloud credentials are hidden for Off and Local", async () => {
+  render(<CleanupStep onReady={() => {}} />);
+  expect(screen.queryByLabelText("API key")).not.toBeInTheDocument();
+  await userEvent.click(screen.getByLabelText("Local (Ollama)"));
+  expect(screen.queryByLabelText("API key")).not.toBeInTheDocument();
+});

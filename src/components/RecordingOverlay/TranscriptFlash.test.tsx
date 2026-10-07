@@ -5,9 +5,9 @@ import { TranscriptFlash } from "./TranscriptFlash";
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
-test("shows raw and cleaned text", () => {
+test("shows only the final transcript preview", () => {
   render(<TranscriptFlash raw="hello world" cleaned="Hello, world." />);
-  expect(screen.getByText("hello world")).toBeInTheDocument();
+  expect(screen.queryByText("hello world")).not.toBeInTheDocument();
   expect(screen.getByText("Hello, world.")).toBeInTheDocument();
 });
 

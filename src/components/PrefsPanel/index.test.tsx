@@ -78,11 +78,11 @@ test("the active tab and its panel are cross-linked (id/aria-controls/aria-label
 test("General is the default tab and switching tabs shows/hides the corresponding content", async () => {
   await renderPanel();
   expect(screen.getByRole("heading", { name: "Startup" })).toBeInTheDocument();
-  expect(screen.queryByRole("heading", { name: "Cleanup" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "Text cleanup" })).not.toBeInTheDocument();
 
   await userEvent.click(screen.getByRole("tab", { name: "AI" }));
-  expect(screen.getByRole("heading", { name: "Cleanup" })).toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "Transcription model" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Text cleanup" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Transcription" })).toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "Startup" })).not.toBeInTheDocument();
 });
 
@@ -255,4 +255,34 @@ test("selecting an input device is picked up as a dirtying change", async () => 
       expect.objectContaining({ preferredInputDevice: "AirPods Pro" })
     )
   );
+});
+
+test("failed save displays feedback and retains edits for retry", async () => {
+  vi.mocked(ipc.savePrefs).mockRejectedValueOnce(new Error("Disk unavailable"));
+  await renderPanel();
+  await userEvent.click(screen.getByLabelText("Launch at login"));
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Could not save");
+  expect(screen.getByLabelText("Launch at login")).toBeChecked();
+  expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
+  await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
+});
+
+test("download error takes precedence over stale progress and offers retry", async () => {
+  await renderPanel();
+  await userEvent.click(screen.getByRole("tab", { name: "AI" }));
+  act(() => {
+    useRecordingStore.getState().setDownloadProgress("base_en", 64);
+    useRecordingStore.getState().setModelStatus("base_en", { error: "Network unavailable" });
+  });
+  expect(screen.queryByText("Downloading 64%")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Retry Base (English)" })).toBeEnabled();
+});
+
+test("active model download disables repeated download clicks", async () => {
+  await renderPanel();
+  await userEvent.click(screen.getByRole("tab", { name: "AI" }));
+  act(() => useRecordingStore.getState().setDownloadProgress("base_en", 64));
+  expect(screen.getByRole("button", { name: "Download Base (English)" })).toBeDisabled();
 });

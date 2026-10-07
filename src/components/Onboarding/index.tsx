@@ -5,6 +5,7 @@ import { HotkeyStep } from "./HotkeyStep";
 import { CleanupStep } from "./CleanupStep";
 import { ModelDownloadStep } from "./ModelDownloadStep";
 import { DemoStep } from "./DemoStep";
+import "../../styles/tokens.css";
 import "./index.css";
 
 const STEPS = ["Permissions", "Shortcut", "Cleanup", "Model", "Try it"] as const;
@@ -34,11 +35,12 @@ export function Onboarding() {
 
   return (
     <div className="onboarding">
-      <ol className="onboarding__progress">
+      <header className="onboarding__header"><span className="onboarding__brand">Welcome to Wipzi</span><span>Step {step + 1} of {STEPS.length}</span></header>
+      <ol className="onboarding__progress" aria-label="Setup progress">
         {STEPS.map((label, i) => (
-          <li key={label}
+          <li key={label} aria-current={i === step ? "step" : undefined}
             className={`onboarding__dot${i === step ? " onboarding__dot--active" : ""}${i < step ? " onboarding__dot--done" : ""}`}>
-            {label}
+            {i < step && <span aria-hidden="true">✓ </span>}{label}
           </li>
         ))}
       </ol>
@@ -51,7 +53,7 @@ export function Onboarding() {
       </div>
       <footer className="onboarding__nav">
         <button type="button" onClick={back} disabled={step === 0}>Back</button>
-        <button type="button" className="onboarding__next" onClick={next} disabled={!ready}>
+        <button type="button" className="onboarding__next primary-action" onClick={next} disabled={!ready}>
           {isLast ? "Finish" : "Next"}
         </button>
       </footer>

@@ -16,6 +16,7 @@ import "./index.css";
  *  (an unsaved API key, an in-progress hotkey recording) and every tab's
  *  mount effect fires on first render regardless of which tab is active. */
 export function PrefsPanel() {
+  const [saveError, setSaveError] = useState<string | null>(null);
   const prefs = usePrefsStore((s) => s.prefs);
   const isDirty = usePrefsStore((s) => s.isDirty);
   const isSaving = usePrefsStore((s) => s.isSaving);
@@ -24,7 +25,16 @@ export function PrefsPanel() {
 
   return (
     <div className="prefs">
-      <PrefsTabs active={activeTab} onSelect={setActiveTab} />
+      <aside className="prefs__sidebar">
+        <div className="prefs__brand">Wipzi<small>Preferences</small></div>
+        <PrefsTabs active={activeTab} onSelect={setActiveTab} />
+        <div className="prefs__source">
+          <span>Wipzi · AGPLv3</span>
+          <button type="button" onClick={() => void openExternal("https://github.com/kacheo/wipzi")}>
+            Source and license
+          </button>
+        </div>
+      </aside>
 
       <div className="prefs__content">
         <section
@@ -35,6 +45,7 @@ export function PrefsPanel() {
           tabIndex={0}
           hidden={activeTab !== "general"}
         >
+          <header className="page-heading"><h1>General</h1><p>Make Wipzi feel at home on your Mac.</p></header>
           <GeneralSection />
         </section>
 
@@ -46,7 +57,10 @@ export function PrefsPanel() {
           tabIndex={0}
           hidden={activeTab !== "shortcut"}
         >
+          <header className="page-heading"><h1>Shortcut</h1><p>Hold your shortcut to dictate from any app.</p></header>
           <div className="prefs__section">
+            <h2 className="prefs__heading">Dictation shortcut</h2>
+            <p className="prefs__hint">Click the keys below to record a new shortcut. Press Escape to cancel.</p>
             <HotkeyPicker
               value={prefs.hotkey}
               onChange={(combo) => setField("hotkey", combo)}
@@ -63,6 +77,7 @@ export function PrefsPanel() {
           tabIndex={0}
           hidden={activeTab !== "ai"}
         >
+          <header className="page-heading"><h1>AI</h1><p>Choose how your speech becomes text.</p></header>
           <AiSection />
         </section>
 
@@ -74,6 +89,7 @@ export function PrefsPanel() {
           tabIndex={0}
           hidden={activeTab !== "permissions"}
         >
+          <header className="page-heading"><h1>Permissions</h1><p>Manage the access Wipzi needs on your Mac.</p></header>
           <div className="prefs__section">
             <PermissionsNotice />
           </div>
@@ -82,26 +98,23 @@ export function PrefsPanel() {
       </div>
 
       <footer className="prefs__footer">
-        <div className="prefs__source">
-          <span>Wipzi · AGPLv3</span>
-          <button type="button" onClick={() => void openExternal("https://github.com/kacheo/wipzi")}>
-            Source and license
-          </button>
-        </div>
+        <p className="prefs__save-feedback" role={saveError ? "alert" : "status"}>{saveError ?? (isSaving ? "Saving changes…" : isDirty ? "Unsaved changes" : "All changes saved")}</p>
+
         <button
           type="button"
           className="prefs__discard"
           disabled={!isDirty || isSaving}
-          onClick={() => usePrefsStore.getState().discardChanges()}
+          onClick={() => { setSaveError(null); usePrefsStore.getState().discardChanges(); }}
         >
           Discard
         </button>
         <button
           type="button"
-          className="prefs__save"
+          className="prefs__save primary-action"
           disabled={!isDirty || isSaving}
           onClick={() => {
-            void usePrefsStore.getState().savePrefs();
+            setSaveError(null);
+            void usePrefsStore.getState().savePrefs().catch(() => setSaveError("Could not save. Your edits are kept. Try again."));
           }}
         >
           {isSaving ? "Saving…" : "Save"}

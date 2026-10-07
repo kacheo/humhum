@@ -24,27 +24,27 @@ test("each tab exposes the id/aria-controls pair its panel will reference", () =
   expect(ai).toHaveAttribute("aria-controls", "prefs-panel-ai");
 });
 
-test("ArrowRight moves focus and activates the next tab, wrapping past the last", async () => {
+test("ArrowDown moves focus and activates the next tab, wrapping past the last", async () => {
   const user = userEvent.setup();
   render(<ControlledTabs />);
   screen.getByRole("tab", { name: "General" }).focus();
 
-  await user.keyboard("{ArrowRight}{ArrowRight}{ArrowRight}");
+  await user.keyboard("{ArrowDown}{ArrowDown}{ArrowDown}");
   const permissions = screen.getByRole("tab", { name: "Permissions" });
   expect(permissions).toHaveFocus();
   expect(permissions).toHaveAttribute("aria-selected", "true");
 
-  await user.keyboard("{ArrowRight}"); // wraps
+  await user.keyboard("{ArrowDown}"); // wraps
   const general = screen.getByRole("tab", { name: "General" });
   expect(general).toHaveFocus();
   expect(general).toHaveAttribute("aria-selected", "true");
 });
 
-test("ArrowLeft from the first tab wraps to the last", async () => {
+test("ArrowUp from the first tab wraps to the last", async () => {
   const user = userEvent.setup();
   render(<ControlledTabs />);
   screen.getByRole("tab", { name: "General" }).focus();
-  await user.keyboard("{ArrowLeft}");
+  await user.keyboard("{ArrowUp}");
   const permissions = screen.getByRole("tab", { name: "Permissions" });
   expect(permissions).toHaveFocus();
   expect(permissions).toHaveAttribute("aria-selected", "true");

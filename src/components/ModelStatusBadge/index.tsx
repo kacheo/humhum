@@ -20,8 +20,12 @@ export function ModelStatusBadge({ status }: { status: ModelStatus }) {
     mod = "error";
   }
   return (
+    <div className="model-status">
     <span className={`model-badge model-badge--${mod}`} role="status">
       {label}
     </span>
+    {typeof status === "object" && "downloading" in status && <progress aria-label="Model download" max={100} value={status.downloading} />}
+    {typeof status === "object" && "error" in status && <span className="model-status__error">{status.error}</span>}
+    </div>
   );
 }
