@@ -27,8 +27,8 @@
         "title": "Wipzi Preferences",
         "visible": false,
         "resizable": false,
-        "width": 500,
-        "height": 560
+        "width": 720,
+        "height": 600
       }
     ],
     "macOSPrivateApi": true,

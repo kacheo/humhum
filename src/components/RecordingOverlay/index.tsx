@@ -3,6 +3,7 @@ import { useRecordingStore } from "../../stores/recording";
 import { useOverlayVisibility } from "../../hooks/useOverlayVisibility";
 import { WaveformIndicator } from "./WaveformIndicator";
 import { TranscriptFlash } from "./TranscriptFlash";
+import "../../styles/tokens.css";
 import "./index.css";
 
 export function RecordingOverlay() {
@@ -15,20 +16,20 @@ export function RecordingOverlay() {
   let body: React.ReactNode = null;
   switch (phase) {
     case "recording":
-      body = <div className="overlay__row"><WaveformIndicator isActive /></div>;
+      body = <div className="overlay__row"><WaveformIndicator isActive /><span className="overlay__status" role="status">Recording…</span></div>;
       break;
     case "transcribing":
-      body = <div className="overlay__status">Transcribing…</div>;
+      body = <div className="overlay__status" role="status">Transcribing…</div>;
       break;
     case "cleaning":
-      body = <div className="overlay__status">Cleaning…</div>;
+      body = <div className="overlay__status" role="status">Cleaning…</div>;
       break;
     case "pasting":
     case "done":
       body = <TranscriptFlash raw={rawTranscript ?? ""} cleaned={cleanedTranscript ?? rawTranscript ?? ""} onDone={handleFlashDone} />;
       break;
     case "error":
-      body = <div className="overlay__error">{errorMessage ?? "Something went wrong."}</div>;
+      body = <div className="overlay__error" role="alert">{errorMessage ?? "Something went wrong."}</div>;
       break;
   }
 

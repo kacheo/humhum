@@ -44,3 +44,32 @@ test("does not re-fetch status mid-download", () => {
   fire("model-download-progress", { model: "base_en", pct: 50 });
   expect(ipc.getModelStatus).not.toHaveBeenCalled();
 });
+
+test("reconciles an async download failure so Retry becomes available", async () => {
+  vi.mocked(ipc.getModelStatus).mockResolvedValueOnce("not_downloaded");
+  useRecordingStore.getState().setModelStatus("base_en", { downloading: 0 });
+  await waitFor(() => {
+    expect(useRecordingStore.getState().modelStatus.base_en).toEqual({
+      error: "Download did not finish. Check your connection and available disk space, then retry.",
+    });
+  }, { timeout: 2000 });
+});
+
+test("verification failure after 100 percent clears stale progress and enables retry", async () => {
+  vi.mocked(ipc.getModelStatus).mockResolvedValueOnce("not_downloaded");
+  fire("model-download-progress", { model: "base_en", pct: 100 });
+  await waitFor(() => expect(useRecordingStore.getState().modelStatus.base_en).toEqual({
+    error: "Download did not finish. Check your connection and available disk space, then retry.",
+  }));
+  expect(useRecordingStore.getState().downloadProgress.base_en).toBe(0);
+});
+
+test("a stale completion response cannot overwrite a newer retry", async () => {
+  let resolve!: (value: "ready") => void;
+  vi.mocked(ipc.getModelStatus).mockReturnValueOnce(new Promise((done) => { resolve = done; }));
+  fire("model-download-progress", { model: "base_en", pct: 100 });
+  useRecordingStore.getState().setModelStatus("base_en", { downloading: 0 });
+  resolve("ready");
+  await Promise.resolve();
+  expect(useRecordingStore.getState().modelStatus.base_en).toEqual({ downloading: 0 });
+});

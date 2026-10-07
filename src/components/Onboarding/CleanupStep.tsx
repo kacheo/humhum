@@ -42,10 +42,11 @@ export function CleanupStep({ onReady }: { onReady: (ready: boolean) => void }) 
           </label>
         </>
       )}
-      <div className="onb-row onb-row--col">
+      {prefs.cleanupMode === "api" && <div className="onb-row onb-row--col">
         <span>Cloud API key</span>
         <ApiKeyInput provider={prefs.apiProvider} onTest={(p, k) => ipc.testApiKey(p, k)} />
-      </div>
+        <p className="onb-hint">Testing a valid key saves it immediately in Keychain. Cloud cleanup sends transcript text to your provider.</p>
+      </div>}
     </section>
   );
 }

@@ -33,7 +33,7 @@ export function AiSection() {
 
   function effectiveStatus(id: WhisperModel): ModelStatus {
     const s = modelStatus[id];
-    if (s === "ready") return "ready";
+    if (s === "ready" || (typeof s === "object" && "error" in s)) return s;
     const pct = downloadProgress[id];
     return pct > 0 ? { downloading: pct } : s;
   }
@@ -41,7 +41,7 @@ export function AiSection() {
   return (
     <>
       <section className="prefs__section">
-        <h2 className="prefs__heading">Transcription model</h2>
+        <h2 className="prefs__heading">Transcription</h2>
         <label className="prefs__row">
           <span>Model</span>
           <select
@@ -55,28 +55,36 @@ export function AiSection() {
             ))}
           </select>
         </label>
-        {MODELS.map((m) => (
-          <div key={m.id} className="prefs__row">
-            <span className="prefs__row-label">
-              {m.label}
-            </span>
-            <ModelStatusBadge status={effectiveStatus(m.id)} />
-            <button
-              type="button"
-              aria-label={`Download ${m.label}`}
-              disabled={effectiveStatus(m.id) === "ready"}
-              onClick={() => {
-                void ipc.downloadModel(m.id).catch(() => {});
-              }}
-            >
-              Download
-            </button>
-          </div>
-        ))}
+        {MODELS.map((m) => {
+          const status = effectiveStatus(m.id);
+          const downloading = typeof status === "object" && "downloading" in status;
+          const failed = typeof status === "object" && "error" in status;
+          return (
+            <div key={m.id} className="prefs__model-row">
+              <span className="prefs__row-label">{m.label}</span>
+              <ModelStatusBadge status={status} />
+              <button
+                type="button"
+                aria-label={`${failed ? "Retry" : "Download"} ${m.label}`}
+                disabled={status === "ready" || downloading}
+                onClick={() => {
+                  useRecordingStore.getState().setDownloadProgress(m.id, 0);
+                  useRecordingStore.getState().setModelStatus(m.id, { downloading: 0 });
+                  void ipc.downloadModel(m.id).catch(() => {
+                    useRecordingStore.getState().setModelStatus(m.id, { error: "Could not start the download. Try again." });
+                  });
+                }}
+              >
+                {status === "ready" ? "Downloaded" : failed ? "Retry" : "Download"}
+              </button>
+            </div>
+          );
+        })}
+        <p className="prefs__hint">Downloads start immediately. Speech is transcribed on your Mac.</p>
       </section>
 
       <section className="prefs__section">
-        <h2 className="prefs__heading">Cleanup</h2>
+        <h2 className="prefs__heading">Text cleanup</h2>
         <label className="prefs__row">
           <span>Mode</span>
           <select
@@ -111,6 +119,7 @@ export function AiSection() {
             <div className="prefs__row prefs__row--col">
               <span>API key</span>
               <ApiKeyInput provider={prefs.apiProvider} onTest={(p, k) => ipc.testApiKey(p, k)} />
+              <p className="prefs__hint">Testing a valid key saves it immediately in Keychain. Cloud cleanup sends transcript text to your provider.</p>
             </div>
           </>
         )}

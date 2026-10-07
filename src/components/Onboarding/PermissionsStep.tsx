@@ -39,7 +39,7 @@ function PermRow({ label, granted, action, onClick }: {
   label: string; granted: boolean; action: string; onClick: () => void;
 }) {
   return (
-    <li className="perm-row">
+    <li className={`perm-row${granted ? " perm-row--granted" : ""}`}>
       <span className="perm-row__label">{label}</span>
       <span className="perm-row__status" role="status">{granted ? "Granted ✓" : "Needed"}</span>
       {!granted && <button type="button" onClick={onClick}>{action}</button>}

@@ -87,7 +87,7 @@ export function HotkeyPicker({
       >
         {recording
           ? preview || "Press keys…"
-          : formatHotkey(value, "mac") || "Click to record"}
+          : value ? <kbd>{formatHotkey(value, "mac")}</kbd> : "Click to record"}
       </button>
       {error && (
         <span className="hotkey-picker__error" role="alert">

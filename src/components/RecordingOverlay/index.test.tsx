@@ -45,7 +45,7 @@ test("shows the cleaning status", () => {
 test("flashes raw and cleaned transcript while pasting", () => {
   useRecordingStore.setState({ phase: "pasting", rawTranscript: "hello", cleanedTranscript: "Hello." });
   render(<RecordingOverlay />);
-  expect(screen.getByText("hello")).toBeInTheDocument();
+  expect(screen.queryByText("hello")).not.toBeInTheDocument();
   expect(screen.getByText("Hello.")).toBeInTheDocument();
 });
 

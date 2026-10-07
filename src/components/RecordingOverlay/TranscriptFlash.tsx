@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import "./TranscriptFlash.css";
 
-/** Briefly shows the raw and cleaned transcript side by side, fades, then
+/** Briefly shows the final transcript, fades, then
  *  calls onDone after 2s (the Done → Idle transition). Renders text into the
  *  local overlay only — never logged or emitted. */
 export function TranscriptFlash({
@@ -22,15 +22,9 @@ export function TranscriptFlash({
   }, []);
 
   return (
-    <div className="transcript-flash">
-      <div className="transcript-flash__col">
-        <span className="transcript-flash__label">Heard</span>
-        <p className="transcript-flash__text">{raw}</p>
-      </div>
-      <div className="transcript-flash__col">
-        <span className="transcript-flash__label">Cleaned</span>
-        <p className="transcript-flash__text">{cleaned}</p>
-      </div>
+    <div className="transcript-flash" role="status">
+      <span className="transcript-flash__label">Transcript</span>
+      <p className="transcript-flash__text">{cleaned || raw}</p>
     </div>
   );
 }
