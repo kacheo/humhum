@@ -22,6 +22,7 @@ The corrected local candidate passed Developer ID signature verification, Gateke
 - Production npm audit: zero advisories. Vitest/coverage updated to 4.1.11 and compatible development dependencies refreshed; no critical npm findings remain.
 - Rust audit: zero vulnerabilities and zero unsoundness findings after updates and reviewed target exceptions. Six unmaintained upstream crates remain warnings.
 - Frontend: 153 tests passed. Coverage: statements 95.62%, branches 90.07%, functions 95.02%, lines 97.73%; configured thresholds passed.
+- A clean source archive of the preparation commit passed `npm ci`, all 153 frontend tests, all 16 release tests, the production frontend build, and the dependency notice hash check. The full Git history including the preparation commit passed Gitleaks (11 commits).
 - Rust: 368 tests passed, 5 intentionally ignored; binary/doc tests also passed. Sandboxed tests initially failed because of loopback/Keychain restrictions; a normal unsandboxed macOS run passed.
 - Default E2E: onboarding, model download, and settings persistence across cold restart passed. The known API-key case remains excluded.
 - Sixteen release safeguard/version/notice tests passed, including stale same-target bundle prevention, interrupted checksum-upload recovery, unsigned CI prevention, CI notarization enforcement, target-specific artifact selection, and mismatched versions.
