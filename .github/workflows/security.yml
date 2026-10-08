@@ -1,0 +1,69 @@
+name: Security
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: "23 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Scan Git history with Gitleaks
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/gitleaks.tar.gz" \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          printf '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  %s\n' "$RUNNER_TEMP/gitleaks.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
+          "$RUNNER_TEMP/gitleaks" git . --log-opts=--all --redact
+  dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: npm
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+      - run: npm ci --ignore-scripts
+      - name: Audit production npm dependencies
+        run: npm audit --omit=dev
+      - name: Report development-tool advisories
+        run: |
+          npm audit --json > npm-audit.json || audit_status=$?
+          node -e 'const a=require("./npm-audit.json"); if(a.error||!a.metadata) process.exit(1); console.log(a.metadata.vulnerabilities); if(a.metadata.vulnerabilities.total) console.log("::warning::Development-tool advisories require review; see npm-audit artifact and docs/public-readiness.md")'
+      - name: Check target-specific advisory exceptions
+        run: |
+          set -euo pipefail
+          cargo tree --manifest-path src-tauri/Cargo.toml --locked --target aarch64-apple-darwin \
+            --edges normal,build --prefix none --format '{p}' > active-crates.txt
+          if grep -Eq '^(rkyv|glib) v' active-crates.txt; then
+            echo "::error::Reassess .cargo/audit.toml: an excepted crate is now built for macOS"
+            exit 1
+          fi
+      - name: Audit Rust dependencies
+        run: |
+          cargo install cargo-audit --version 0.22.2 --locked
+          cargo audit --file src-tauri/Cargo.lock --deny unsound
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: dependency-audit
+          path: |
+            npm-audit.json
+            active-crates.txt
+          if-no-files-found: ignore

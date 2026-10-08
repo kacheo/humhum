@@ -20,3 +20,5 @@ src-tauri/lcov.info
 # normal build.
 src-tauri/capabilities/e2e.json
 e2e/logs/
+.worktrees/
+__pycache__/

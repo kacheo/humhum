@@ -1,37 +1,67 @@
 # Wipzi
 
-Wipzi is a free, open-source macOS menu bar app for voice dictation. Hold a global shortcut, speak, and paste a locally transcribed result into the active app. Audio is processed on your Mac. Optional text cleanup uses local Ollama or an OpenAI/Anthropic API key you provide; cloud cleanup sends transcript text to that provider.
+Wipzi is a free, open-source macOS menu bar app for voice dictation. Hold a global shortcut, speak, and paste locally transcribed text into the active app.
 
-## Install
+**Public beta target: Apple Silicon Macs, macOS 13 or later, English transcription.** The current installer is Apple Silicon only; Intel Macs are not yet supported.
 
-Download the signed, notarized `.dmg` from [GitHub Releases](https://github.com/kacheo/wipzi/releases). macOS 13 or later is required. Open Wipzi and follow onboarding to grant Microphone, Accessibility, and Input Monitoring permissions. The default shortcut is Option+Shift+Space.
+<img src="assets/screenshots/preferences.png" alt="Wipzi General preferences" width="720">
 
-Wipzi starts with fresh preferences, model downloads, and API keys. It does not read or alter the previous app's data. Quit the older app before running Wipzi to avoid a shortcut conflict.
+<img src="assets/screenshots/recording.png" alt="Wipzi recording overlay" width="320">
+
+Screenshots show the existing UI with synthetic state.
+
+The public-launch candidate is being verified; see [release readiness](docs/public-readiness.md).
+
+## Install and first run
+
+1. Download the Apple Silicon `.dmg` from [GitHub Releases](https://github.com/kacheo/wipzi/releases). Releases are Developer ID signed and notarized.
+2. Drag Wipzi into Applications, eject the disk image, and open `/Applications/Wipzi.app`.
+3. Follow onboarding to grant Microphone, Accessibility, and Input Monitoring permissions.
+4. Download Base English (about 148 MB). Small English is optional (about 488 MB). Allow additional free space for downloads and app operation.
+5. Focus a text field in another app. Hold **Option+Shift+Space**, speak, and release to transcribe and paste. Escape cancels a recording. Recordings stop automatically after five minutes.
+
+Change the shortcut, input device, model, and cleanup mode in Preferences. The menu-bar menu opens Preferences and quits the app. Closing Preferences hides the window.
+
+See [troubleshooting](docs/troubleshooting.md) for setup problems. This is a beta: review dictated text before sending or submitting it.
+
+## Privacy and optional cleanup
+
+Whisper transcription runs on your Mac. After a model is downloaded, raw transcription works offline. Model downloads contact Hugging Face and are checked against pinned SHA-256 hashes.
+
+Cleanup is off by default:
+
+- **None:** paste the raw local transcript.
+- **Local Ollama:** send transcript text to your configured Ollama endpoint. Use a local endpoint to keep processing on your Mac.
+- **Cloud API:** send transcript text, not audio, to OpenAI or Anthropic using your own key. Keys are stored in macOS Keychain. Provider terms, retention policies, and usage charges apply.
+
+See [cleanup setup and local data removal](docs/troubleshooting.md). Never include private recordings, transcript text, or API keys in bug reports.
 
 ## Build and test
 
-Install Node.js 20+, Rust stable, Xcode Command Line Tools, and CMake. On macOS:
+Install Node.js 20+, Rust stable, Xcode Command Line Tools, CMake, and Python 3. On an Apple Silicon Mac:
 
 ```sh
 git clone https://github.com/kacheo/wipzi.git
 cd wipzi
 npm ci
 npm run tauri dev
-npm test
-npm run build
-cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
-`npm run tauri build` creates an unsigned local bundle. Signed releases use the workflow in [docs/release.md](docs/release.md). The app never requires a license key or payment. A recording stops after five minutes as a safety limit.
+Run checks separately:
 
-## Privacy
+```sh
+npm test
+npm run test:release
+npm run build
+cargo test --manifest-path src-tauri/Cargo.toml --locked
+```
 
-Whisper transcription runs locally. Model files download from Hugging Face when selected. Ollama cleanup runs against the configured local endpoint. Cloud cleanup sends transcript text, not audio, to the selected provider using your own key; keys are stored in macOS Keychain. See the provider's privacy terms before enabling cloud cleanup.
+`npm run tauri build` creates an unsigned development bundle. Signed releases use [the release guide](docs/release.md). No license key or payment is required to use Wipzi.
 
 ## Contributing and security
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development and pull requests. Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for architecture, checks, and pull requests, and the [roadmap](docs/roadmap.md) for priorities. Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
 
 ## License
 
-Copyright © 2026 Kalon Cheong and contributors. Wipzi is licensed under the [GNU Affero General Public License v3.0](LICENSE). Each GitHub Release links to the source tag used to build it. Dependencies and downloaded models retain their own licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Copyright © 2026 Kalon Cheong and contributors. Wipzi is licensed under [AGPL-3.0-only](LICENSE). Release notes link to the exact source tag. Dependencies and downloaded models retain their own licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

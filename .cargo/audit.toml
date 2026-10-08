@@ -1,0 +1,9 @@
+[advisories]
+# These crates are present in the cross-platform lockfile but absent from the
+# default Apple Silicon production/build graph. The security workflow checks
+# that both stay absent before permitting these narrowly scoped exceptions.
+# Reassess these exceptions before enabling either crate or another platform.
+ignore = [
+  "RUSTSEC-2026-0235", # rkyv 0.7: optional archive code, not built for Wipzi
+  "RUSTSEC-2024-0429", # glib: Linux-only backend, not built for macOS
+]

@@ -1,0 +1,38 @@
+name: Bug report
+description: Report a reproducible problem with Wipzi.
+body:
+  - type: markdown
+    attributes:
+      value: "For vulnerabilities, use the Security tab's private reporting flow once enabled. Never attach API keys, private recordings, or transcripts. Redact diagnostics before sharing."
+  - type: input
+    id: version
+    attributes:
+      label: Wipzi version
+      placeholder: v0.1.3
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: macOS version and Mac chip
+      placeholder: macOS 15, Apple M2
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include the focused app and permission status if relevant. Use synthetic example text.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Redacted diagnostics or screenshots
+      description: Optional. Remove personal text, paths, account details, and secrets.
