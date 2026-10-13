@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { usePrefsStore } from "../../stores/prefs";
 import { PermissionsStep } from "./PermissionsStep";
 import { HotkeyStep } from "./HotkeyStep";
@@ -17,18 +17,42 @@ const STEPS = ["Permissions", "Shortcut", "Cleanup", "Model", "Try it"] as const
 export function Onboarding() {
   const [step, setStep] = useState(0);
   const [ready, setReady] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  const [prepareError, setPrepareError] = useState<string | null>(null);
+  const preparationInFlight = useRef(false);
   const isLast = step === STEPS.length - 1;
 
   async function complete() {
     usePrefsStore.getState().setField("onboardingComplete", true);
     await usePrefsStore.getState().savePrefs();
   }
-  function next() {
+  async function next() {
+    if (preparationInFlight.current) return;
+    if (step === STEPS.length - 2) {
+      preparationInFlight.current = true;
+      setPreparing(true);
+      setPrepareError(null);
+      try {
+        // Apply the draft shortcut and cleanup settings before asking the user
+        // to try them. Saving does not complete onboarding.
+        await usePrefsStore.getState().savePrefs();
+        setReady(false);
+        setStep(STEPS.length - 1);
+      } catch {
+        setPrepareError("Could not apply your settings. Try again before starting dictation.");
+      } finally {
+        preparationInFlight.current = false;
+        setPreparing(false);
+      }
+      return;
+    }
     if (isLast) { void complete(); return; }
     setReady(false);
     setStep((s) => s + 1);
   }
   function back() {
+    if (preparationInFlight.current) return;
+    setPrepareError(null);
     setReady(false);
     setStep((s) => Math.max(0, s - 1));
   }
@@ -51,10 +75,11 @@ export function Onboarding() {
         {step === 3 && <ModelDownloadStep onReady={setReady} />}
         {step === 4 && <DemoStep onReady={setReady} onSkip={() => void complete()} />}
       </div>
+      {prepareError && <p className="onb-error" role="alert">{prepareError}</p>}
       <footer className="onboarding__nav">
-        <button type="button" onClick={back} disabled={step === 0}>Back</button>
-        <button type="button" className="onboarding__next primary-action" onClick={next} disabled={!ready}>
-          {isLast ? "Finish" : "Next"}
+        <button type="button" onClick={back} disabled={step === 0 || preparing}>Back</button>
+        <button type="button" className="onboarding__next primary-action" onClick={() => void next()} disabled={!ready || preparing}>
+          {preparing ? "Preparing…" : isLast ? "Finish" : "Next"}
         </button>
       </footer>
     </div>

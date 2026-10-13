@@ -6,7 +6,7 @@ Generated with cargo-about 0.9.2; target aarch64-apple-darwin; dev dependencies 
 ========================================================================
 GNU Affero General Public License v3.0 only (AGPL-3.0-only)
 
-Components: humhum 0.1.5
+Components: humhum 0.1.6
 
 GNU AFFERO GENERAL PUBLIC LICENSE
 Version 3, 19 November 2007
