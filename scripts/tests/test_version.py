@@ -22,7 +22,7 @@ class VersionTests(unittest.TestCase):
             (root / "package.json").write_text(json.dumps({"version": "0.1.3"}))
             (root / "src-tauri/tauri.conf.json").write_text(json.dumps({"version": "0.1.3"}))
             (root / "src-tauri/Cargo.toml").write_text(f'[package]\nversion = "{cargo_version}"\n[dependencies]\nother = "9"\n')
-            return subprocess.run(["node", "scripts/check-release-version.mjs"], cwd=root, env=os.environ | {"GITHUB_REF_NAME": tag} | ({"RELEASE_TAG": release_tag} if release_tag is not None else {}), capture_output=True, text=True)
+            return subprocess.run(["node", "scripts/check-release-version.mjs"], cwd=root, env={k: v for k, v in os.environ.items() if k != "RELEASE_TAG"} | {"GITHUB_REF_NAME": tag} | ({"RELEASE_TAG": release_tag} if release_tag is not None else {}), capture_output=True, text=True)
 
     def test_matching_versions(self):
         self.assertEqual(self.check().returncode, 0)
