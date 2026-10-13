@@ -2,7 +2,7 @@
 
 Humhum is a free, open-source macOS menu bar app for voice dictation. Hold a global shortcut, speak, and paste locally transcribed text into the active app.
 
-**Source release: Apple Silicon Macs, macOS 13 or later, English transcription.** Humhum v0.1.5 is source-only; no public installer is available. Intel Macs are not yet supported.
+**Installer beta: Apple Silicon Macs, macOS 13 or later, English transcription.** Download [Humhum v0.1.6 beta](https://github.com/kacheo/humhum/releases/tag/v0.1.6). Intel Macs are not yet supported.
 
 <img src="assets/screenshots/preferences.png" alt="Humhum General preferences" width="720">
 
@@ -10,11 +10,16 @@ Humhum is a free, open-source macOS menu bar app for voice dictation. Hold a glo
 
 Screenshots show the existing UI with synthetic state.
 
-Humhum was previously named Wipzi. See [source-release readiness](docs/humhum-readiness.md).
+Humhum was previously named Wipzi. See [v0.1.6 beta verification](docs/v0.1.6-readiness.md).
 
-## First run from source
+## Install and first run
 
-Build and launch Humhum using the instructions below. Follow onboarding to grant Microphone, Accessibility, and Input Monitoring permissions, then download Base English (about 148 MB). Small English is optional (about 488 MB).
+1. Download `Humhum_0.1.6_aarch64.dmg` and `SHA256SUMS.txt` from [the v0.1.6 beta release](https://github.com/kacheo/humhum/releases/tag/v0.1.6). The installer is Developer ID signed, notarized, and stapled. To verify the download, put both files in the same directory and run `shasum -a 256 -c SHA256SUMS.txt` there.
+2. Open the DMG and drag Humhum into Applications. Quit older Humhum/Wipzi copies, eject the DMG, and open `/Applications/Humhum.app`.
+3. Follow onboarding to grant Microphone, Accessibility, and Input Monitoring permissions. Select your shortcut; it is applied before the Try it step.
+4. Download Base English (about 148 MB). Small English is optional (about 488 MB); allow additional free space for downloads and operation.
+
+You can also build and launch Humhum from source using the instructions below.
 
 Focus a text field in another app. Hold **Option+Shift+Space**, speak, and release to transcribe and paste. Escape cancels a recording. Recordings stop automatically after five minutes.
 

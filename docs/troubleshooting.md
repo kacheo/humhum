@@ -2,7 +2,7 @@
 
 ## Permissions and shortcuts
 
-For the current source release, grant permissions to the Humhum development build you actually run. Rebuilds may require a new grant. For future installers, use `/Applications/Humhum.app`, rather than a development build or the copy inside the DMG. In onboarding or Preferences, click **Open Settings** and grant Microphone, Accessibility, and Input Monitoring to that copy.
+For the installer beta, grant permissions to `/Applications/Humhum.app`, rather than a development build or the copy inside the DMG. If you build from source, grant permissions to the development build you actually run; rebuilding may require a new grant. In onboarding or Preferences, click **Open Settings** and grant Microphone, Accessibility, and Input Monitoring to that copy.
 
 After changing a grant, return to Humhum and allow at least two seconds. If it still shows **Needed**, quit from the menu bar and reopen. If that fails, remove the old Humhum entry in System Settings, click **Open Settings** again, and grant access to the installed copy. See the [manual checklist](manual-test-checklist.md) for detailed recovery checks.
 
