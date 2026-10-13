@@ -1,6 +1,6 @@
-# Contributing to Wipzi
+# Contributing to Humhum
 
-Open an issue before a large change. Contributions are licensed under AGPL-3.0-only, the same license as Wipzi. Focus each PR on one problem and explain the resulting behavior.
+Open an issue before a large change. Contributions are licensed under AGPL-3.0-only, the same license as Humhum. Focus each PR on one problem and explain the resulting behavior.
 
 ## Development
 
@@ -12,12 +12,13 @@ Run before submitting a PR:
 
 ```sh
 npm test
+python3 -m pip install -r scripts/requirements-test.txt
 npm run test:release
 npm run build
 cargo test --manifest-path src-tauri/Cargo.toml --locked
 ```
 
-Rust network tests start loopback mock servers, and Keychain tests use an isolated `wipzi-api-test` namespace. Run them in a normal macOS session; restrictive sandboxes may block these operations.
+Rust network tests start loopback mock servers, and Keychain tests use an isolated `humhum-api-test` namespace. Run them in a normal macOS session; restrictive sandboxes may block these operations.
 
 For UI integration checks, build with `npx tauri build --debug --features e2e-harness --bundles app`, then run `npm run test:e2e`. The API-key case is excluded until its session/Keychain behavior is verified; see [CI notes](docs/ci.md). Never enable `e2e-harness` in a production release.
 

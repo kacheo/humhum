@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Wipzi",
-  "version": "0.1.4",
-  "identifier": "com.kacheo.wipzi",
+  "productName": "Humhum",
+  "version": "0.1.5",
+  "identifier": "com.kacheo.humhum",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
@@ -24,7 +24,7 @@
       {
         "label": "prefs",
         "url": "prefs.html",
-        "title": "Wipzi Preferences",
+        "title": "Humhum Preferences",
         "visible": false,
         "resizable": false,
         "width": 720,

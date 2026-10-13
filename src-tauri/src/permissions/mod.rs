@@ -41,14 +41,14 @@ pub trait Permissions: Send + Sync {
 }
 
 /// Construct the platform `Permissions` implementation (LLD §10 factory). In
-/// debug builds, `WIPZI_E2E_FORCE_PERMISSIONS=1` swaps in
+/// debug builds, `HUMHUM_E2E_FORCE_PERMISSIONS=1` swaps in
 /// [`ForcedPermissions`] (all-granted) so the onboarding wizard can be walked
 /// to Finish in CI, where the three real macOS TCC grants can't be obtained
 /// non-interactively.
 #[cfg(target_os = "macos")]
 pub fn create() -> Box<dyn Permissions> {
     #[cfg(debug_assertions)]
-    if std::env::var("WIPZI_E2E_FORCE_PERMISSIONS").as_deref() == Ok("1") {
+    if std::env::var("HUMHUM_E2E_FORCE_PERMISSIONS").as_deref() == Ok("1") {
         return Box::new(ForcedPermissions);
     }
     Box::new(macos::MacosPermissions)

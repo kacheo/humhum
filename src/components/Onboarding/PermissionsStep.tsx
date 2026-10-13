@@ -21,7 +21,7 @@ export function PermissionsStep({ onReady }: { onReady: (ready: boolean) => void
   return (
     <section className="onb-step">
       <h2>Permissions</h2>
-      <p>Wipzi needs three macOS permissions to record audio and paste text.</p>
+      <p>Humhum needs three macOS permissions to record audio and paste text.</p>
       <ul className="perm-list">
         <PermRow label="Microphone" granted={perms.microphone} action="Grant"
           onClick={() => { void ipc.requestMicrophone().catch(() => {}); }} />

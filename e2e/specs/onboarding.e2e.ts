@@ -1,7 +1,7 @@
 import { switchToPrefs } from "../support/prefsWindow.ts";
 
 // Manual-checklist flow: onboarding gate. Fresh $HOME (no seeded prefs) +
-// WIPZI_E2E_FORCE_PERMISSIONS=1 (real TCC grants aren't obtainable
+// HUMHUM_E2E_FORCE_PERMISSIONS=1 (real TCC grants aren't obtainable
 // headlessly) walks the full 5-step wizard to Finish and asserts the window
 // swaps from `.onboarding` to `.prefs` once onboardingComplete is persisted.
 describe("onboarding gate", () => {

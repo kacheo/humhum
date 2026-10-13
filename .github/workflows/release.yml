@@ -1,8 +1,12 @@
 name: Release
 
 on:
-  push:
-    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Existing reviewed version tag to build and publish as an installer"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -11,12 +15,21 @@ jobs:
   release:
     runs-on: macos-14
     environment: release
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag }}
     permissions:
       contents: write
     steps:
+      - name: Validate requested release tag
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+          ref: refs/tags/${{ inputs.release_tag }}
       - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -29,6 +42,10 @@ jobs:
         run: |
           node scripts/check-release-version.mjs
       - run: npm test
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+      - run: python3 -m pip install -r scripts/requirements-test.txt
       - run: npm run test:release
       - run: cargo test --manifest-path src-tauri/Cargo.toml --locked
       - run: rustup target add aarch64-apple-darwin
@@ -41,8 +58,8 @@ jobs:
           test -n "$APPLE_CERTIFICATE"
           test -n "$APPLE_CERTIFICATE_PASSWORD"
           umask 077
-          keychain_path="$RUNNER_TEMP/wipzi-release.keychain-db"
-          certificate_path="$RUNNER_TEMP/wipzi-release.p12"
+          keychain_path="$RUNNER_TEMP/humhum-release.keychain-db"
+          certificate_path="$RUNNER_TEMP/humhum-release.p12"
           keychain_password="$(openssl rand -base64 32)"
           printf '%s' "$APPLE_CERTIFICATE" | base64 --decode > "$certificate_path"
           security create-keychain -p "$keychain_password" "$keychain_path"
@@ -69,5 +86,5 @@ jobs:
       - name: Publish installer and exact source tag
         env:
           GH_TOKEN: ${{ github.token }}
-          WIPZI_DMG: ${{ steps.build.outputs.dmg }}
+          HUMHUM_DMG: ${{ steps.build.outputs.dmg }}
         run: node scripts/publish-release.mjs

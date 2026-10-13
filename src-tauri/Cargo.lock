@@ -2127,6 +2127,35 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 
 [[package]]
+name = "humhum"
+version = "0.1.5"
+dependencies = [
+ "aisdk",
+ "block2",
+ "coreaudio-sys",
+ "cpal",
+ "keyring",
+ "log",
+ "mockito",
+ "nix",
+ "objc2",
+ "objc2-foundation",
+ "reqwest 0.12.28",
+ "rubato",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-log",
+ "tauri-plugin-opener",
+ "tauri-plugin-wdio-webdriver",
+ "tempfile",
+ "tokio",
+ "whisper-rs",
+]
+
+[[package]]
 name = "hyper"
 version = "1.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6359,35 +6388,6 @@ checksum = "cb5a765337c50e9ec252c2069be9bf91c7df47afb103b642ba3a53bf8101be97"
 dependencies = [
  "cfg-if",
  "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "wipzi"
-version = "0.1.4"
-dependencies = [
- "aisdk",
- "block2",
- "coreaudio-sys",
- "cpal",
- "keyring",
- "log",
- "mockito",
- "nix",
- "objc2",
- "objc2-foundation",
- "reqwest 0.12.28",
- "rubato",
- "serde",
- "serde_json",
- "sha2",
- "tauri",
- "tauri-build",
- "tauri-plugin-log",
- "tauri-plugin-opener",
- "tauri-plugin-wdio-webdriver",
- "tempfile",
- "tokio",
- "whisper-rs",
 ]
 
 [[package]]

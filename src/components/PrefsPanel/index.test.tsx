@@ -61,10 +61,10 @@ test("renders all tabs", async () => {
   }
 });
 
-test("links to the Wipzi source and license", async () => {
+test("links to the Humhum source and license", async () => {
   await renderPanel();
   await userEvent.click(screen.getByRole("button", { name: /Source and license/i }));
-  expect(openExternal).toHaveBeenCalledWith("https://github.com/kacheo/wipzi");
+  expect(openExternal).toHaveBeenCalledWith("https://github.com/kacheo/humhum");
 });
 
 test("the active tab and its panel are cross-linked (id/aria-controls/aria-labelledby)", async () => {

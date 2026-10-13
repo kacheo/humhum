@@ -4,8 +4,8 @@
 <dict>
   <key>LSUIElement</key><true/>
   <key>NSMicrophoneUsageDescription</key>
-  <string>Wipzi needs microphone access to capture your voice.</string>
+  <string>Humhum needs microphone access to capture your voice.</string>
   <key>NSAccessibilityUsageDescription</key>
-  <string>Wipzi needs accessibility access to paste text at your cursor.</string>
+  <string>Humhum needs accessibility access to paste text at your cursor.</string>
 </dict>
 </plist>

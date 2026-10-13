@@ -4,11 +4,12 @@ import { basename, join } from "node:path";
 import { tmpdir } from "node:os";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 
-const { WIPZI_DMG: installer, GITHUB_REF_NAME: tag, GITHUB_REPOSITORY: repository } = process.env;
+const { HUMHUM_DMG: installer, GITHUB_REPOSITORY: repository } = process.env;
+const tag = process.env.RELEASE_TAG ?? process.env.GITHUB_REF_NAME;
 if (!installer || !tag || !repository || !existsSync(installer)) throw new Error("Installer, release tag, and repository are required.");
 const name = basename(installer);
-if (name !== `Wipzi_${tag.replace(/^v/, "")}_aarch64.dmg`) throw new Error("Installer filename must match the Apple Silicon release tag.");
-const scratch = mkdtempSync(join(tmpdir(), "wipzi-publish-"));
+if (name !== `Humhum_${tag.replace(/^v/, "")}_aarch64.dmg`) throw new Error("Installer filename must match the Apple Silicon release tag.");
+const scratch = mkdtempSync(join(tmpdir(), "humhum-publish-"));
 function gh(args) {
   const result = spawnSync("gh", args, { encoding: "utf8" });
   if (result.error || result.status !== 0) throw new Error(result.error?.message ?? result.stderr);
@@ -30,7 +31,7 @@ try {
     writeFileSync(sums, `${checksum(installer)}  ${name}\n`);
     const notes = join(scratch, "release-notes.md");
     writeFileSync(notes, `Source: https://github.com/${repository}/tree/${tag}\n\nApple Silicon beta; macOS 13+. Licensed under AGPL-3.0-only. See LICENSE, THIRD_PARTY_NOTICES.md, and dependency source links in docs/licenses/INVENTORY.md at the source tag.\n`);
-    gh(["release", "create", tag, installer, sums, "--repo", repository, "--title", `Wipzi ${tag}`, "--notes-file", notes, "--verify-tag"]);
+    gh(["release", "create", tag, installer, sums, "--repo", repository, "--title", `Humhum ${tag}`, "--notes-file", notes, "--verify-tag"]);
   } else {
     const assets = JSON.parse(view.stdout).assets.map(asset => asset.name);
     let bytes = installer;

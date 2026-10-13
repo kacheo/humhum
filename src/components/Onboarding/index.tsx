@@ -35,7 +35,7 @@ export function Onboarding() {
 
   return (
     <div className="onboarding">
-      <header className="onboarding__header"><span className="onboarding__brand">Welcome to Wipzi</span><span>Step {step + 1} of {STEPS.length}</span></header>
+      <header className="onboarding__header"><span className="onboarding__brand">Welcome to Humhum</span><span>Step {step + 1} of {STEPS.length}</span></header>
       <ol className="onboarding__progress" aria-label="Setup progress">
         {STEPS.map((label, i) => (
           <li key={label} aria-current={i === step ? "step" : undefined}

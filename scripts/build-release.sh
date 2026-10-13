@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Release build for Wipzi (macOS).
+# Release build for Humhum (macOS).
 #
 # Tauri-native signing + notarization: when the APPLE_* vars below are set,
 # `tauri build` signs the .app (hardened runtime + Entitlements.plist), notarizes
@@ -120,7 +120,7 @@ fi
 # so a mis-signed bundle is caught here instead of by users (re-granting TCC).
 # Skipped for the unsigned fallback path.
 if [[ -n "${APPLE_SIGNING_IDENTITY:-}" ]]; then
-  scripts/verify-signing.sh "$bundle_root/macos/Wipzi.app" "$dmg"
+  scripts/verify-signing.sh "$bundle_root/macos/Humhum.app" "$dmg"
 fi
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
   printf 'dmg=%s\n' "$dmg" >> "$GITHUB_OUTPUT"

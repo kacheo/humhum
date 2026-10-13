@@ -26,11 +26,11 @@ export function PrefsPanel() {
   return (
     <div className="prefs">
       <aside className="prefs__sidebar">
-        <div className="prefs__brand">Wipzi<small>Preferences</small></div>
+        <div className="prefs__brand">Humhum<small>Preferences</small></div>
         <PrefsTabs active={activeTab} onSelect={setActiveTab} />
         <div className="prefs__source">
-          <span>Wipzi · AGPLv3</span>
-          <button type="button" onClick={() => void openExternal("https://github.com/kacheo/wipzi")}>
+          <span>Humhum · AGPLv3</span>
+          <button type="button" onClick={() => void openExternal("https://github.com/kacheo/humhum")}>
             Source and license
           </button>
         </div>
@@ -45,7 +45,7 @@ export function PrefsPanel() {
           tabIndex={0}
           hidden={activeTab !== "general"}
         >
-          <header className="page-heading"><h1>General</h1><p>Make Wipzi feel at home on your Mac.</p></header>
+          <header className="page-heading"><h1>General</h1><p>Make Humhum feel at home on your Mac.</p></header>
           <GeneralSection />
         </section>
 
@@ -89,7 +89,7 @@ export function PrefsPanel() {
           tabIndex={0}
           hidden={activeTab !== "permissions"}
         >
-          <header className="page-heading"><h1>Permissions</h1><p>Manage the access Wipzi needs on your Mac.</p></header>
+          <header className="page-heading"><h1>Permissions</h1><p>Manage the access Humhum needs on your Mac.</p></header>
           <div className="prefs__section">
             <PermissionsNotice />
           </div>
