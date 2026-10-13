@@ -657,7 +657,7 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn manual_real_paste() {
-        let result = MacosPaste::new().paste("wipzi paste test").await;
+        let result = MacosPaste::new().paste("humhum paste test").await;
         println!("real paste result: {result:?}");
     }
 

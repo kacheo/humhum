@@ -130,6 +130,7 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | http-body | 1.0.1 | MIT | [Source](https://crates.io/api/v1/crates/http-body/1.0.1/download) |
 | http-body-util | 0.1.3 | MIT | [Source](https://crates.io/api/v1/crates/http-body-util/0.1.3/download) |
 | httparse | 1.10.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/httparse/1.10.1/download) |
+| humhum | 0.1.5 | AGPL-3.0-only | [Source](https://github.com/kacheo/humhum/tree/v0.1.5) |
 | hyper | 1.10.1 | MIT | [Source](https://crates.io/api/v1/crates/hyper/1.10.1/download) |
 | hyper-tls | 0.6.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/hyper-tls/0.6.0/download) |
 | hyper-util | 0.1.20 | MIT | [Source](https://crates.io/api/v1/crates/hyper-util/0.1.20/download) |
@@ -340,7 +341,6 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | window-vibrancy | 0.6.0 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/window-vibrancy/0.6.0/download) |
 | winnow | 0.7.15 | MIT | [Source](https://crates.io/api/v1/crates/winnow/0.7.15/download) |
 | winnow | 1.0.3 | MIT | [Source](https://crates.io/api/v1/crates/winnow/1.0.3/download) |
-| wipzi | 0.1.4 | AGPL-3.0-only | [Source](https://github.com/kacheo/wipzi/tree/v0.1.4) |
 | writeable | 0.6.3 | Unicode-3.0 | [Source](https://crates.io/api/v1/crates/writeable/0.6.3/download) |
 | wry | 0.55.1 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/wry/0.55.1/download) |
 | yoke | 0.8.3 | Unicode-3.0 | [Source](https://crates.io/api/v1/crates/yoke/0.8.3/download) |

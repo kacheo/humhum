@@ -1,8 +1,8 @@
 import { switchToPrefs } from "../support/prefsWindow.ts";
 
-const mockUrl = process.env.WIPZI_E2E_MOCK_URL;
+const mockUrl = process.env.HUMHUM_E2E_MOCK_URL;
 if (!mockUrl) {
-  throw new Error("WIPZI_E2E_MOCK_URL not set — this spec must be run via run-all.ts");
+  throw new Error("HUMHUM_E2E_MOCK_URL not set — this spec must be run via run-all.ts");
 }
 
 async function setApiKeyResult(result: "success" | "fail"): Promise<void> {

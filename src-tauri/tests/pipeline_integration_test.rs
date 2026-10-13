@@ -23,17 +23,17 @@ use std::time::Duration;
 
 use tokio::sync::oneshot;
 
-use wipzi_lib::audio::{AudioBuffer, AudioCapture, AudioError};
-use wipzi_lib::cleanup::{CleanupConfig, CleanupMode};
-use wipzi_lib::events::PasteFailReason;
-use wipzi_lib::hotkey::{AudioCue, HotkeyCapture, HotkeyCombo, HotkeyError, HotkeyEvent};
-use wipzi_lib::models::ModelGate;
-use wipzi_lib::paste::{PasteError, TextPaste};
-use wipzi_lib::permissions::{Permissions, PermissionsState};
-use wipzi_lib::pipeline::PipelineEmitter;
-use wipzi_lib::recording::{self, RecordingEmitter, RecordingSignal};
-use wipzi_lib::state::{AppState, RecordingPhase};
-use wipzi_lib::transcription::{Transcriber, TranscriptionError, WhisperModel};
+use humhum_lib::audio::{AudioBuffer, AudioCapture, AudioError};
+use humhum_lib::cleanup::{CleanupConfig, CleanupMode};
+use humhum_lib::events::PasteFailReason;
+use humhum_lib::hotkey::{AudioCue, HotkeyCapture, HotkeyCombo, HotkeyError, HotkeyEvent};
+use humhum_lib::models::ModelGate;
+use humhum_lib::paste::{PasteError, TextPaste};
+use humhum_lib::permissions::{Permissions, PermissionsState};
+use humhum_lib::pipeline::PipelineEmitter;
+use humhum_lib::recording::{self, RecordingEmitter, RecordingSignal};
+use humhum_lib::state::{AppState, RecordingPhase};
+use humhum_lib::transcription::{Transcriber, TranscriptionError, WhisperModel};
 
 // ---- Mocks -------------------------------------------------------------
 // Mirrors `recording.rs`'s own inline harness; duplicated here since an

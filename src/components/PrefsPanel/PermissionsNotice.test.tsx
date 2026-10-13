@@ -97,7 +97,7 @@ test.each([
   vi.mocked(ipc.checkPermissions).mockResolvedValue(perms);
   render(<PermissionsNotice />);
   const recovery = await screen.findByRole("note", { name: "Permission recovery" });
-  expect(recovery).toHaveTextContent("fully quit Wipzi");
+  expect(recovery).toHaveTextContent("fully quit Humhum");
   fire("permissions-changed", { microphone: false, accessibility: true, inputMonitoring: true });
   await waitFor(() => expect(screen.queryByRole("note", { name: "Permission recovery" })).toBeNull());
   expect(screen.getByRole("button", { name: "Grant" })).toBeInTheDocument();

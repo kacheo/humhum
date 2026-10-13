@@ -1,24 +1,24 @@
-# Wipzi
+# Humhum
 
-Wipzi is a free, open-source macOS menu bar app for voice dictation. Hold a global shortcut, speak, and paste locally transcribed text into the active app.
+Humhum is a free, open-source macOS menu bar app for voice dictation. Hold a global shortcut, speak, and paste locally transcribed text into the active app.
 
-**Public beta target: Apple Silicon Macs, macOS 13 or later, English transcription.** The current installer is Apple Silicon only; Intel Macs are not yet supported.
+**Source release: Apple Silicon Macs, macOS 13 or later, English transcription.** Humhum v0.1.5 is source-only; no public installer is available. Intel Macs are not yet supported.
 
-<img src="assets/screenshots/preferences.png" alt="Wipzi General preferences" width="720">
+<img src="assets/screenshots/preferences.png" alt="Humhum General preferences" width="720">
 
-<img src="assets/screenshots/recording.png" alt="Wipzi recording overlay" width="320">
+<img src="assets/screenshots/recording.png" alt="Humhum recording overlay" width="320">
 
 Screenshots show the existing UI with synthetic state.
 
-The public-launch candidate is being verified; see [release readiness](docs/public-readiness.md).
+Humhum was previously named Wipzi. See [source-release readiness](docs/humhum-readiness.md).
 
-## Install and first run
+## First run from source
 
-1. Download the Apple Silicon `.dmg` from [GitHub Releases](https://github.com/kacheo/wipzi/releases). Releases are Developer ID signed and notarized.
-2. Drag Wipzi into Applications, eject the disk image, and open `/Applications/Wipzi.app`.
-3. Follow onboarding to grant Microphone, Accessibility, and Input Monitoring permissions.
-4. Download Base English (about 148 MB). Small English is optional (about 488 MB). Allow additional free space for downloads and app operation.
-5. Focus a text field in another app. Hold **Option+Shift+Space**, speak, and release to transcribe and paste. Escape cancels a recording. Recordings stop automatically after five minutes.
+Build and launch Humhum using the instructions below. Follow onboarding to grant Microphone, Accessibility, and Input Monitoring permissions, then download Base English (about 148 MB). Small English is optional (about 488 MB).
+
+Focus a text field in another app. Hold **Option+Shift+Space**, speak, and release to transcribe and paste. Escape cancels a recording. Recordings stop automatically after five minutes.
+
+Humhum uses a new app identity and starts with fresh preferences, models, API keys, and permission grants. It does not import or remove Wipzi data. Quit Wipzi and disable its Launch at Login setting before using Humhum to avoid competing shortcuts.
 
 Change the shortcut, input device, model, and cleanup mode in Preferences. The menu-bar menu opens Preferences and quits the app. Closing Preferences hides the window.
 
@@ -41,8 +41,8 @@ See [cleanup setup and local data removal](docs/troubleshooting.md). Never inclu
 Install Node.js 20+, Rust stable, Xcode Command Line Tools, CMake, and Python 3. On an Apple Silicon Mac:
 
 ```sh
-git clone https://github.com/kacheo/wipzi.git
-cd wipzi
+git clone https://github.com/kacheo/humhum.git
+cd humhum
 npm ci
 npm run tauri dev
 ```
@@ -51,12 +51,13 @@ Run checks separately:
 
 ```sh
 npm test
+python3 -m pip install -r scripts/requirements-test.txt
 npm run test:release
 npm run build
 cargo test --manifest-path src-tauri/Cargo.toml --locked
 ```
 
-`npm run tauri build` creates an unsigned development bundle. Signed releases use [the release guide](docs/release.md). No license key or payment is required to use Wipzi.
+`npm run tauri build` creates an unsigned development bundle. Signed releases use [the release guide](docs/release.md). No license key or payment is required to use Humhum.
 
 ## Contributing and security
 
@@ -64,4 +65,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for architecture, checks, and pull reques
 
 ## License
 
-Copyright © 2026 Kalon Cheong and contributors. Wipzi is licensed under [AGPL-3.0-only](LICENSE). Release notes link to the exact source tag. Dependencies and downloaded models retain their own licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Copyright © 2026 Kalon Cheong and contributors. Humhum is licensed under [AGPL-3.0-only](LICENSE). Release notes link to the exact source tag. Dependencies and downloaded models retain their own licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

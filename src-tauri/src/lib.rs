@@ -36,7 +36,7 @@ fn show_prefs_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
                 "prefs",
                 tauri::WebviewUrl::App("prefs.html".into()),
             )
-            .title("Wipzi Preferences")
+            .title("Humhum Preferences")
             .inner_size(500.0, 560.0)
             .resizable(false)
             .center()
@@ -88,8 +88,8 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             let _ = app.handle().set_activation_policy(tauri::ActivationPolicy::Accessory);
 
-            // Log in release too (writes to ~/Library/Logs/com.kacheo.wipzi/
-            // Wipzi.log) so shipping builds surface permission/hotkey
+            // Log in release too (writes to ~/Library/Logs/com.kacheo.humhum/
+            // Humhum.log) so shipping builds surface permission/hotkey
             // problems for support. Info level; the high-frequency per-keystroke
             // tap trace is compiled out of release (see hotkey/macos.rs).
             app.handle().plugin(
@@ -225,7 +225,7 @@ pub fn run() {
             // System tray (LLD §12): the menu-bar presence + the only way to
             // reopen Preferences or quit once windows are closed.
             let prefs_item = MenuItem::with_id(app, "preferences", "Preferences…", true, None::<&str>)?;
-            let quit_item = PredefinedMenuItem::quit(app, Some("Quit Wipzi"))?;
+            let quit_item = PredefinedMenuItem::quit(app, Some("Quit Humhum"))?;
             let menu = Menu::with_items(app, &[&prefs_item, &quit_item])?;
             let tray = TrayIconBuilder::with_id("main");
             // Platform tray icon. On macOS the menu bar expects a monochrome
@@ -243,7 +243,7 @@ pub fn run() {
             let tray =
                 tray.icon(app.default_window_icon().expect("bundled default icon").clone());
             let tray = tray
-                .tooltip("Wipzi")
+                .tooltip("Humhum")
                 .menu(&menu)
                 .show_menu_on_left_click(true)
                 .on_menu_event(|app, event| {
@@ -289,7 +289,7 @@ pub fn run() {
             // is its only way to reach `PrefsPanel` for the model-download,
             // a release build can never be redirected regardless of environment.
             #[cfg(debug_assertions)]
-            if std::env::var("WIPZI_E2E_SHOW_PREFS_ON_STARTUP").as_deref() == Ok("1") {
+            if std::env::var("HUMHUM_E2E_SHOW_PREFS_ON_STARTUP").as_deref() == Ok("1") {
                 show_prefs_window(&app.handle());
             }
 

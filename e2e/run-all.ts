@@ -17,10 +17,10 @@ const here = path.dirname(new URL(import.meta.url).pathname);
 const repoRoot = path.resolve(here, "..");
 const fixturePath = path.join(here, "fixtures/models/base-en-fixture.bin");
 const appPath =
-  process.env.WIPZI_E2E_APP_PATH ??
+  process.env.HUMHUM_E2E_APP_PATH ??
   path.join(
     repoRoot,
-    "src-tauri/target/debug/bundle/macos/Wipzi.app/Contents/MacOS/wipzi",
+    "src-tauri/target/debug/bundle/macos/Humhum.app/Contents/MacOS/humhum",
   );
 
 // Full canonical settings.json shape (see prefs/mod.rs's
@@ -128,7 +128,7 @@ let tearingDown = false;
 function teardownAndExit(code: number): void {
   if (tearingDown) return; // idempotent — ignore repeat/double signals
   tearingDown = true;
-  // Kill the whole process group (wdio + the wipzi app it spawned). The
+  // Kill the whole process group (wdio + the humhum app it spawned). The
   // child is spawned `detached`, so its pgid == child.pid; a negative pid
   // targets the group. Best-effort — it may already be gone.
   if (activeChild?.pid) {
@@ -187,10 +187,10 @@ function runWdio(specFile: string, env: NodeJS.ProcessEnv): Promise<number> {
 async function runOne(spec: SpecDef): Promise<boolean> {
   console.log(`\n=== ${spec.name} ===`);
 
-  const homeDir = mkdtempSync(path.join(tmpdir(), "wipzi-e2e-home-"));
-  mkdirSync(path.join(homeDir, "Library/Application Support/wipzi"), { recursive: true });
+  const homeDir = mkdtempSync(path.join(tmpdir(), "humhum-e2e-home-"));
+  mkdirSync(path.join(homeDir, "Library/Application Support/humhum"), { recursive: true });
   writeFileSync(
-    path.join(homeDir, "Library/Application Support/wipzi/settings.json"),
+    path.join(homeDir, "Library/Application Support/humhum/settings.json"),
     seededSettingsJson(spec.seedOnboardingComplete),
   );
 
@@ -230,17 +230,17 @@ async function runOne(spec: SpecDef): Promise<boolean> {
     const env: NodeJS.ProcessEnv = {
       ...process.env,
       HOME: homeDir,
-      WIPZI_E2E_APP_PATH: appPath,
-      WIPZI_E2E_FORCE_PERMISSIONS: "1",
-      WIPZI_E2E_SHOW_PREFS_ON_STARTUP: "1",
-      WIPZI_OPENAI_BASE_URL: `${mockServer.url}/openai`,
-      WIPZI_ANTHROPIC_BASE_URL: `${mockServer.url}/anthropic`,
-      WIPZI_MODEL_BASE_EN_URL: `${mockServer.url}/models/base-en-fixture.bin`,
-      WIPZI_MODEL_BASE_EN_SHA256: sha256,
-      WIPZI_MODEL_BASE_EN_SIZE_BYTES: String(sizeBytes),
+      HUMHUM_E2E_APP_PATH: appPath,
+      HUMHUM_E2E_FORCE_PERMISSIONS: "1",
+      HUMHUM_E2E_SHOW_PREFS_ON_STARTUP: "1",
+      HUMHUM_OPENAI_BASE_URL: `${mockServer.url}/openai`,
+      HUMHUM_ANTHROPIC_BASE_URL: `${mockServer.url}/anthropic`,
+      HUMHUM_MODEL_BASE_EN_URL: `${mockServer.url}/models/base-en-fixture.bin`,
+      HUMHUM_MODEL_BASE_EN_SHA256: sha256,
+      HUMHUM_MODEL_BASE_EN_SIZE_BYTES: String(sizeBytes),
       // Exposed for specs that need to flip mock state mid-run (apiKeyTest,
       // API key) via plain fetch() against the control-plane routes.
-      WIPZI_E2E_MOCK_URL: mockServer.url,
+      HUMHUM_E2E_MOCK_URL: mockServer.url,
     };
 
     // Sequential — settingsPersist's two files share this $HOME/mock/keychain

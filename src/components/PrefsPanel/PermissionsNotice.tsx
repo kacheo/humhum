@@ -21,7 +21,7 @@ interface Row {
   run: () => void;
 }
 
-/** The macOS permissions Wipzi needs, each with a one-click way to grant
+/** The macOS permissions Humhum needs, each with a one-click way to grant
  *  it when missing. This is the only in-app path to (re-)grant **Microphone**
  *  after onboarding — macOS won't let you add an app to the Microphone list
  *  manually, so it must be requested via the system prompt. Stays live via the

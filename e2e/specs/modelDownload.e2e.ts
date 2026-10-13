@@ -1,7 +1,7 @@
 import { switchToPrefs } from "../support/prefsWindow.ts";
 
 // Manual-checklist flow: model download progress. onboardingComplete seeded
-// true + WIPZI_E2E_SHOW_PREFS_ON_STARTUP=1 lands directly on PrefsPanel
+// true + HUMHUM_E2E_SHOW_PREFS_ON_STARTUP=1 lands directly on PrefsPanel
 // (no tray to click). Asserts the Base (English) row's badge cycles
 // Not downloaded -> Downloading n% -> Ready and the Download button disables.
 describe("model download", () => {

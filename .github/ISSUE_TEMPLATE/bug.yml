@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible problem with Wipzi.
+description: Report a reproducible problem with Humhum.
 body:
   - type: markdown
     attributes:
@@ -7,7 +7,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: Wipzi version
+      label: Humhum version
       placeholder: v0.1.3
     validations:
       required: true

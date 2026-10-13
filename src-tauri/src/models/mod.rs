@@ -45,7 +45,7 @@ impl ModelFile {
     /// (`/ggerganov/whisper.cpp/raw/main/<file>` → `oid sha256:…` / `size …`),
     /// so we verify against a known-good hash rather than trusting the bytes we
     /// happen to download. In debug builds, an all-or-nothing per-model env
-    /// override (`WIPZI_MODEL_<FILE>_URL`/`_SHA256`/`_SIZE_BYTES`) points
+    /// override (`HUMHUM_MODEL_<FILE>_URL`/`_SHA256`/`_SIZE_BYTES`) points
     /// this at the E2E mock server + fixture instead — all three or none, so a
     /// partially-set override can't produce a silently-wrong hash/size pairing.
     fn spec(&self) -> ModelSpec {
@@ -75,8 +75,8 @@ impl ModelFile {
     #[cfg(debug_assertions)]
     fn env_prefix(&self) -> &'static str {
         match self {
-            ModelFile::BaseEn => "WIPZI_MODEL_BASE_EN",
-            ModelFile::SmallEn => "WIPZI_MODEL_SMALL_EN",
+            ModelFile::BaseEn => "HUMHUM_MODEL_BASE_EN",
+            ModelFile::SmallEn => "HUMHUM_MODEL_SMALL_EN",
         }
     }
 
@@ -107,10 +107,10 @@ struct ModelSpec {
     size_bytes: u64,
 }
 
-/// `<home>/Library/Application Support/wipzi/models/<filename>` — pure so
+/// `<home>/Library/Application Support/humhum/models/<filename>` — pure so
 /// it is testable without touching `$HOME` (mirrors `prefs::settings_file`).
 fn model_file_in(home: &Path, model: ModelFile) -> PathBuf {
-    home.join("Library/Application Support/wipzi/models")
+    home.join("Library/Application Support/humhum/models")
         .join(model.filename())
 }
 
@@ -603,18 +603,18 @@ mod tests {
     use serde_json::json;
 
     /// Serializes every test that mutates process-wide state (`$HOME`, the
-    /// debug-only `WIPZI_MODEL_*` overrides, or the [`DOWNLOADS`]
+    /// debug-only `HUMHUM_MODEL_*` overrides, or the [`DOWNLOADS`]
     /// registry) so they can't race each other under `cargo test`'s default
     /// thread-per-test parallelism. All `#[tokio::test]`s in this module run
     /// on the default (current-thread) runtime, so holding this across an
     /// `.await` is safe — the guard is never moved to another thread.
     const OVERRIDE_VARS: [&str; 6] = [
-        "WIPZI_MODEL_BASE_EN_URL",
-        "WIPZI_MODEL_BASE_EN_SHA256",
-        "WIPZI_MODEL_BASE_EN_SIZE_BYTES",
-        "WIPZI_MODEL_SMALL_EN_URL",
-        "WIPZI_MODEL_SMALL_EN_SHA256",
-        "WIPZI_MODEL_SMALL_EN_SIZE_BYTES",
+        "HUMHUM_MODEL_BASE_EN_URL",
+        "HUMHUM_MODEL_BASE_EN_SHA256",
+        "HUMHUM_MODEL_BASE_EN_SIZE_BYTES",
+        "HUMHUM_MODEL_SMALL_EN_URL",
+        "HUMHUM_MODEL_SMALL_EN_SHA256",
+        "HUMHUM_MODEL_SMALL_EN_SIZE_BYTES",
     ];
 
     /// RAII env-var guard: restores (or removes) the prior value on drop, so
@@ -649,7 +649,7 @@ mod tests {
         let _lock = crate::test_support::ENV_LOCK
             .lock()
             .unwrap_or_else(|e| e.into_inner());
-        const KEY: &str = "WIPZI_TEST_ENV_VAR_GUARD_PROBE";
+        const KEY: &str = "HUMHUM_TEST_ENV_VAR_GUARD_PROBE";
         let outer = EnvVarGuard::set(KEY, "initial");
         {
             let _inner = EnvVarGuard::set(KEY, "overridden");
@@ -668,11 +668,23 @@ mod tests {
     }
 
     #[test]
+    fn fresh_identity_models_do_not_use_legacy_downloads() {
+        let temp = tempfile::tempdir().unwrap();
+        let legacy = temp.path().join("Library/Application Support/wipzi/models/base.en.bin");
+        std::fs::create_dir_all(legacy.parent().unwrap()).unwrap();
+        std::fs::write(&legacy, b"legacy-model").unwrap();
+        let current = model_file_in(temp.path(), ModelFile::BaseEn);
+        assert_eq!(current, temp.path().join("Library/Application Support/humhum/models/base.en.bin"));
+        assert!(!current.exists());
+        assert_eq!(std::fs::read(&legacy).unwrap(), b"legacy-model");
+    }
+
+    #[test]
     fn model_file_in_builds_models_subdir_path() {
         let p = model_file_in(Path::new("/Users/x"), ModelFile::BaseEn);
         assert_eq!(
             p,
-            Path::new("/Users/x/Library/Application Support/wipzi/models/base.en.bin")
+            Path::new("/Users/x/Library/Application Support/humhum/models/base.en.bin")
         );
     }
 
@@ -790,7 +802,7 @@ mod tests {
     #[test]
     fn verify_file_hash_accepts_matching_and_rejects_tampered() {
         let dir = tempfile::tempdir().unwrap();
-        let bytes = b"wipzi model bytes";
+        let bytes = b"humhum model bytes";
         let (path, hex) = sha_of(bytes, dir.path());
 
         // Correct size + hash → Ok.
@@ -1152,7 +1164,7 @@ mod tests {
         let p = model_file_in(Path::new("/Users/x"), ModelFile::SmallEn);
         assert_eq!(
             p,
-            Path::new("/Users/x/Library/Application Support/wipzi/models/small.en.bin")
+            Path::new("/Users/x/Library/Application Support/humhum/models/small.en.bin")
         );
     }
 
@@ -1169,7 +1181,7 @@ mod tests {
         assert_eq!(
             ModelFile::SmallEn.path(),
             Some(PathBuf::from(
-                "/Users/x/Library/Application Support/wipzi/models/small.en.bin"
+                "/Users/x/Library/Application Support/humhum/models/small.en.bin"
             ))
         );
 
@@ -1207,9 +1219,9 @@ mod tests {
         for k in OVERRIDE_VARS {
             std::env::remove_var(k);
         }
-        let _u = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_URL", "http://example.test/model.bin");
-        let _s = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_SHA256", "deadbeef");
-        let _b = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_SIZE_BYTES", "123");
+        let _u = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_URL", "http://example.test/model.bin");
+        let _s = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SHA256", "deadbeef");
+        let _b = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SIZE_BYTES", "123");
 
         let spec = ModelFile::BaseEn.spec();
         assert_eq!(spec.url, "http://example.test/model.bin");
@@ -1227,9 +1239,9 @@ mod tests {
         }
         // URL + SHA256 set but SIZE_BYTES missing → all-or-nothing override
         // rule falls back to the pinned production spec entirely.
-        let _u = EnvVarGuard::set("WIPZI_MODEL_SMALL_EN_URL", "http://example.test/small.bin");
-        let _s = EnvVarGuard::set("WIPZI_MODEL_SMALL_EN_SHA256", "deadbeef");
-        std::env::remove_var("WIPZI_MODEL_SMALL_EN_SIZE_BYTES");
+        let _u = EnvVarGuard::set("HUMHUM_MODEL_SMALL_EN_URL", "http://example.test/small.bin");
+        let _s = EnvVarGuard::set("HUMHUM_MODEL_SMALL_EN_SHA256", "deadbeef");
+        std::env::remove_var("HUMHUM_MODEL_SMALL_EN_SIZE_BYTES");
 
         let spec = ModelFile::SmallEn.spec();
         assert_eq!(spec.size_bytes, 487_614_201, "fell back to the pinned size");
@@ -1344,9 +1356,9 @@ mod tests {
             hasher.update(&payload);
             format!("{:x}", hasher.finalize())
         };
-        let _url = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_URL", "http://example.test/unused");
-        let _sha = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_SHA256", &hex);
-        let _size = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_SIZE_BYTES", &payload.len().to_string());
+        let _url = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_URL", "http://example.test/unused");
+        let _sha = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SHA256", &hex);
+        let _size = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SIZE_BYTES", &payload.len().to_string());
 
         let final_path = ModelFile::BaseEn.path().unwrap();
         std::fs::create_dir_all(final_path.parent().unwrap()).unwrap();
@@ -1398,9 +1410,9 @@ mod tests {
             hasher.update(&payload);
             format!("{:x}", hasher.finalize())
         };
-        let _url = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_URL", "http://example.test/unused");
-        let _sha = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_SHA256", &hex);
-        let _size = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_SIZE_BYTES", &payload.len().to_string());
+        let _url = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_URL", "http://example.test/unused");
+        let _sha = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SHA256", &hex);
+        let _size = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SIZE_BYTES", &payload.len().to_string());
 
         let final_path = ModelFile::BaseEn.path().unwrap();
         std::fs::create_dir_all(final_path.parent().unwrap()).unwrap();
@@ -1434,9 +1446,9 @@ mod tests {
             hasher.update(&payload);
             format!("{:x}", hasher.finalize())
         };
-        let _url = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_URL", "http://example.test/unused");
-        let _sha = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_SHA256", &hex);
-        let _size = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_SIZE_BYTES", &payload.len().to_string());
+        let _url = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_URL", "http://example.test/unused");
+        let _sha = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SHA256", &hex);
+        let _size = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SIZE_BYTES", &payload.len().to_string());
 
         // The interrupted-finalize state: a hash-valid `.tmp`, no final `.bin`.
         let final_path = ModelFile::BaseEn.path().unwrap();
@@ -1467,9 +1479,9 @@ mod tests {
         let home_dir = tempfile::tempdir().unwrap();
         let _home = EnvVarGuard::set("HOME", home_dir.path().to_str().unwrap());
 
-        let _url = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_URL", "http://example.test/unused");
-        let _sha = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_SHA256", &"0".repeat(64));
-        let _size = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_SIZE_BYTES", "8");
+        let _url = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_URL", "http://example.test/unused");
+        let _sha = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SHA256", &"0".repeat(64));
+        let _size = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SIZE_BYTES", "8");
 
         // A `.tmp` that will not match the pinned hash, and no final `.bin`.
         let final_path = ModelFile::BaseEn.path().unwrap();
@@ -1514,11 +1526,11 @@ mod tests {
         let home_dir = tempfile::tempdir().unwrap();
         let _home = EnvVarGuard::set("HOME", home_dir.path().to_str().unwrap());
         let _url = EnvVarGuard::set(
-            "WIPZI_MODEL_BASE_EN_URL",
+            "HUMHUM_MODEL_BASE_EN_URL",
             &format!("{}/base.bin", server.url()),
         );
-        let _sha = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_SHA256", &hex);
-        let _size = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_SIZE_BYTES", &payload.len().to_string());
+        let _sha = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SHA256", &hex);
+        let _size = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SIZE_BYTES", &payload.len().to_string());
 
         let emitter = FakeProgressEmitter::default();
         let result = ModelManager::new()
@@ -1563,11 +1575,11 @@ mod tests {
         let home_dir = tempfile::tempdir().unwrap();
         let _home = EnvVarGuard::set("HOME", home_dir.path().to_str().unwrap());
         let _url = EnvVarGuard::set(
-            "WIPZI_MODEL_BASE_EN_URL",
+            "HUMHUM_MODEL_BASE_EN_URL",
             &format!("{}/base.bin", server.url()),
         );
-        let _sha = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_SHA256", &"0".repeat(64));
-        let _size = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_SIZE_BYTES", "64");
+        let _sha = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SHA256", &"0".repeat(64));
+        let _size = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SIZE_BYTES", "64");
 
         let emitter = FakeProgressEmitter::default();
         let result = ModelManager::new()
@@ -1613,12 +1625,12 @@ mod tests {
 
         let home_dir = tempfile::tempdir().unwrap();
         let _home = EnvVarGuard::set("HOME", home_dir.path().to_str().unwrap());
-        let _url = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_URL", "http://127.0.0.1:1/unused");
-        let _sha = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_SHA256", &"0".repeat(64));
+        let _url = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_URL", "http://127.0.0.1:1/unused");
+        let _sha = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SHA256", &"0".repeat(64));
         // Comfortably larger than any real disk, with plenty of headroom
         // below `u64::MAX` so `required_bytes`'s `+ DISK_MARGIN_BYTES` can't
         // overflow (debug builds panic on overflow).
-        let _size = EnvVarGuard::set("WIPZI_MODEL_BASE_EN_SIZE_BYTES", "100000000000000000");
+        let _size = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SIZE_BYTES", "100000000000000000");
 
         let emitter = FakeProgressEmitter::default();
         let result = ModelManager::new()

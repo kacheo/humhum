@@ -86,9 +86,9 @@ impl std::fmt::Display for PrefsError {
 /// `pub(crate)` so `commands.rs`'s real-wrapper test can clean up via the same
 /// (cfg-swapped) service instead of a hardcoded literal.
 #[cfg(not(test))]
-pub(crate) const API_KEYCHAIN_SERVICE: &str = "wipzi-api";
+pub(crate) const API_KEYCHAIN_SERVICE: &str = "humhum-api";
 #[cfg(test)]
-pub(crate) const API_KEYCHAIN_SERVICE: &str = "wipzi-api-test";
+pub(crate) const API_KEYCHAIN_SERVICE: &str = "humhum-api-test";
 
 /// Keychain account name per provider. Stable strings — changing them orphans
 /// any previously stored key.
@@ -141,10 +141,10 @@ pub fn default_prefs() -> Prefs {
 /// The settings.json path under a given home directory (pure — testable without
 /// touching the process environment).
 fn settings_file(home: &std::path::Path) -> std::path::PathBuf {
-    home.join("Library/Application Support/wipzi/settings.json")
+    home.join("Library/Application Support/humhum/settings.json")
 }
 
-/// `~/Library/Application Support/wipzi/settings.json`, or `None` if
+/// `~/Library/Application Support/humhum/settings.json`, or `None` if
 /// `$HOME` is unset.
 fn settings_path() -> Option<std::path::PathBuf> {
     let home = std::env::var_os("HOME")?;
@@ -233,6 +233,36 @@ mod tests {
     }
 
     #[test]
+    fn fresh_identity_does_not_import_or_modify_legacy_settings() {
+        let temp = tempfile::tempdir().unwrap();
+        let legacy = temp.path().join("Library/Application Support/wipzi/settings.json");
+        let mut old = Prefs::default();
+        old.onboarding_complete = true;
+        save_to(&legacy, &old).unwrap();
+        let before = std::fs::read(&legacy).unwrap();
+        let current = settings_file(temp.path());
+        assert_eq!(current, temp.path().join("Library/Application Support/humhum/settings.json"));
+        assert!(!load_from(&current).onboarding_complete);
+        save_to(&current, &Prefs::default()).unwrap();
+        assert_eq!(std::fs::read(&legacy).unwrap(), before);
+    }
+
+    #[test]
+    fn fresh_identity_keychain_does_not_read_or_overwrite_legacy_keys() {
+        let _lock = crate::test_support::ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let legacy = Entry::new("wipzi-api-test", "openai-key").unwrap();
+        legacy.set_password("legacy-test-value").unwrap();
+        let result = read_api_key(ApiProvider::OpenAi);
+        let current = Entry::new(API_KEYCHAIN_SERVICE, "openai-key").unwrap();
+        store_api_key(ApiProvider::OpenAi, "new-test-value").unwrap();
+        let retained = legacy.get_password().unwrap();
+        let _ = current.delete_credential();
+        let _ = legacy.delete_credential();
+        assert_eq!(result.unwrap(), None);
+        assert_eq!(retained, "legacy-test-value");
+    }
+
+    #[test]
     fn prefs_error_display_messages_for_every_variant() {
         assert_eq!(
             PrefsError::IoError("boom".into()).to_string(),
@@ -274,7 +304,7 @@ mod tests {
         assert_eq!(
             settings_path(),
             Some(std::path::PathBuf::from(
-                "/Users/x/Library/Application Support/wipzi/settings.json"
+                "/Users/x/Library/Application Support/humhum/settings.json"
             ))
         );
 
@@ -471,7 +501,7 @@ mod tests {
         let p = settings_file(std::path::Path::new("/Users/x"));
         assert_eq!(
             p,
-            std::path::Path::new("/Users/x/Library/Application Support/wipzi/settings.json")
+            std::path::Path::new("/Users/x/Library/Application Support/humhum/settings.json")
         );
     }
 

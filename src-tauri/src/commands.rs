@@ -29,7 +29,7 @@ fn parse_provider(provider: &str) -> Result<ApiProvider, AppError> {
 }
 
 /// Base URL for `test_api_key`: a debug-only per-provider env override
-/// (`WIPZI_OPENAI_BASE_URL` / `WIPZI_ANTHROPIC_BASE_URL`, for the
+/// (`HUMHUM_OPENAI_BASE_URL` / `HUMHUM_ANTHROPIC_BASE_URL`, for the
 /// E2E mock server) takes precedence, else the real production URL (no
 /// trailing slash). Rust's own `run_test_api_key` tests inject a mockito URL
 /// directly and never call this.
@@ -37,8 +37,8 @@ fn default_base_url(provider: ApiProvider) -> String {
     #[cfg(debug_assertions)]
     {
         let env_var = match provider {
-            ApiProvider::OpenAi => "WIPZI_OPENAI_BASE_URL",
-            ApiProvider::Anthropic => "WIPZI_ANTHROPIC_BASE_URL",
+            ApiProvider::OpenAi => "HUMHUM_OPENAI_BASE_URL",
+            ApiProvider::Anthropic => "HUMHUM_ANTHROPIC_BASE_URL",
         };
         if let Ok(url) = std::env::var(env_var) {
             return url;
@@ -271,7 +271,7 @@ mod tests {
     }
 
     /// The `test_api_key` command itself (not just `run_test_api_key`): resolves
-    /// `default_base_url` via the debug-only `WIPZI_OPENAI_BASE_URL`
+    /// `default_base_url` via the debug-only `HUMHUM_OPENAI_BASE_URL`
     /// override to a mock server, and lets the success path store the key for
     /// real via `prefs::store_api_key` (real Keychain access confirmed to work
     /// Keychain test). Cleans up the Keychain entry afterward.
@@ -286,8 +286,8 @@ mod tests {
             .with_status(200)
             .create_async()
             .await;
-        let old = std::env::var("WIPZI_OPENAI_BASE_URL").ok();
-        std::env::set_var("WIPZI_OPENAI_BASE_URL", server.url());
+        let old = std::env::var("HUMHUM_OPENAI_BASE_URL").ok();
+        std::env::set_var("HUMHUM_OPENAI_BASE_URL", server.url());
 
         let result = test_api_key("open_ai".into(), "test-command-key".into()).await;
 
@@ -300,8 +300,8 @@ mod tests {
         let _ = entry.delete_credential();
 
         match old {
-            Some(v) => std::env::set_var("WIPZI_OPENAI_BASE_URL", v),
-            None => std::env::remove_var("WIPZI_OPENAI_BASE_URL"),
+            Some(v) => std::env::set_var("HUMHUM_OPENAI_BASE_URL", v),
+            None => std::env::remove_var("HUMHUM_OPENAI_BASE_URL"),
         }
 
         assert!(result.is_ok());
@@ -349,7 +349,7 @@ mod tests {
     #[test]
     fn default_base_url_prefers_env_override_else_prod_url() {
         // Clean slate regardless of ambient env (this var is only touched here).
-        std::env::remove_var("WIPZI_OPENAI_BASE_URL");
+        std::env::remove_var("HUMHUM_OPENAI_BASE_URL");
         assert_eq!(
             default_base_url(ApiProvider::OpenAi),
             "https://api.openai.com/v1"
@@ -359,7 +359,7 @@ mod tests {
             "https://api.anthropic.com/v1"
         );
 
-        std::env::set_var("WIPZI_OPENAI_BASE_URL", "http://127.0.0.1:1/mock");
+        std::env::set_var("HUMHUM_OPENAI_BASE_URL", "http://127.0.0.1:1/mock");
         assert_eq!(
             default_base_url(ApiProvider::OpenAi),
             "http://127.0.0.1:1/mock"
@@ -369,7 +369,7 @@ mod tests {
             default_base_url(ApiProvider::Anthropic),
             "https://api.anthropic.com/v1"
         );
-        std::env::remove_var("WIPZI_OPENAI_BASE_URL");
+        std::env::remove_var("HUMHUM_OPENAI_BASE_URL");
     }
 
     #[test]
@@ -434,9 +434,9 @@ mod tests {
             .with_status(401)
             .create_async()
             .await;
-        std::env::set_var("WIPZI_ANTHROPIC_BASE_URL", server.url());
+        std::env::set_var("HUMHUM_ANTHROPIC_BASE_URL", server.url());
         let result = test_api_key("anthropic".into(), "bad-key".into()).await;
-        std::env::remove_var("WIPZI_ANTHROPIC_BASE_URL");
+        std::env::remove_var("HUMHUM_ANTHROPIC_BASE_URL");
         assert_eq!(result.unwrap_err().code(), "key_rejected");
     }
 
@@ -477,7 +477,7 @@ mod tests {
     /// never touches real TCC prompts or spawns a real System Settings pane.
     #[test]
     fn permission_commands_use_forced_permissions_in_e2e_mode() {
-        std::env::set_var("WIPZI_E2E_FORCE_PERMISSIONS", "1");
+        std::env::set_var("HUMHUM_E2E_FORCE_PERMISSIONS", "1");
 
         let state = check_permissions().expect("check_permissions should succeed");
         assert!(state.all_granted());
@@ -485,7 +485,7 @@ mod tests {
         open_accessibility_settings(); // no-op under the forced impl; must not panic
         open_input_monitoring_settings(); // same
 
-        std::env::remove_var("WIPZI_E2E_FORCE_PERMISSIONS");
+        std::env::remove_var("HUMHUM_E2E_FORCE_PERMISSIONS");
     }
 
     #[test]

@@ -18,7 +18,7 @@ class PublishTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.store = self.root / "assets"
         self.store.mkdir()
-        self.dmg = self.root / "Wipzi_0.1.4_aarch64.dmg"
+        self.dmg = self.root / "Humhum_0.1.4_aarch64.dmg"
         self.dmg.write_bytes(b"new build, different signing timestamp")
         self.original = b"original published installer"
         (self.store / self.dmg.name).write_bytes(self.original)
@@ -51,7 +51,7 @@ else: sys.exit(3)
         script = ROOT / "scripts/publish-release.mjs"
         if not script.exists():
             self.fail("release publisher has not been implemented")
-        env = os.environ | {"PATH": str(self.root) + os.pathsep + os.environ["PATH"], "ASSET_STORE": str(self.store), "WIPZI_DMG": str(self.dmg), "GITHUB_REF_NAME": "v0.1.4", "GITHUB_REPOSITORY": "example/wipzi"}
+        env = os.environ | {"PATH": str(self.root) + os.pathsep + os.environ["PATH"], "ASSET_STORE": str(self.store), "HUMHUM_DMG": str(self.dmg), "GITHUB_REF_NAME": "v0.1.4", "GITHUB_REPOSITORY": "example/humhum"}
         env.update(extra_env)
         return subprocess.run(["node", str(script)], cwd=self.root, env=env, text=True, capture_output=True)
 
@@ -82,7 +82,7 @@ else: sys.exit(3)
         self.assertEqual(result.returncode, 0, result.stderr)
         digest = hashlib.sha256(self.dmg.read_bytes()).hexdigest()
         self.assertEqual((self.store / "SHA256SUMS.txt").read_text(), digest + "  " + self.dmg.name + "\n")
-        self.assertIn("https://github.com/example/wipzi/tree/v0.1.4", (self.root / "notes").read_text())
+        self.assertIn("https://github.com/example/humhum/tree/v0.1.4", (self.root / "notes").read_text())
 
     def test_failed_lookup_does_not_attempt_publication(self):
         result = self.publish(LOOKUP_ERROR="1")

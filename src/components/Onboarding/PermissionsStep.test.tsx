@@ -50,7 +50,7 @@ test("the accessibility and input monitoring actions open their System Settings 
 test("offers recovery while Accessibility is denied and clears it after a live grant", async () => {
   render(<PermissionsStep onReady={() => {}} />);
   const recovery = await screen.findByRole("note", { name: "Permission recovery" });
-  expect(recovery).toHaveTextContent("fully quit Wipzi");
+  expect(recovery).toHaveTextContent("fully quit Humhum");
   fire("permissions-changed", { microphone: true, accessibility: true, inputMonitoring: true });
   await waitFor(() => expect(screen.queryByRole("note", { name: "Permission recovery" })).toBeNull());
 });

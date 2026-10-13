@@ -1,6 +1,6 @@
 [package]
-name = "wipzi"
-version = "0.1.4"
+name = "humhum"
+version = "0.1.5"
 description = "Privacy-first on-device voice dictation for macOS"
 authors = ["Kalon Cheong"]
 license = "AGPL-3.0-only"
@@ -17,7 +17,7 @@ default = []
 e2e-harness = ["dep:tauri-plugin-wdio-webdriver"]
 
 [lib]
-name = "wipzi_lib"
+name = "humhum_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

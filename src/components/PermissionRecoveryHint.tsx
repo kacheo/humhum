@@ -7,14 +7,14 @@ export function PermissionRecoveryHint({ perms }: { perms: PermissionsState }) {
   return (
     <div role="note" aria-label="Permission recovery">
       <p>
-        If a permission is enabled in System Settings but still says Needed, fully quit Wipzi
+        If a permission is enabled in System Settings but still says Needed, fully quit Humhum
         from its menu-bar menu and reopen the installed app in Applications.
         Closing this window does not quit the app.
       </p>
       {!perms.accessibility && (
         <p>
-          If Accessibility still says Needed, remove Wipzi from the Accessibility list using
-          the minus button. Then use Open Settings here and enable Wipzi again.
+          If Accessibility still says Needed, remove Humhum from the Accessibility list using
+          the minus button. Then use Open Settings here and enable Humhum again.
           Choose the installed app in Applications, rather than a development copy or the app inside the DMG.
         </p>
       )}

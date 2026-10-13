@@ -1,6 +1,6 @@
 # Roadmap
 
-Wipzi's first public beta targets Apple Silicon Macs running macOS 13 or later, with English transcription.
+Humhum's first public beta targets Apple Silicon Macs running macOS 13 or later, with English transcription.
 
 Near-term priorities:
 

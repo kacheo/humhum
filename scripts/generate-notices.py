@@ -21,7 +21,7 @@ rust = ["Rust production and build dependencies\nGenerated with cargo-about 0.9.
 inventory = ["# Dependency inventory\n", "Production/build dependencies for Apple Silicon. Build-only crates are conservatively included. Development tooling and other platforms are excluded.\n", "## Rust\n", "| Component | Version | Declared license | Source |", "| --- | --- | --- | --- |"]
 for crate in sorted(report["crates"], key=lambda c: (c["package"]["name"], c["package"]["version"])):
     p = crate["package"]
-    source = f"https://crates.io/api/v1/crates/{p['name']}/{p['version']}/download" if p["source"] else f"https://github.com/kacheo/wipzi/tree/v{p['version']}"
+    source = f"https://crates.io/api/v1/crates/{p['name']}/{p['version']}/download" if p["source"] else f"https://github.com/kacheo/humhum/tree/v{p['version']}"
     inventory.append(f"| {p['name']} | {p['version']} | {p['license']} | [Source]({source}) |")
 for license in report["licenses"]:
     users = sorted({f"{u['crate']['name']} {u['crate']['version']}" for u in license["used_by"]})
@@ -73,6 +73,6 @@ for path in sorted(paths[1:]):
         npm.extend([file.name, file.read_text().strip()])
 (output / "NPM_NOTICES.txt").write_text("\n\n".join(npm) + "\n")
 (output / "INVENTORY.md").write_text("\n".join(inventory) + "\n")
-inputs = ("package-lock.json", "src-tauri/Cargo.lock", "about.toml")
+inputs = ("package-lock.json", "src-tauri/Cargo.lock", "src-tauri/Cargo.toml", "about.toml")
 (output / "lockfiles.json").write_text(json.dumps({name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in inputs}, indent=2) + "\n")
 print(f"Generated {len(report['crates'])} Rust component entries and {len(paths) - 1} npm entries in docs/licenses")

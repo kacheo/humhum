@@ -59,7 +59,7 @@ export async function createScratchKeychain(
 ): Promise<ScratchKeychain> {
   const previousDefault = await currentDefaultKeychain();
   const previousSearchList = await currentUserSearchList();
-  const scratchPath = path.join(os.tmpdir(), `wipzi-e2e-${randomUUID()}.keychain-db`);
+  const scratchPath = path.join(os.tmpdir(), `humhum-e2e-${randomUUID()}.keychain-db`);
 
   await exec("security", ["create-keychain", "-p", SCRATCH_PASSWORD, scratchPath]);
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Verify the signed/notarized Wipzi build.
+# Verify the signed/notarized Humhum build.
 #
 # Asserts that the built .app is signed with a Developer ID Application identity
 # (hardened runtime) and that the .dmg is notarized + stapled — the conditions
@@ -43,7 +43,7 @@ trap cleanup EXIT
 if [[ -z "$app" || ! -d "$app" ]]; then
   [[ -n "$dmg" && -f "$dmg" ]] || fail "no .app and no .dmg found (build first, or pass paths as args)"
   echo "verify-signing: standalone .app not found — inspecting the .app inside the dmg"
-  mountpoint=$(mktemp -d /tmp/wipzi-verify.XXXXXX)
+  mountpoint=$(mktemp -d /tmp/humhum-verify.XXXXXX)
   hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$mountpoint" -quiet \
     || fail "could not mount $dmg"
   app=$(find "$mountpoint" -maxdepth 2 -name '*.app' 2>/dev/null | head -1)
