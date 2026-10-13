@@ -17,6 +17,7 @@ import "./index.css";
  *  mount effect fires on first render regardless of which tab is active. */
 export function PrefsPanel() {
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [sourceError, setSourceError] = useState<string | null>(null);
   const prefs = usePrefsStore((s) => s.prefs);
   const isDirty = usePrefsStore((s) => s.isDirty);
   const isSaving = usePrefsStore((s) => s.isSaving);
@@ -30,9 +31,15 @@ export function PrefsPanel() {
         <PrefsTabs active={activeTab} onSelect={setActiveTab} />
         <div className="prefs__source">
           <span>Humhum · AGPLv3</span>
-          <button type="button" onClick={() => void openExternal("https://github.com/kacheo/humhum")}>
+          <button type="button" onClick={() => {
+            setSourceError(null);
+            void openExternal("https://github.com/kacheo/humhum").catch(() => {
+              setSourceError("Could not open the browser. Try again.");
+            });
+          }}>
             Source and license
           </button>
+          {sourceError && <p className="prefs__source-error" role="alert">{sourceError}</p>}
         </div>
       </aside>
 

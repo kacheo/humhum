@@ -67,6 +67,30 @@ test("links to the Humhum source and license", async () => {
   expect(openExternal).toHaveBeenCalledWith("https://github.com/kacheo/humhum");
 });
 
+test.each(["{Enter}", " "])("opens the source and license with keyboard activation %s", async (key) => {
+  await renderPanel();
+  screen.getByRole("button", { name: /Source and license/i }).focus();
+  await userEvent.keyboard(key);
+  expect(openExternal).toHaveBeenCalledWith("https://github.com/kacheo/humhum");
+});
+
+test("shows a browser-opening error and clears it when retrying", async () => {
+  vi.mocked(openExternal).mockRejectedValueOnce(new Error("forbidden URL"));
+  await renderPanel();
+  const button = screen.getByRole("button", { name: /Source and license/i });
+  await userEvent.click(button);
+  expect(await screen.findByRole("alert")).toHaveTextContent("Could not open the browser. Try again.");
+  expect(button).toBeEnabled();
+
+  let finishRetry!: () => void;
+  vi.mocked(openExternal).mockImplementationOnce(() => new Promise<void>((resolve) => { finishRetry = resolve; }));
+  await userEvent.click(button);
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  await act(async () => { finishRetry(); });
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(openExternal).toHaveBeenCalledTimes(2);
+});
+
 test("the active tab and its panel are cross-linked (id/aria-controls/aria-labelledby)", async () => {
   await renderPanel();
   const tab = screen.getByRole("tab", { name: "General" });
