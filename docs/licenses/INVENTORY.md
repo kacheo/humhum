@@ -130,7 +130,7 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | http-body | 1.0.1 | MIT | [Source](https://crates.io/api/v1/crates/http-body/1.0.1/download) |
 | http-body-util | 0.1.3 | MIT | [Source](https://crates.io/api/v1/crates/http-body-util/0.1.3/download) |
 | httparse | 1.10.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/httparse/1.10.1/download) |
-| humhum | 0.1.5 | AGPL-3.0-only | [Source](https://github.com/kacheo/humhum/tree/v0.1.5) |
+| humhum | 0.1.6 | AGPL-3.0-only | [Source](https://github.com/kacheo/humhum/tree/v0.1.6) |
 | hyper | 1.10.1 | MIT | [Source](https://crates.io/api/v1/crates/hyper/1.10.1/download) |
 | hyper-tls | 0.6.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/hyper-tls/0.6.0/download) |
 | hyper-util | 0.1.20 | MIT | [Source](https://crates.io/api/v1/crates/hyper-util/0.1.20/download) |

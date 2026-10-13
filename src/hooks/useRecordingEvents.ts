@@ -27,14 +27,20 @@ export function useRecordingEvents(): void {
   useTauriEvent<void>("recording-cancelled", () => {
     useRecordingStore.getState().setPhase("cancelled");
     // Not unmount-guarded: harmless — the store is module-global and resetting an idle store is a no-op.
-    setTimeout(() => useRecordingStore.getState().reset(), 200);
+    setTimeout(() => {
+      // A retry may already have started before this dismissal fires.
+      if (useRecordingStore.getState().phase === "cancelled") useRecordingStore.getState().reset();
+    }, 200);
   });
   // Blank audio: the backend transcribed silence and returned to idle without a
   // transcript. There's no follow-up pipeline event to leave `transcribing`, so
   // this drives the overlay back to hidden/idle (mirrors recording-cancelled).
   useTauriEvent<void>("transcription-discarded", () => {
     useRecordingStore.getState().setPhase("cancelled");
-    setTimeout(() => useRecordingStore.getState().reset(), 200);
+    setTimeout(() => {
+      // A retry may already have started before this dismissal fires.
+      if (useRecordingStore.getState().phase === "cancelled") useRecordingStore.getState().reset();
+    }, 200);
   });
   useTauriEvent<TranscriptReadyPayload>("transcript-ready", (e) => {
     const s = useRecordingStore.getState();
@@ -64,6 +70,8 @@ export function useRecordingEvents(): void {
     const s = useRecordingStore.getState();
     s.setPhase("error");
     s.setError(e.payload.message);
-    setTimeout(() => useRecordingStore.getState().reset(), 4000);
+    setTimeout(() => {
+      if (useRecordingStore.getState().phase === "error") useRecordingStore.getState().reset();
+    }, 4000);
   });
 }
