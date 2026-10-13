@@ -46,7 +46,9 @@ jobs:
         with:
           python-version: "3.12"
       - run: python3 -m pip install -r scripts/requirements-test.txt
-      - run: npm run test:release
+      # The tagged test suite may contain older fixtures that inherit RELEASE_TAG.
+      # Keep the real release tag for version/build/publication, not fixture tests.
+      - run: env -u RELEASE_TAG npm run test:release
       - run: cargo test --manifest-path src-tauri/Cargo.toml --locked
       - run: rustup target add aarch64-apple-darwin
       - name: Import Developer ID certificate

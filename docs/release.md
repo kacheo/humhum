@@ -1,6 +1,6 @@
 # Releasing Humhum
 
-Humhum v0.1.5 distributes source only. Future signed, notarized macOS `.dmg` installers will link to the exact source tag. The bundle identifier is `com.kacheo.humhum`; keep it and the Apple Team ID stable so macOS permissions persist across Humhum updates. Public beta installers target Apple Silicon only.
+Humhum distributes source releases and opt-in Apple Silicon installer betas. Signed, notarized macOS `.dmg` installers link to the exact source tag. The bundle identifier is `com.kacheo.humhum`; keep it and the Apple Team ID stable so macOS permissions persist across Humhum updates. Public beta installers target Apple Silicon only.
 
 ## One-time private repository setup
 
@@ -8,7 +8,7 @@ Create the GitHub Actions environment `release` and configure `APPLE_CERTIFICATE
 
 For the two certificate secrets, export the existing **Developer ID Application** certificate together with its private key from Keychain Access → login → My Certificates as a password-protected `.p12`. Encode the file with `openssl base64 -A -in /path/to/certificate.p12 -out /path/to/certificate-base64.txt`. Enter the encoded text as `APPLE_CERTIFICATE` and the export password as `APPLE_CERTIFICATE_PASSWORD`. Delete both temporary files after the secrets are stored. The release workflow imports this certificate into a temporary runner Keychain.
 
-## Source-only v0.1.5 release
+## Historical source-only v0.1.5 release
 
 Humhum v0.1.5 publishes source only. Existing Wipzi installer releases remain drafts, and v0.1.4 is retained as a historical source tag. Never rewrite those tags or advertise those installers as Humhum builds.
 
@@ -17,7 +17,7 @@ Humhum v0.1.5 publishes source only. Existing Wipzi installer releases remain dr
 3. Tag the reviewed commit and push the tag. Tag pushes do **not** run the installer workflow.
 4. Create a GitHub Release with source-only notes and no installer assets. GitHub supplies source archives for the tag.
 
-## Future installer release (manual only)
+## Installer beta release (manual only)
 
 Complete the [manual smoke test](manual-test-checklist.md) on the exact signed build before advertising an installer. From Actions → Release → Run workflow on `main`, enter an existing reviewed `v<major>.<minor>.<patch>` tag. The workflow validates and checks out that tag, verifies matching versions and notices, then signs, notarizes, staples, and verifies the Apple Silicon `.dmg` before publishing checksums. An explicit manual run can add an installer to an existing source release; preserve and update its source-only notes deliberately once manual installer acceptance is complete.
 

@@ -51,7 +51,7 @@ else: sys.exit(3)
         script = ROOT / "scripts/publish-release.mjs"
         if not script.exists():
             self.fail("release publisher has not been implemented")
-        env = os.environ | {"PATH": str(self.root) + os.pathsep + os.environ["PATH"], "ASSET_STORE": str(self.store), "HUMHUM_DMG": str(self.dmg), "GITHUB_REF_NAME": "v0.1.4", "GITHUB_REPOSITORY": "example/humhum"}
+        env = os.environ | {"PATH": str(self.root) + os.pathsep + os.environ["PATH"], "ASSET_STORE": str(self.store), "HUMHUM_DMG": str(self.dmg), "GITHUB_REF_NAME": "v0.1.4", "RELEASE_TAG": "v0.1.4", "GITHUB_REPOSITORY": "example/humhum"}
         env.update(extra_env)
         return subprocess.run(["node", str(script)], cwd=self.root, env=env, text=True, capture_output=True)
 
