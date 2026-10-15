@@ -245,7 +245,7 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | serde_core | 1.0.228 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde_core/1.0.228/download) |
 | serde_derive | 1.0.228 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde_derive/1.0.228/download) |
 | serde_derive_internals | 0.29.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde_derive_internals/0.29.1/download) |
-| serde_json | 1.0.150 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde_json/1.0.150/download) |
+| serde_json | 1.0.151 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde_json/1.0.151/download) |
 | serde_repr | 0.1.20 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde_repr/0.1.20/download) |
 | serde_spanned | 1.1.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde_spanned/1.1.1/download) |
 | serde_urlencoded | 0.7.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde_urlencoded/0.7.1/download) |
