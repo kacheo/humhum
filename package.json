@@ -39,7 +39,7 @@
     "typescript": "^5",
     "vite": "^6",
     "vitest": "^4.1.11",
-    "webdriverio": "^9.29.1"
+    "webdriverio": "^10.0.2"
   },
   "overrides": {
     "@wdio/native-utils": "2.5.0"
