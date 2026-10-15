@@ -364,4 +364,4 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | react | 19.2.7 | MIT |
 | react-dom | 19.2.7 | MIT |
 | scheduler | 0.27.0 | MIT |
-| zustand | 5.0.14 | MIT |
+| zustand | 5.0.15 | MIT |
