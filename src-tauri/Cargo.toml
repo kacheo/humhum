@@ -5,7 +5,7 @@ description = "Privacy-first on-device voice dictation for macOS"
 authors = ["Kalon Cheong"]
 license = "AGPL-3.0-only"
 edition = "2021"
-rust-version = "1.88"
+rust-version = "1.90"
 
 [features]
 default = []
@@ -28,10 +28,10 @@ tauri = { version = "2", features = ["macos-private-api", "tray-icon"] }
 tauri-plugin-log = "2"
 tauri-plugin-opener = "2"
 tokio = { version = "1", features = ["full"] }
-cpal = "0.15"
+cpal = "0.18.2"
 whisper-rs = "0.16"
-rubato = "0.15"
-reqwest = { version = "0.12", features = ["json", "stream"] }
+rubato = "5.0.1"
+reqwest = { version = "0.13.4", default-features = false, features = ["native-tls", "charset", "http2", "system-proxy", "json", "stream"] }
 # AI cleanup LLM client (Phase 12, user-authorized exception to the no-new-deps
 # default). default-features off to drop the unused embedding provider; just the
 # three cleanup providers + the language-model request API.

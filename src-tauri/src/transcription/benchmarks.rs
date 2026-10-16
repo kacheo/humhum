@@ -20,9 +20,10 @@ fn real_model() {
     let ctx = load_ctx_from(Path::new(&model)).expect("load model");
     let load_ms = load_start.elapsed().as_secs_f64() * 1000.0;
     let mut runs = Vec::new();
-    for _ in 0..6 {
+    let smoke = std::env::var("HUMHUM_BENCH_SMOKE").as_deref() == Ok("1");
+    for _ in 0..if smoke { 1 } else { 6 } {
         let start = Instant::now();
-        let text = match transcribe_chunks(&samples, 16_000, |p| infer_chunk(&ctx, p)) {
+        let text = match transcribe_recording(&samples, |p| infer_recording(&ctx, p)) {
             Ok(text) => text,
             Err(TranscriptionError::EmptyResult) => String::new(),
             Err(error) => panic!("inference failed: {error}"),
@@ -38,7 +39,7 @@ fn real_model() {
     let peak_rss_bytes = usage.ru_maxrss;
     #[cfg(not(target_os = "macos"))]
     let peak_rss_bytes = usage.ru_maxrss * 1024;
-    let info = whisper_rs::print_system_info().replace(" ", "");
+    let info = whisper_rs::print_system_info().replace(' ', "");
     let blas = info.contains("BLAS=1") || info.contains("ACCELERATE=1");
     let result = serde_json::json!({"rustc": env!("HUMHUM_BUILD_RUSTC"), "build": {"target": env!("HUMHUM_BUILD_TARGET"), "profile": env!("HUMHUM_BUILD_PROFILE"), "target_features": env!("HUMHUM_BUILD_CARGO_CFG_TARGET_FEATURE"), "opt_level": env!("HUMHUM_BUILD_OPT_LEVEL"), "debug": env!("HUMHUM_BUILD_DEBUG"), "flags": env!("HUMHUM_BUILD_FLAGS")}, "backend": {"gpu": WhisperContextParameters::default().use_gpu, "blas": blas}, "system_info": whisper_rs::print_system_info(), "load_ms": load_ms, "peak_rss_bytes": peak_rss_bytes, "runs": runs});
     fs::write(

@@ -39,8 +39,8 @@
     "file": "madsmtm-objc2-8852b424193c.txt",
     "source": "https://github.com/madsmtm/objc2/blob/8852b424193ca41602281b3d7540d7c8ed51e49a/crates/dispatch2/Cargo.toml",
     "additional_sources": [
-      "https://github.com/madsmtm/objc2/blob/8852b424193ca41602281b3d7540d7c8ed51e49a/crates/objc2/Cargo.toml",
-      "https://github.com/madsmtm/objc2/blob/8852b424193ca41602281b3d7540d7c8ed51e49a/LICENSE.md"
+      "https://github.com/madsmtm/objc2/blob/8852b424193ca41602281b3d7540d7c8ed51e49a/LICENSE.md",
+      "https://github.com/madsmtm/objc2/blob/8852b424193ca41602281b3d7540d7c8ed51e49a/crates/objc2/Cargo.toml"
     ],
     "standard_mit": true
   },
@@ -56,19 +56,27 @@
   {
     "components": [
       "objc2-app-kit@0.3.2",
+      "objc2-audio-toolbox@0.3.2",
+      "objc2-core-audio-types@0.3.2",
+      "objc2-core-audio@0.3.2",
       "objc2-core-foundation@0.3.2",
       "objc2-core-graphics@0.3.2",
       "objc2-foundation@0.3.2",
+      "objc2-quartz-core@0.3.2",
       "objc2-web-kit@0.3.2"
     ],
     "file": "madsmtm-objc2-7b1abfd750a2.txt",
     "source": "https://github.com/madsmtm/objc2/blob/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/framework-crates/objc2-app-kit/Cargo.toml",
     "additional_sources": [
+      "https://github.com/madsmtm/objc2/blob/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+      "https://github.com/madsmtm/objc2/blob/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/framework-crates/objc2-audio-toolbox/Cargo.toml",
+      "https://github.com/madsmtm/objc2/blob/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/framework-crates/objc2-core-audio-types/Cargo.toml",
+      "https://github.com/madsmtm/objc2/blob/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/framework-crates/objc2-core-audio/Cargo.toml",
       "https://github.com/madsmtm/objc2/blob/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/framework-crates/objc2-core-foundation/Cargo.toml",
       "https://github.com/madsmtm/objc2/blob/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/framework-crates/objc2-core-graphics/Cargo.toml",
       "https://github.com/madsmtm/objc2/blob/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/framework-crates/objc2-foundation/Cargo.toml",
-      "https://github.com/madsmtm/objc2/blob/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/framework-crates/objc2-web-kit/Cargo.toml",
-      "https://github.com/madsmtm/objc2/blob/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md"
+      "https://github.com/madsmtm/objc2/blob/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/framework-crates/objc2-quartz-core/Cargo.toml",
+      "https://github.com/madsmtm/objc2/blob/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/framework-crates/objc2-web-kit/Cargo.toml"
     ],
     "standard_mit": true
   },
@@ -80,8 +88,8 @@
     "file": "madsmtm-objc2-8d214f547736.txt",
     "source": "https://github.com/madsmtm/objc2/blob/8d214f5477365ffcbcbb7de058c86ed9a518efb7/crates/objc2-encode/Cargo.toml",
     "additional_sources": [
-      "https://github.com/madsmtm/objc2/blob/8d214f5477365ffcbcbb7de058c86ed9a518efb7/crates/objc2-exception-helper/Cargo.toml",
-      "https://github.com/madsmtm/objc2/blob/8d214f5477365ffcbcbb7de058c86ed9a518efb7/LICENSE.md"
+      "https://github.com/madsmtm/objc2/blob/8d214f5477365ffcbcbb7de058c86ed9a518efb7/LICENSE.md",
+      "https://github.com/madsmtm/objc2/blob/8d214f5477365ffcbcbb7de058c86ed9a518efb7/crates/objc2-exception-helper/Cargo.toml"
     ],
     "standard_mit": true
   },
@@ -135,5 +143,37 @@
     ],
     "file": "open-i18n-rust-unic-8a6ce83063d9.txt",
     "source": "https://github.com/open-i18n/rust-unic/blob/8a6ce83063d90b91ae2ce59eddb803edd393fca9/LICENSE-MIT"
+  },
+  {
+    "components": [
+      "alloc-stdlib@0.3.0"
+    ],
+    "file": "dropbox-rust-alloc-no-stdlib-0a81fd6928ea.txt",
+    "source": "https://github.com/dropbox/rust-alloc-no-stdlib/blob/0a81fd6928ea3b33c8cd484aa4575d50ffb98012/LICENSE"
+  },
+  {
+    "components": [
+      "brotli-decompressor@6.0.1"
+    ],
+    "file": "dropbox-rust-brotli-decompressor-e4f3bf332625.txt",
+    "source": "https://github.com/dropbox/rust-brotli-decompressor/blob/e4f3bf3326256a5dc23e5fa9276d803f6a4ad527/LICENSE"
+  },
+  {
+    "components": [
+      "objc2@0.6.5"
+    ],
+    "file": "madsmtm-objc2-d7d2fa23ceaa.txt",
+    "source": "https://github.com/madsmtm/objc2/blob/d7d2fa23ceaa5e6096c923b081040e5d81b3b9df/LICENSE.md",
+    "standard_mit": true,
+    "additional_sources": [
+      "https://github.com/madsmtm/objc2/blob/d7d2fa23ceaa5e6096c923b081040e5d81b3b9df/crates/objc2/Cargo.toml"
+    ]
+  },
+  {
+    "components": [
+      "tauri-plugin@2.7.2"
+    ],
+    "file": "tauri-apps-tauri-59b63ab500da.txt",
+    "source": "https://github.com/tauri-apps/tauri/blob/59b63ab500da9859f12d8888c3298bc29bba0b92/LICENSE-MIT"
   }
 ]

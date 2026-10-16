@@ -1,6 +1,3 @@
-pub mod chunker;
-mod join;
-
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
@@ -9,9 +6,6 @@ use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextPar
 
 use crate::audio::AudioBuffer;
 use crate::models::ModelFile;
-
-const CHUNK_SECS: f32 = 30.0;
-const OVERLAP_SECS: f32 = 2.0;
 
 #[derive(Debug)]
 pub enum TranscriptionError {
@@ -89,34 +83,27 @@ fn get_or_load_ctx(model: WhisperModel) -> Result<Arc<WhisperContext>, Transcrip
     Ok(ctx)
 }
 
-/// Chunk `samples`, transcribe each chunk via `infer`, overlap-join, and guard
-/// blank output. The `infer` seam lets tests drive the whole pipeline without a
-/// real model.
-fn transcribe_chunks<F>(
-    samples: &[f32],
-    sample_rate: u32,
-    mut infer: F,
-) -> Result<String, TranscriptionError>
+/// Transcribe the full 16 kHz mono recording once, then clean and guard output.
+/// Whisper handles its internal audio windows; joining overlapping text here
+/// can duplicate fragments or erase intentional repeated instructions.
+fn transcribe_recording<F>(samples: &[f32], mut infer: F) -> Result<String, TranscriptionError>
 where
     F: FnMut(&[f32]) -> Result<String, TranscriptionError>,
 {
-    let chunks = chunker::chunk_pcm(samples, CHUNK_SECS, OVERLAP_SECS, sample_rate);
-    let mut parts = Vec::with_capacity(chunks.len());
-    for chunk in &chunks {
-        let raw = infer(chunk)?;
-        // Drop non-speech annotations and normalize interior whitespace so the
-        // overlap-join and word-count dedupe see only real tokens.
-        let cleaned = strip_nonspeech(&raw)
-            .split_whitespace()
-            .collect::<Vec<_>>()
-            .join(" ");
-        parts.push(cleaned);
-    }
-    let joined = join::join_transcripts(&parts, OVERLAP_SECS);
-    if !is_meaningful(&joined) {
+    // Whisper can hallucinate words on exact digital silence. Do not apply a
+    // volume threshold: even very quiet nonzero recordings must be decoded.
+    if samples.iter().all(|sample| *sample == 0.0) {
         return Err(TranscriptionError::EmptyResult);
     }
-    Ok(joined.trim().to_string())
+    let raw = infer(samples)?;
+    let cleaned = strip_nonspeech(&raw)
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+    if !is_meaningful(&cleaned) {
+        return Err(TranscriptionError::EmptyResult);
+    }
+    Ok(cleaned)
 }
 
 /// Remove whisper's non-speech annotations — bracketed/parenthesized spans like
@@ -143,18 +130,17 @@ fn is_meaningful(text: &str) -> bool {
     strip_nonspeech(text).chars().any(|c| c.is_alphanumeric())
 }
 
-/// Run whisper inference over one 16 kHz mono chunk (thin adapter; untested —
+/// Run whisper inference over a full 16 kHz mono recording (thin adapter; untested —
 /// covered manually via the real-model verification step).
-fn infer_chunk(ctx: &WhisperContext, pcm: &[f32]) -> Result<String, TranscriptionError> {
+fn infer_recording(ctx: &WhisperContext, pcm: &[f32]) -> Result<String, TranscriptionError> {
     let mut state = ctx
         .create_state()
         .map_err(|e| TranscriptionError::InferenceFailed(format!("create state: {e}")))?;
     let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
     params.set_language(Some("en"));
     params.set_translate(false);
-    // Each chunk is transcribed independently and overlap-joined, so carrying
-    // decoder context across whisper's internal windows only invites repetition/
-    // hallucination loops on silence and chunk boundaries.
+    // Keep recordings independent. Whisper advances through the full audio
+    // using its own timestamps; no application overlap joining is needed.
     params.set_no_context(true);
     params.set_suppress_blank(true);
     params.set_print_special(false);
@@ -186,9 +172,7 @@ fn transcribe_blocking(
     model: WhisperModel,
 ) -> Result<String, TranscriptionError> {
     let ctx = get_or_load_ctx(model)?;
-    transcribe_chunks(&buffer.samples, buffer.sample_rate, |pcm| {
-        infer_chunk(&ctx, pcm)
-    })
+    transcribe_recording(&buffer.samples, |pcm| infer_recording(&ctx, pcm))
 }
 
 pub async fn transcribe(
@@ -341,25 +325,8 @@ mod tests {
         ));
     }
 
-    #[test]
-    fn segment_read_failure_is_not_silently_dropped() {
-        let result =
-            collect_segment_text([Ok("hello"), Err(whisper_rs::WhisperError::NullPointer)]);
-        assert!(
-            matches!(result, Err(TranscriptionError::InferenceFailed(message)) if message.starts_with("segment 1:"))
-        );
-    }
-
-    #[test]
-    fn segment_collection_keeps_text_and_whitespace_in_order() {
-        assert_eq!(
-            collect_segment_text([Ok("hello"), Ok(" world.")]).unwrap(),
-            "hello world."
-        );
-    }
-
-    fn silence(secs: usize) -> Vec<f32> {
-        vec![0.0; secs * 16_000]
+    fn test_pcm(secs: usize) -> Vec<f32> {
+        vec![0.125; secs * 16_000]
     }
 
     fn empty_buffer() -> AudioBuffer {
@@ -371,9 +338,9 @@ mod tests {
     }
 
     /// `transcribe_blocking`/`transcribe`/`WhisperTranscriber::transcribe` are
-    /// thin dispatch (cache lookup → chunk → infer); with no model downloaded
+    /// thin dispatch (cache lookup → infer); with no model downloaded
     /// they all short-circuit at `get_or_load_ctx` before ever touching real
-    /// whisper-rs inference (`infer_chunk`, still uncovered — that needs a real
+    /// whisper-rs inference (`infer_recording`, still uncovered — that needs a real
     /// GGML model file and is out of scope for a unit test).
     #[tokio::test]
     async fn transcribe_is_model_not_ready_without_a_downloaded_model() {
@@ -402,39 +369,74 @@ mod tests {
     }
 
     #[test]
-    fn single_chunk_passes_inference_through() {
-        let out =
-            transcribe_chunks(&silence(1), 16_000, |_| Ok("hello world".to_string())).unwrap();
+    fn segment_read_failure_is_not_silently_dropped() {
+        let result =
+            collect_segment_text([Ok("hello"), Err(whisper_rs::WhisperError::NullPointer)]);
+        assert!(
+            matches!(result, Err(TranscriptionError::InferenceFailed(message)) if message.starts_with("segment 1:"))
+        );
+    }
+
+    #[test]
+    fn segment_collection_keeps_text_and_whitespace_in_order() {
+        assert_eq!(
+            collect_segment_text([Ok("hello"), Ok(" world.")]).unwrap(),
+            "hello world."
+        );
+    }
+
+    #[test]
+    fn single_recording_passes_inference_through() {
+        let out = transcribe_recording(&test_pcm(1), |_| Ok("hello world".to_string())).unwrap();
         assert_eq!(out, "hello world");
     }
 
     #[test]
-    fn multi_chunk_audio_is_overlap_joined() {
-        // 70s @ 16k with 30s/2s chunks → 3 chunks; fake returns overlapping
-        // text per call, mimicking whisper re-transcribing the shared overlap
-        // region at the tail of one chunk and the head of the next.
-        let mut call = 0;
-        let out = transcribe_chunks(&silence(70), 16_000, |_| {
-            call += 1;
-            Ok(match call {
-                1 => "a b c d e".to_string(),
-                2 => "d e f g h".to_string(), // "d e" is the duplicated overlap
-                _ => "g h i j k".to_string(), // "g h" is the duplicated overlap
-            })
+    fn whole_recording_reaches_inference_once_including_final_sample() {
+        let mut samples = test_pcm(70);
+        samples[70 * 16_000 - 1] = 0.75;
+        let mut calls = 0;
+        let out = transcribe_recording(&samples, |pcm| {
+            calls += 1;
+            assert_eq!(pcm.len(), 1_120_000);
+            assert_eq!(pcm.last(), Some(&0.75));
+            Ok("The final sentence is intact.".into())
         })
         .unwrap();
-        assert_eq!(out, "a b c d e f g h i j k");
+        assert_eq!(calls, 1);
+        assert_eq!(out, "The final sentence is intact.");
+    }
+
+    #[test]
+    fn digital_silence_skips_inference_instead_of_hallucinating() {
+        let result = transcribe_recording(&[0.0, -0.0, 0.0], |_| {
+            panic!("digital silence must not reach Whisper")
+        });
+        assert!(matches!(result, Err(TranscriptionError::EmptyResult)));
+    }
+
+    #[test]
+    fn empty_recording_skips_inference() {
+        let result = transcribe_recording(&[], |_| panic!("empty PCM must not reach Whisper"));
+        assert!(matches!(result, Err(TranscriptionError::EmptyResult)));
+    }
+
+    #[test]
+    fn intentional_repetitions_and_distinct_instructions_are_preserved() {
+        let text = "Choose red lights. Choose bright red lights. Then stop. Again. Again.";
+        let out = transcribe_recording(&test_pcm(70), |_| Ok(text.into())).unwrap();
+        assert_eq!(out, text);
     }
 
     #[test]
     fn blank_inference_is_empty_result() {
-        let err = transcribe_chunks(&silence(1), 16_000, |_| Ok("   ".to_string())).unwrap_err();
+        let err = transcribe_recording(&test_pcm(1), |_| Ok("   ".to_string())).unwrap_err();
         assert!(matches!(err, TranscriptionError::EmptyResult));
     }
 
     #[test]
     fn inference_error_propagates() {
-        let err = transcribe_chunks(&silence(1), 16_000, |_| {
+        let err = transcribe_recording(&test_pcm(1), |_| {
             Err(TranscriptionError::InferenceFailed("boom".into()))
         })
         .unwrap_err();
@@ -443,23 +445,25 @@ mod tests {
 
     #[test]
     fn punctuation_only_is_empty_result() {
-        let err = transcribe_chunks(&silence(1), 16_000, |_| Ok(" . ".to_string())).unwrap_err();
+        let err = transcribe_recording(&test_pcm(1), |_| Ok(" . ".to_string())).unwrap_err();
         assert!(matches!(err, TranscriptionError::EmptyResult));
     }
 
     #[test]
     fn blank_audio_annotation_is_empty_result() {
-        let err = transcribe_chunks(&silence(1), 16_000, |_| Ok("[BLANK_AUDIO]".to_string()))
-            .unwrap_err();
+        let err =
+            transcribe_recording(&test_pcm(1), |_| Ok("[BLANK_AUDIO]".to_string())).unwrap_err();
         assert!(matches!(err, TranscriptionError::EmptyResult));
     }
 
     #[test]
     fn nonspeech_annotation_is_stripped_from_kept_output() {
-        let out = transcribe_chunks(&silence(1), 16_000, |_| {
-            Ok("hello [BLANK_AUDIO] world".to_string())
-        })
-        .unwrap();
+        let out =
+            transcribe_recording(
+                &test_pcm(1),
+                |_| Ok("hello [BLANK_AUDIO] world".to_string()),
+            )
+            .unwrap();
         assert_eq!(out, "hello world");
     }
 }
