@@ -423,7 +423,7 @@ impl AudioCapture for CpalAudioCapture {
             // The thread dropped the stream before firing `done`, so no callback
             // races this take.
             let samples = std::mem::take(&mut *buffer.lock().unwrap());
-            let resampled = resample_to_16k(samples, device_rate);
+            let resampled = resample_to_16k(samples, device_rate)?;
             let duration = duration_ms(resampled.len());
             Ok(AudioBuffer {
                 samples: resampled,
