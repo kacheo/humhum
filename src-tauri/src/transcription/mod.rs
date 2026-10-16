@@ -59,11 +59,8 @@ fn load_ctx_from(path: &Path) -> Result<Arc<WhisperContext>, TranscriptionError>
     if !path.exists() {
         return Err(TranscriptionError::ModelNotReady);
     }
-    let ctx = WhisperContext::new_with_params(
-        &path.to_string_lossy(),
-        WhisperContextParameters::default(),
-    )
-    .map_err(|e| TranscriptionError::InferenceFailed(format!("load model: {e}")))?;
+    let ctx = WhisperContext::new_with_params(path, WhisperContextParameters::default())
+        .map_err(|e| TranscriptionError::InferenceFailed(format!("load model: {e}")))?;
     Ok(Arc::new(ctx))
 }
 
@@ -167,15 +164,18 @@ fn infer_chunk(ctx: &WhisperContext, pcm: &[f32]) -> Result<String, Transcriptio
     state
         .full(params, pcm)
         .map_err(|e| TranscriptionError::InferenceFailed(format!("inference: {e}")))?;
-    let n = state
-        .full_n_segments()
-        .map_err(|e| TranscriptionError::InferenceFailed(format!("segments: {e}")))?;
+    collect_segment_text(state.as_iter().map(|segment| segment.to_str()))
+}
+
+fn collect_segment_text<'a>(
+    segments: impl IntoIterator<Item = Result<&'a str, whisper_rs::WhisperError>>,
+) -> Result<String, TranscriptionError> {
     let mut text = String::new();
-    for i in 0..n {
-        let seg = state
-            .full_get_segment_text(i)
-            .map_err(|e| TranscriptionError::InferenceFailed(format!("segment {i}: {e}")))?;
-        text.push_str(&seg);
+    for (index, segment) in segments.into_iter().enumerate() {
+        let value = segment.map_err(|error| {
+            TranscriptionError::InferenceFailed(format!("segment {index}: {error}"))
+        })?;
+        text.push_str(value);
     }
     Ok(text)
 }
@@ -339,6 +339,23 @@ mod tests {
             load_ctx_from(&path),
             Err(TranscriptionError::InferenceFailed(_))
         ));
+    }
+
+    #[test]
+    fn segment_read_failure_is_not_silently_dropped() {
+        let result =
+            collect_segment_text([Ok("hello"), Err(whisper_rs::WhisperError::NullPointer)]);
+        assert!(
+            matches!(result, Err(TranscriptionError::InferenceFailed(message)) if message.starts_with("segment 1:"))
+        );
+    }
+
+    #[test]
+    fn segment_collection_keeps_text_and_whitespace_in_order() {
+        assert_eq!(
+            collect_segment_text([Ok("hello"), Ok(" world.")]).unwrap(),
+            "hello world."
+        );
     }
 
     fn silence(secs: usize) -> Vec<f32> {
