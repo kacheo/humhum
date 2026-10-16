@@ -2,7 +2,7 @@
 //! downloads with per-1% progress events.
 //!
 //! Follows this codebase's "pure core + thin IO/network adapter" seam (cf.
-//! `transcription::transcribe_chunks`, `paste::decide`, `prefs::settings_file`):
+//! `transcription::transcribe_recording`, `paste::decide`, `prefs::settings_file`):
 //! disk-space math, SHA-256 comparison, status determination, and progress
 //! quantization are pure and CI-testable; `reqwest`/`statvfs`/filesystem calls
 //! are thin wrappers over those cores. Downloads land in `<model>.bin.tmp` and
