@@ -15,6 +15,10 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | anyhow | 1.0.104 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/anyhow/1.0.104/download) |
 | async-trait | 0.1.89 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/async-trait/0.1.89/download) |
 | atomic-waker | 1.1.2 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/atomic-waker/1.1.2/download) |
+| audio-codec-algorithms | 0.8.1 | 0BSD OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/audio-codec-algorithms/0.8.1/download) |
+| audioadapter | 5.0.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/audioadapter/5.0.0/download) |
+| audioadapter-buffers | 5.2.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/audioadapter-buffers/5.2.0/download) |
+| audioadapter-sample | 5.2.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/audioadapter-sample/5.2.0/download) |
 | autocfg | 1.5.1 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/autocfg/1.5.1/download) |
 | base64 | 0.21.7 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/base64/0.21.7/download) |
 | base64 | 0.22.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/base64/0.22.1/download) |
@@ -222,7 +226,7 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | reqwest | 0.12.28 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/reqwest/0.12.28/download) |
 | reqwest | 0.13.4 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/reqwest/0.13.4/download) |
 | reqwest-eventsource | 0.6.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/reqwest-eventsource/0.6.0/download) |
-| rubato | 0.15.0 | MIT | [Source](https://crates.io/api/v1/crates/rubato/0.15.0/download) |
+| rubato | 5.0.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/rubato/5.0.1/download) |
 | rustc-hash | 1.1.0 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/rustc-hash/1.1.0/download) |
 | rustc-hash | 2.1.2 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/rustc-hash/2.1.2/download) |
 | rustc_version | 0.4.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/rustc_version/0.4.1/download) |
@@ -325,6 +329,7 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | utf8_iter | 1.0.4 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/utf8_iter/1.0.4/download) |
 | uuid | 1.23.3 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/uuid/1.23.3/download) |
 | version_check | 0.9.5 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/version_check/0.9.5/download) |
+| visibility | 0.1.1 | Zlib OR MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/visibility/0.1.1/download) |
 | walkdir | 2.5.0 | Unlicense OR MIT | [Source](https://crates.io/api/v1/crates/walkdir/2.5.0/download) |
 | want | 0.3.1 | MIT | [Source](https://crates.io/api/v1/crates/want/0.3.1/download) |
 | web-time | 1.1.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/web-time/1.1.0/download) |
@@ -333,6 +338,7 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | whisper-rs | 0.12.0 | Unlicense | [Source](https://crates.io/api/v1/crates/whisper-rs/0.12.0/download) |
 | whisper-rs-sys | 0.10.0 | Unlicense | [Source](https://crates.io/api/v1/crates/whisper-rs-sys/0.10.0/download) |
 | window-vibrancy | 0.8.1 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/window-vibrancy/0.8.1/download) |
+| windowfunctions | 0.1.1 | MIT | [Source](https://crates.io/api/v1/crates/windowfunctions/0.1.1/download) |
 | winnow | 1.0.3 | MIT | [Source](https://crates.io/api/v1/crates/winnow/1.0.3/download) |
 | writeable | 0.6.3 | Unicode-3.0 | [Source](https://crates.io/api/v1/crates/writeable/0.6.3/download) |
 | wry | 0.57.0 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/wry/0.57.0/download) |
