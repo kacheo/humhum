@@ -43,7 +43,7 @@ See [cleanup setup and local data removal](docs/troubleshooting.md). Never inclu
 
 ## Build and test
 
-Install Node.js 24, Rust 1.88+ (stable recommended), Xcode Command Line Tools, CMake, and Python 3. On an Apple Silicon Mac:
+Install Node.js 24, Rust 1.90+ (stable recommended), Xcode Command Line Tools, CMake, and Python 3. On an Apple Silicon Mac:
 
 ```sh
 git clone https://github.com/kacheo/humhum.git
