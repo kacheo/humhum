@@ -1,0 +1,122 @@
+{
+  "format": "headerless little-endian signed PCM16, mono, 16000 Hz",
+  "provenance": "Original synthetic prompts generated with macOS say/Samantha; ffmpeg mono 16 kHz conversion. Fixed committed bytes are the benchmark inputs; regeneration may differ across OS voices. No personal audio.",
+  "clips": [
+    {
+      "id": "speech-01",
+      "file": "speech-01.pcm",
+      "kind": "speech",
+      "text": "The morning train arrives beside the river. Please leave the blue notebook on the kitchen table before you go.",
+      "seconds": 5.78225,
+      "sha256": "33ac8652298c5fe810a30567ff752f9140d696838360c8c060debefcb9c2e25e",
+      "voice": "Samantha",
+      "words_per_minute": 170
+    },
+    {
+      "id": "speech-02",
+      "file": "speech-02.pcm",
+      "kind": "speech",
+      "text": "We tested the microphone in a quiet room and checked every sentence before saving the final version of the document.",
+      "seconds": 6.0744375,
+      "sha256": "2d82f1d26242005655ccae91040dd6c16036f8fc6615982d65cc4602fe0ea6af",
+      "voice": "Samantha",
+      "words_per_minute": 170
+    },
+    {
+      "id": "speech-03",
+      "file": "speech-03.pcm",
+      "kind": "speech",
+      "text": "Please schedule a meeting for next Tuesday afternoon. Bring the project notes and a short list of questions for the team.",
+      "seconds": 6.4880625,
+      "sha256": "8def0f649902471068b12fd43d1e7470860a3c93b31af3de1d77088dc28933ef",
+      "voice": "Samantha",
+      "words_per_minute": 170
+    },
+    {
+      "id": "speech-04",
+      "file": "speech-04.pcm",
+      "kind": "speech",
+      "text": "A small orange cat watched the birds from the window while rain tapped gently against the glass throughout the afternoon.",
+      "seconds": 5.848125,
+      "sha256": "403f58d8a82d769624901c07b053308261ed5198aed28143744fe7f3b042d779",
+      "voice": "Samantha",
+      "words_per_minute": 170
+    },
+    {
+      "id": "speech-05",
+      "file": "speech-05.pcm",
+      "kind": "speech",
+      "text": "When the recording stops, the application should write a clear transcript into the text field that currently has the keyboard focus.",
+      "seconds": 7.351,
+      "sha256": "97312c4fcb4cdac6989a29e01b8a55182ed142b60af7fd8f6158e52aaef7eb03",
+      "voice": "Samantha",
+      "words_per_minute": 170
+    },
+    {
+      "id": "speech-06",
+      "file": "speech-06.pcm",
+      "kind": "speech",
+      "text": "Turn left at the library, continue past the garden, and look for the wooden bridge near the old stone building.",
+      "seconds": 5.99075,
+      "sha256": "8f76f4bbec0c0ca106229c43f1f02aa195bd86a6ab8abc5a5e2a2ec6cdbba964",
+      "voice": "Samantha",
+      "words_per_minute": 170
+    },
+    {
+      "id": "speech-07",
+      "file": "speech-07.pcm",
+      "kind": "speech",
+      "text": "This short example contains several pauses. We can still understand the words. The next sentence begins after a brief moment of silence.",
+      "seconds": 8.1834375,
+      "sha256": "34dcc27dea1c6a4fb4d3021e86b2a91439a728a6a657750d77f186ceb55f55aa",
+      "voice": "Samantha",
+      "words_per_minute": 170
+    },
+    {
+      "id": "speech-08",
+      "file": "speech-08.pcm",
+      "kind": "speech",
+      "text": "The engineer reviewed the changes carefully, ran the tests again, and explained the results using simple language that everyone could follow.",
+      "seconds": 7.7538125,
+      "sha256": "ea1475b1ac7438f387389827f14712b11e2e28384d213c58a06be970c107b693",
+      "voice": "Samantha",
+      "words_per_minute": 170
+    },
+    {
+      "id": "speech-09",
+      "file": "speech-09.pcm",
+      "kind": "speech",
+      "text": "The morning train arrives beside the river. Please leave the blue notebook on the kitchen table before you go. We tested the microphone in a quiet room and checked every sentence before saving the final version of the document. Please schedule a meeting for next Tuesday afternoon. Bring the project notes and a short list of questions for the team. A small orange cat watched the birds from the window while rain tapped gently against the glass throughout the afternoon. When the recording stops, the application should write a clear transcript into the text field that currently has the keyboard focus. Turn left at the library, continue past the garden, and look for the wooden bridge near the old stone building. This short example contains several pauses. We can still understand the words. The next sentence begins after a brief moment of silence. The engineer reviewed the changes carefully, ran the tests again, and explained the results using simple language that everyone could follow. We finished the review before dinner and agreed to discuss the remaining questions tomorrow. The notes stayed on the desk so that nothing important would be forgotten. After a short break, everyone returned to the room and continued working through the final section together.",
+      "seconds": 67.672125,
+      "sha256": "4c9a1c59a6e77b63ef25fddc6a5a750831a1f588905b6a68bce886d4a85b3fb9",
+      "voice": "Samantha",
+      "words_per_minute": 173
+    },
+    {
+      "id": "speech-10",
+      "file": "speech-10.pcm",
+      "kind": "speech",
+      "text": "The engineer reviewed the changes carefully, ran the tests again, and explained the results using simple language that everyone could follow. This short example contains several pauses. We can still understand the words. The next sentence begins after a brief moment of silence. Turn left at the library, continue past the garden, and look for the wooden bridge near the old stone building. When the recording stops, the application should write a clear transcript into the text field that currently has the keyboard focus. A small orange cat watched the birds from the window while rain tapped gently against the glass throughout the afternoon. Please schedule a meeting for next Tuesday afternoon. Bring the project notes and a short list of questions for the team. We tested the microphone in a quiet room and checked every sentence before saving the final version of the document. The morning train arrives beside the river. Please leave the blue notebook on the kitchen table before you go. A careful comparison helps us notice missing words, repeated sentences, and unexpected changes near the boundary between two sections. We should listen to the complete recording once more before accepting the result. The final paragraph explains what happened and what we intend to do next.",
+      "seconds": 70.23725,
+      "sha256": "48fc1f6b8fce83a72c0b392f05bc8118cf53023a78ec9cd0ec8d787586a02014",
+      "voice": "Samantha",
+      "words_per_minute": 174
+    },
+    {
+      "id": "silence",
+      "file": "silence.pcm",
+      "kind": "nonspeech",
+      "text": "",
+      "seconds": 10.0,
+      "sha256": "ac2878215ad33205d1732578c89f25ededaad1b676911c540825bcf4baa42d9b"
+    },
+    {
+      "id": "noise",
+      "file": "noise.pcm",
+      "kind": "nonspeech",
+      "text": "",
+      "seconds": 10.0,
+      "sha256": "bb89c4e80ef3b648c417009ed13cf9796c441e90fd11fcfe3d3c5f895801efd9"
+    }
+  ]
+}

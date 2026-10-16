@@ -446,3 +446,6 @@ mod tests {
         assert_eq!(out, "hello world");
     }
 }
+
+#[cfg(test)]
+mod benchmarks;
