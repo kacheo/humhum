@@ -348,9 +348,9 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | --- | --- | --- |
 | @tauri-apps/api | 2.12.4 | Apache-2.0 OR MIT |
 | @tauri-apps/plugin-opener | 2.7.2 | MIT OR Apache-2.0 |
-| @types/react | 19.2.17 | MIT |
+| @types/react | 19.3.0 | MIT |
 | csstype | 3.2.3 | MIT |
-| react | 19.2.7 | MIT |
-| react-dom | 19.2.7 | MIT |
-| scheduler | 0.27.0 | MIT |
+| react | 19.3.1 | MIT |
+| react-dom | 19.3.1 | MIT |
+| scheduler | 0.28.0 | MIT |
 | zustand | 5.0.15 | MIT |
