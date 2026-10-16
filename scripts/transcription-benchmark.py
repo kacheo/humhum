@@ -36,7 +36,7 @@ def regressions(base, candidate):
 
 
 def check_comparable(base, candidate):
-    for key in ("corpus_sha256", "models", "profile", "machine", "backend", "rustc"):
+    for key in ("corpus_sha256", "models", "profile", "machine", "backend", "rustc", "build"):
         if base[key] != candidate[key]:
             raise ValueError("incomparable benchmark: " + key)
 
@@ -57,7 +57,7 @@ def run(args):
     for clip in manifest["clips"]:
         if digest(corpus / clip["file"]) != clip["sha256"]:
             raise ValueError("corpus checksum mismatch: " + clip["file"])
-    result = {"corpus_sha256": digest(corpus / "manifest.json"), "models": hashes, "profile": "release", "machine": platform.platform() + ":" + subprocess.check_output(["sysctl", "-n", "machdep.cpu.brand_string"], text=True).strip(), "backend": "cpu", "engine": args.engine, "binary_sha256": digest(args.binary), "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(), "rustc": subprocess.check_output(["rustc", "--version"], text=True).strip(), "results": {}}
+    result = {"corpus_sha256": digest(corpus / "manifest.json"), "models": hashes, "profile": "release", "machine": platform.platform() + ":" + subprocess.check_output(["sysctl", "-n", "machdep.cpu.brand_string"], text=True).strip(), "engine": args.engine, "binary_sha256": digest(args.binary), "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(), "results": {}}
     for model, (filename, _) in MODEL_HASHES.items():
         clips, edits, words, warm, peak = [], 0, 0, [], 0
         for clip in manifest["clips"]:
@@ -66,6 +66,10 @@ def run(args):
                 env = os.environ | {"HUMHUM_BENCH_MODEL": str((args.models / filename).resolve()), "HUMHUM_BENCH_PCM": str(corpus / clip["file"]), "HUMHUM_BENCH_OUTPUT": str(output)}
                 subprocess.run([str(args.binary.resolve()), "transcription::benchmarks::real_model", "--exact", "--ignored", "--nocapture"], env=env, check=True, stdout=subprocess.DEVNULL)
                 measured = json.loads(output.read_text())
+                for key in ("rustc", "build", "backend"):
+                    if key in result and result[key] != measured[key]:
+                        raise ValueError("artifact metadata changed within run: " + key)
+                    result[key] = measured[key]
             for sample in measured["runs"]:
                 e, w = wer(clip["text"], sample["text"])
                 if clip["kind"] == "speech":

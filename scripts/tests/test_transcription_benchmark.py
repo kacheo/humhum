@@ -20,7 +20,7 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(set(benchmark.regressions(base, {"wer": .13, "warm_ms": 111., "peak_rss_bytes": 1201})), {"wer", "warm_ms", "peak_rss_bytes"})
 
     def test_comparison_refuses_different_inputs_or_build_profile(self):
-        base = {"corpus_sha256": "a", "models": {"base_en": "b"}, "profile": "release", "machine": "M1", "backend": "cpu", "rustc": "rustc 1.88.0"}
+        base = {"corpus_sha256": "a", "models": {"base_en": "b"}, "profile": "release", "machine": "M1", "backend": "cpu", "rustc": "rustc 1.88.0", "build": {"flags": "", "target": "aarch64-apple-darwin"}}
         benchmark.check_comparable(base, base)
         for key in base:
             changed = dict(base, **{key: "different"})
