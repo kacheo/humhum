@@ -217,6 +217,7 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | regex-automata | 0.4.14 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/regex-automata/0.4.14/download) |
 | regex-syntax | 0.8.11 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/regex-syntax/0.8.11/download) |
 | reqwest | 0.12.28 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/reqwest/0.12.28/download) |
+| reqwest | 0.13.4 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/reqwest/0.13.4/download) |
 | reqwest-eventsource | 0.6.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/reqwest-eventsource/0.6.0/download) |
 | rubato | 0.15.0 | MIT | [Source](https://crates.io/api/v1/crates/rubato/0.15.0/download) |
 | rustc-hash | 1.1.0 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/rustc-hash/1.1.0/download) |
