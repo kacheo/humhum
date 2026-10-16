@@ -114,8 +114,8 @@ use buffer::{duration_ms, resample_to_16k, to_mono_f32, TARGET_SAMPLE_RATE};
 /// runs once the stream is dropped here). Privacy-critical for a dictation app.
 const MAX_CAPTURE: Duration = Duration::from_secs(330);
 
-/// CPAL-backed [`AudioCapture`]. `cpal::Stream` is `!Send`, so it lives entirely
-/// on a dedicated capture thread; this struct holds only `Send` handles. `start`
+/// CPAL-backed [`AudioCapture`]. The stream is built, played and dropped entirely
+/// on a dedicated capture thread; this struct holds only control handles. `start`
 /// records into a shared `Vec<f32>` until `stop`/`cancel`, then downmixes +
 /// resamples to 16 kHz.
 pub struct CpalAudioCapture {
@@ -178,7 +178,7 @@ fn append(buf: &Arc<Mutex<Vec<f32>>>, dropped: &Arc<AtomicU64>, mono: Vec<f32>) 
     }
 }
 
-fn log_stream_error(e: cpal::StreamError) {
+fn log_stream_error(e: cpal::Error) {
     log::warn!("audio stream error: {e}");
 }
 
@@ -214,7 +214,11 @@ fn park_until_stop(stop_rx: &std::sync::mpsc::Receiver<()>, max_capture: Duratio
 fn select_device(preferred_device: &Option<String>) -> Option<cpal::Device> {
     if let Some(name) = resolve_preferred_device_name(preferred_device.as_deref()) {
         if let Ok(mut devices) = cpal::default_host().input_devices() {
-            if let Some(d) = devices.find(|d| d.name().map(|n| n == name).unwrap_or(false)) {
+            if let Some(d) = devices.find(|d| {
+                d.description()
+                    .map(|description| description.name() == name)
+                    .unwrap_or(false)
+            }) {
                 return Some(d);
             }
         }
@@ -255,7 +259,7 @@ fn run_capture(
             return;
         }
     };
-    let rate = config.sample_rate().0;
+    let rate = config.sample_rate();
     let channels = config.channels();
     let fmt = config.sample_format();
     let stream_config: cpal::StreamConfig = config.into();
@@ -265,7 +269,7 @@ fn run_capture(
         let fd = dropped.clone();
         match fmt {
             SampleFormat::F32 => device.build_input_stream(
-                &stream_config,
+                stream_config,
                 move |data: &[f32], _: &cpal::InputCallbackInfo| {
                     append(&buf, &fd, to_mono_f32(data, channels))
                 },
@@ -273,7 +277,7 @@ fn run_capture(
                 None,
             ),
             SampleFormat::I16 => device.build_input_stream(
-                &stream_config,
+                stream_config,
                 move |data: &[i16], _: &cpal::InputCallbackInfo| {
                     append(&buf, &fd, to_mono_f32(data, channels))
                 },
@@ -281,7 +285,7 @@ fn run_capture(
                 None,
             ),
             SampleFormat::U16 => device.build_input_stream(
-                &stream_config,
+                stream_config,
                 move |data: &[u16], _: &cpal::InputCallbackInfo| {
                     append(&buf, &fd, to_mono_f32(data, channels))
                 },
@@ -736,12 +740,16 @@ mod tests {
 
     #[test]
     fn log_stream_error_does_not_panic_for_any_variant() {
-        log_stream_error(cpal::StreamError::DeviceNotAvailable);
-        log_stream_error(cpal::StreamError::BackendSpecific {
-            err: cpal::BackendSpecificError {
-                description: "boom".to_string(),
-            },
-        });
+        for kind in [
+            cpal::ErrorKind::DeviceNotAvailable,
+            cpal::ErrorKind::DeviceChanged,
+            cpal::ErrorKind::StreamInvalidated,
+            cpal::ErrorKind::Xrun,
+            cpal::ErrorKind::BackendError,
+        ] {
+            log_stream_error(cpal::Error::new(kind));
+            log_stream_error(cpal::Error::with_message(kind, "capture failed"));
+        }
     }
 
     /// `cancel()` while a recording is genuinely active (not idle) must both

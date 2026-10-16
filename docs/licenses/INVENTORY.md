@@ -48,9 +48,9 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | core-foundation-sys | 0.8.7 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/core-foundation-sys/0.8.7/download) |
 | core-graphics | 0.25.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/core-graphics/0.25.0/download) |
 | core-graphics-types | 0.2.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/core-graphics-types/0.2.0/download) |
-| coreaudio-rs | 0.11.3 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/coreaudio-rs/0.11.3/download) |
+| coreaudio-rs | 0.14.2 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/coreaudio-rs/0.14.2/download) |
 | coreaudio-sys | 0.2.18 | MIT | [Source](https://crates.io/api/v1/crates/coreaudio-sys/0.2.18/download) |
-| cpal | 0.15.3 | Apache-2.0 | [Source](https://crates.io/api/v1/crates/cpal/0.15.3/download) |
+| cpal | 0.18.2 | Apache-2.0 | [Source](https://crates.io/api/v1/crates/cpal/0.18.2/download) |
 | cpufeatures | 0.2.17 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/cpufeatures/0.2.17/download) |
 | crc32fast | 1.5.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/crc32fast/1.5.0/download) |
 | crossbeam-channel | 0.5.15 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/crossbeam-channel/0.5.15/download) |
@@ -160,7 +160,7 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | litemap | 0.8.2 | Unicode-3.0 | [Source](https://crates.io/api/v1/crates/litemap/0.8.2/download) |
 | lock_api | 0.4.14 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/lock_api/0.4.14/download) |
 | log | 0.4.34 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/log/0.4.34/download) |
-| mach2 | 0.4.3 | BSD-2-Clause OR MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/mach2/0.4.3/download) |
+| mach2 | 0.6.0 | BSD-2-Clause OR MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/mach2/0.6.0/download) |
 | markup5ever | 0.39.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/markup5ever/0.39.0/download) |
 | memchr | 2.8.2 | Unlicense OR MIT | [Source](https://crates.io/api/v1/crates/memchr/2.8.2/download) |
 | mime | 0.3.17 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/mime/0.3.17/download) |
@@ -179,6 +179,9 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | num_threads | 0.1.7 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/num_threads/0.1.7/download) |
 | objc2 | 0.6.5 | MIT | [Source](https://crates.io/api/v1/crates/objc2/0.6.5/download) |
 | objc2-app-kit | 0.3.2 | Zlib OR Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/objc2-app-kit/0.3.2/download) |
+| objc2-audio-toolbox | 0.3.2 | Zlib OR Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/objc2-audio-toolbox/0.3.2/download) |
+| objc2-core-audio | 0.3.2 | Zlib OR Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/objc2-core-audio/0.3.2/download) |
+| objc2-core-audio-types | 0.3.2 | Zlib OR Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/objc2-core-audio-types/0.3.2/download) |
 | objc2-core-foundation | 0.3.2 | Zlib OR Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/objc2-core-foundation/0.3.2/download) |
 | objc2-core-graphics | 0.3.2 | Zlib OR Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/objc2-core-graphics/0.3.2/download) |
 | objc2-encode | 4.1.0 | MIT | [Source](https://crates.io/api/v1/crates/objc2-encode/4.1.0/download) |
