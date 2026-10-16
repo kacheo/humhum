@@ -1,0 +1,91 @@
+name: Transcription benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      baseline_sha:
+        description: "Reviewed baseline commit with the benchmark harness"
+        required: true
+        type: string
+      candidate_sha:
+        description: "Reviewed candidate commit"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: macos-14
+    timeout-minutes: 90
+    env:
+      BASELINE_SHA: ${{ inputs.baseline_sha }}
+      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      MACOSX_DEPLOYMENT_TARGET: "13.0"
+      CARGO_HTTP_MULTIPLEXING: "false"
+    steps:
+      - name: Validate exact commit inputs
+        run: |
+          set -euo pipefail
+          [[ "$BASELINE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.baseline_sha }}
+          path: baseline
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          path: candidate
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+        with:
+          toolchain: "1.88.0"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - run: brew install cmake
+      - name: Build both artifacts before measuring either
+        run: |
+          set -euo pipefail
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/bench-target"
+          for variant in baseline candidate; do
+            cd "$GITHUB_WORKSPACE/$variant"
+            npm ci
+            npm run build
+            cargo +1.88.0 test --manifest-path src-tauri/Cargo.toml --release --lib --no-run --locked --message-format=json > "$RUNNER_TEMP/$variant-build.jsonl"
+            python3 - "$variant" <<'PYCODE'
+          import json, os, pathlib, shutil, sys
+          variant = sys.argv[1]
+          root = pathlib.Path(os.environ['RUNNER_TEMP'])
+          records = [json.loads(line) for line in (root / (variant + '-build.jsonl')).read_text().splitlines() if line.startswith('{')]
+          artifact = next(r for r in reversed(records) if r.get('reason') == 'compiler-artifact' and r.get('executable') and r['profile']['test'])
+          shutil.copy2(artifact['executable'], root / (variant + '-test'))
+          PYCODE
+          done
+      - name: Download pinned models
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/models"
+          for model in base small; do
+            curl --fail --location --retry 3 "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-$model.en.bin" --output "$RUNNER_TEMP/models/ggml-$model.en.bin"
+          done
+      - name: Measure baseline then candidate on this runner
+        run: |
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE/baseline"
+          python3 scripts/transcription-benchmark.py --binary "$RUNNER_TEMP/baseline-test" --models "$RUNNER_TEMP/models" --engine baseline --output "$RUNNER_TEMP/baseline.json"
+          cd "$GITHUB_WORKSPACE/candidate"
+          python3 scripts/transcription-benchmark.py --binary "$RUNNER_TEMP/candidate-test" --models "$RUNNER_TEMP/models" --engine candidate --output "$RUNNER_TEMP/candidate.json" --baseline "$RUNNER_TEMP/baseline.json"
+      - name: Upload synthetic benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: transcription-comparison
+          path: |
+            ${{ runner.temp }}/baseline.json
+            ${{ runner.temp }}/candidate.json
+            ${{ runner.temp }}/*-build.jsonl
+          if-no-files-found: warn

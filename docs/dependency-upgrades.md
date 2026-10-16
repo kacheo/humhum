@@ -17,3 +17,5 @@ WER normalization lowercases, removes punctuation and collapses whitespace. Per-
 ## Deferred compatibility work
 
 WebdriverIO 10 remains deferred while the Tauri test service declares a WebdriverIO 9 peer. Do not force peer resolution, loosen audit checks or overwrite model hashes. Mixed bot PRs are closed only after all contents map to merged replacements or explicit deferred work.
+
+For a saturated local machine, dispatch **Transcription benchmark** with reviewed full baseline/candidate commit SHAs. The read-only workflow builds both release test executables before measuring, then runs the same corpus/models on one dedicated macOS runner and uploads synthetic JSON evidence. It has no signing credentials and does not publish installers.
