@@ -4,7 +4,7 @@ Open an issue before a large change. Contributions are licensed under AGPL-3.0-o
 
 ## Development
 
-The supported development target is Apple Silicon macOS 13+. Install Node.js 24, Rust 1.88+ (stable recommended), Xcode Command Line Tools, CMake, and Python 3. Run `npm ci`, then `npm run tauri dev`. Unsigned development builds have a different signing identity from releases and may need their own permission grants.
+The supported development target is Apple Silicon macOS 13+. Install Node.js 24, Rust 1.90+ (stable recommended), Xcode Command Line Tools, CMake, and Python 3. Run `npm ci`, then `npm run tauri dev`. Unsigned development builds have a different signing identity from releases and may need their own permission grants.
 
 The React frontend lives in `src`: components render onboarding, Preferences, and the recording overlay; Zustand stores hold UI state; `src/lib/ipc.ts` defines calls into Tauri. The Rust backend in `src-tauri/src` handles audio capture, local Whisper transcription, model downloads, optional text cleanup, Keychain preferences, permissions, hotkeys, and pasting. `e2e` exercises the real debug app with a mock server and temporary preferences.
 

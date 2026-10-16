@@ -10,10 +10,9 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | aho-corasick | 1.1.4 | Unlicense OR MIT | [Source](https://crates.io/api/v1/crates/aho-corasick/1.1.4/download) |
 | aisdk | 0.5.2 | MIT | [Source](https://crates.io/api/v1/crates/aisdk/0.5.2/download) |
 | aisdk-macros | 0.3.0 | MIT | [Source](https://crates.io/api/v1/crates/aisdk-macros/0.3.0/download) |
-| alloc-no-stdlib | 2.0.4 | BSD-3-Clause | [Source](https://crates.io/api/v1/crates/alloc-no-stdlib/2.0.4/download) |
-| alloc-stdlib | 0.2.4 | BSD-3-Clause | [Source](https://crates.io/api/v1/crates/alloc-stdlib/0.2.4/download) |
+| alloc-no-stdlib | 3.0.0 | BSD-3-Clause | [Source](https://crates.io/api/v1/crates/alloc-no-stdlib/3.0.0/download) |
+| alloc-stdlib | 0.3.0 | BSD-3-Clause | [Source](https://crates.io/api/v1/crates/alloc-stdlib/0.3.0/download) |
 | anyhow | 1.0.104 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/anyhow/1.0.104/download) |
-| arrayvec | 0.7.6 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/arrayvec/0.7.6/download) |
 | async-trait | 0.1.89 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/async-trait/0.1.89/download) |
 | atomic-waker | 1.1.2 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/atomic-waker/1.1.2/download) |
 | autocfg | 1.5.1 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/autocfg/1.5.1/download) |
@@ -28,18 +27,17 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | bitflags | 2.13.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/bitflags/2.13.0/download) |
 | block-buffer | 0.10.4 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/block-buffer/0.10.4/download) |
 | block2 | 0.6.2 | MIT | [Source](https://crates.io/api/v1/crates/block2/0.6.2/download) |
-| brotli | 8.0.4 | BSD-3-Clause AND MIT | [Source](https://crates.io/api/v1/crates/brotli/8.0.4/download) |
-| brotli-decompressor | 5.0.3 | BSD-3-Clause OR MIT | [Source](https://crates.io/api/v1/crates/brotli-decompressor/5.0.3/download) |
-| byte-unit | 5.2.3 | MIT | [Source](https://crates.io/api/v1/crates/byte-unit/5.2.3/download) |
+| brotli | 9.0.0 | BSD-3-Clause AND MIT | [Source](https://crates.io/api/v1/crates/brotli/9.0.0/download) |
+| brotli-decompressor | 6.0.1 | BSD-3-Clause OR MIT | [Source](https://crates.io/api/v1/crates/brotli-decompressor/6.0.1/download) |
 | byteorder | 1.5.0 | Unlicense OR MIT | [Source](https://crates.io/api/v1/crates/byteorder/1.5.0/download) |
 | bytes | 1.11.1 | MIT | [Source](https://crates.io/api/v1/crates/bytes/1.11.1/download) |
 | camino | 1.2.2 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/camino/1.2.2/download) |
 | cargo-platform | 0.1.9 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/cargo-platform/0.1.9/download) |
 | cargo_metadata | 0.19.2 | MIT | [Source](https://crates.io/api/v1/crates/cargo_metadata/0.19.2/download) |
-| cargo_toml | 0.22.3 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/cargo_toml/0.22.3/download) |
+| cargo_toml | 1.0.1 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/cargo_toml/1.0.1/download) |
 | cc | 1.2.64 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/cc/1.2.64/download) |
 | cexpr | 0.6.0 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/cexpr/0.6.0/download) |
-| cfb | 0.7.3 | MIT | [Source](https://crates.io/api/v1/crates/cfb/0.7.3/download) |
+| cfb | 0.14.0 | MIT | [Source](https://crates.io/api/v1/crates/cfb/0.14.0/download) |
 | cfg-if | 1.0.4 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/cfg-if/1.0.4/download) |
 | cfg_aliases | 0.2.1 | MIT | [Source](https://crates.io/api/v1/crates/cfg_aliases/0.2.1/download) |
 | clang-sys | 1.8.1 | Apache-2.0 | [Source](https://crates.io/api/v1/crates/clang-sys/1.8.1/download) |
@@ -58,10 +56,9 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | crossbeam-channel | 0.5.15 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/crossbeam-channel/0.5.15/download) |
 | crossbeam-utils | 0.8.21 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/crossbeam-utils/0.8.21/download) |
 | crypto-common | 0.1.7 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/crypto-common/0.1.7/download) |
-| cssparser | 0.36.0 | MPL-2.0 | [Source](https://crates.io/api/v1/crates/cssparser/0.36.0/download) |
-| cssparser-macros | 0.6.1 | MPL-2.0 | [Source](https://crates.io/api/v1/crates/cssparser-macros/0.6.1/download) |
-| ctor | 0.8.0 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/ctor/0.8.0/download) |
-| ctor-proc-macro | 0.0.7 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/ctor-proc-macro/0.0.7/download) |
+| cssparser | 0.37.0 | MPL-2.0 | [Source](https://crates.io/api/v1/crates/cssparser/0.37.0/download) |
+| cssparser-macros | 0.7.1 | MPL-2.0 | [Source](https://crates.io/api/v1/crates/cssparser-macros/0.7.1/download) |
+| ctor | 1.0.13 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/ctor/1.0.13/download) |
 | darling | 0.20.11 | MIT | [Source](https://crates.io/api/v1/crates/darling/0.20.11/download) |
 | darling | 0.23.0 | MIT | [Source](https://crates.io/api/v1/crates/darling/0.23.0/download) |
 | darling_core | 0.20.11 | MIT | [Source](https://crates.io/api/v1/crates/darling_core/0.20.11/download) |
@@ -76,11 +73,11 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | derive_more | 2.1.1 | MIT | [Source](https://crates.io/api/v1/crates/derive_more/2.1.1/download) |
 | derive_more-impl | 2.1.1 | MIT | [Source](https://crates.io/api/v1/crates/derive_more-impl/2.1.1/download) |
 | digest | 0.10.7 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/digest/0.10.7/download) |
-| dirs | 6.0.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/dirs/6.0.0/download) |
+| dirs | 7.0.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/dirs/7.0.0/download) |
 | dirs-sys | 0.5.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/dirs-sys/0.5.0/download) |
 | dispatch2 | 0.3.1 | Zlib OR Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/dispatch2/0.3.1/download) |
 | displaydoc | 0.2.6 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/displaydoc/0.2.6/download) |
-| dom_query | 0.27.0 | MIT | [Source](https://crates.io/api/v1/crates/dom_query/0.27.0/download) |
+| dom_query | 0.28.0 | MIT | [Source](https://crates.io/api/v1/crates/dom_query/0.28.0/download) |
 | dpi | 0.1.2 | Apache-2.0 AND MIT | [Source](https://crates.io/api/v1/crates/dpi/0.1.2/download) |
 | dtoa | 1.0.11 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/dtoa/1.0.11/download) |
 | dtoa-short | 0.3.5 | MPL-2.0 | [Source](https://crates.io/api/v1/crates/dtoa-short/0.3.5/download) |
@@ -125,7 +122,7 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | hashbrown | 0.17.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/hashbrown/0.17.1/download) |
 | heck | 0.5.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/heck/0.5.0/download) |
 | home | 0.5.12 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/home/0.5.12/download) |
-| html5ever | 0.38.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/html5ever/0.38.0/download) |
+| html5ever | 0.39.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/html5ever/0.39.0/download) |
 | http | 1.4.2 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/http/1.4.2/download) |
 | http-body | 1.0.1 | MIT | [Source](https://crates.io/api/v1/crates/http-body/1.0.1/download) |
 | http-body-util | 0.1.3 | MIT | [Source](https://crates.io/api/v1/crates/http-body-util/0.1.3/download) |
@@ -147,30 +144,30 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | idna_adapter | 1.2.2 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/idna_adapter/1.2.2/download) |
 | indexmap | 1.9.3 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/indexmap/1.9.3/download) |
 | indexmap | 2.14.0 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/indexmap/2.14.0/download) |
-| infer | 0.19.0 | MIT | [Source](https://crates.io/api/v1/crates/infer/0.19.0/download) |
+| infer | 0.22.0 | MIT | [Source](https://crates.io/api/v1/crates/infer/0.22.0/download) |
 | ipnet | 2.12.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/ipnet/2.12.0/download) |
 | itertools | 0.12.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/itertools/0.12.1/download) |
 | itertools | 0.13.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/itertools/0.13.0/download) |
 | itoa | 1.0.18 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/itoa/1.0.18/download) |
-| json-patch | 3.0.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/json-patch/3.0.1/download) |
-| jsonptr | 0.6.3 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/jsonptr/0.6.3/download) |
-| keyboard-types | 0.7.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/keyboard-types/0.7.0/download) |
+| json-patch | 4.2.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/json-patch/4.2.0/download) |
+| jsonptr | 0.7.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/jsonptr/0.7.1/download) |
+| keyboard-types | 0.8.3 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/keyboard-types/0.8.3/download) |
 | keyring | 3.6.3 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/keyring/3.6.3/download) |
-| lazy_static | 1.5.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/lazy_static/1.5.0/download) |
+| lazy_static | 1.5.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/lazy_static/1.5.1/download) |
 | lazycell | 1.3.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/lazycell/1.3.0/download) |
 | libc | 0.2.186 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/libc/0.2.186/download) |
 | libloading | 0.8.9 | ISC | [Source](https://crates.io/api/v1/crates/libloading/0.8.9/download) |
 | litemap | 0.8.2 | Unicode-3.0 | [Source](https://crates.io/api/v1/crates/litemap/0.8.2/download) |
 | lock_api | 0.4.14 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/lock_api/0.4.14/download) |
-| log | 0.4.32 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/log/0.4.32/download) |
+| log | 0.4.34 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/log/0.4.34/download) |
 | mach2 | 0.4.3 | BSD-2-Clause OR MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/mach2/0.4.3/download) |
-| markup5ever | 0.38.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/markup5ever/0.38.0/download) |
+| markup5ever | 0.39.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/markup5ever/0.39.0/download) |
 | memchr | 2.8.2 | Unlicense OR MIT | [Source](https://crates.io/api/v1/crates/memchr/2.8.2/download) |
 | mime | 0.3.17 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/mime/0.3.17/download) |
 | minimal-lexical | 0.2.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/minimal-lexical/0.2.1/download) |
 | miniz_oxide | 0.8.9 | MIT OR Zlib OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/miniz_oxide/0.8.9/download) |
 | mio | 1.2.1 | MIT | [Source](https://crates.io/api/v1/crates/mio/1.2.1/download) |
-| muda | 0.19.3 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/muda/0.19.3/download) |
+| muda | 0.20.0 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/muda/0.20.0/download) |
 | native-tls | 0.2.18 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/native-tls/0.2.18/download) |
 | new_debug_unreachable | 1.0.6 | MIT | [Source](https://crates.io/api/v1/crates/new_debug_unreachable/1.0.6/download) |
 | nix | 0.29.0 | MIT | [Source](https://crates.io/api/v1/crates/nix/0.29.0/download) |
@@ -180,13 +177,14 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | num-integer | 0.1.46 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/num-integer/0.1.46/download) |
 | num-traits | 0.2.19 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/num-traits/0.2.19/download) |
 | num_threads | 0.1.7 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/num_threads/0.1.7/download) |
-| objc2 | 0.6.4 | MIT | [Source](https://crates.io/api/v1/crates/objc2/0.6.4/download) |
+| objc2 | 0.6.5 | MIT | [Source](https://crates.io/api/v1/crates/objc2/0.6.5/download) |
 | objc2-app-kit | 0.3.2 | Zlib OR Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/objc2-app-kit/0.3.2/download) |
 | objc2-core-foundation | 0.3.2 | Zlib OR Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/objc2-core-foundation/0.3.2/download) |
 | objc2-core-graphics | 0.3.2 | Zlib OR Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/objc2-core-graphics/0.3.2/download) |
 | objc2-encode | 4.1.0 | MIT | [Source](https://crates.io/api/v1/crates/objc2-encode/4.1.0/download) |
 | objc2-exception-helper | 0.1.1 | Zlib OR Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/objc2-exception-helper/0.1.1/download) |
 | objc2-foundation | 0.3.2 | MIT | [Source](https://crates.io/api/v1/crates/objc2-foundation/0.3.2/download) |
+| objc2-quartz-core | 0.3.2 | Zlib OR Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/objc2-quartz-core/0.3.2/download) |
 | objc2-web-kit | 0.3.2 | Zlib OR Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/objc2-web-kit/0.3.2/download) |
 | once_cell | 1.21.4 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/once_cell/1.21.4/download) |
 | open | 5.3.6 | MIT | [Source](https://crates.io/api/v1/crates/open/5.3.6/download) |
@@ -221,7 +219,6 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | reqwest | 0.12.28 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/reqwest/0.12.28/download) |
 | reqwest-eventsource | 0.6.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/reqwest-eventsource/0.6.0/download) |
 | rubato | 0.15.0 | MIT | [Source](https://crates.io/api/v1/crates/rubato/0.15.0/download) |
-| rust_decimal | 1.42.1 | MIT | [Source](https://crates.io/api/v1/crates/rust_decimal/1.42.1/download) |
 | rustc-hash | 1.1.0 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/rustc-hash/1.1.0/download) |
 | rustc-hash | 2.1.2 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/rustc-hash/2.1.2/download) |
 | rustc_version | 0.4.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/rustc_version/0.4.1/download) |
@@ -238,14 +235,14 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | scopeguard | 1.2.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/scopeguard/1.2.0/download) |
 | security-framework | 3.7.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/security-framework/3.7.0/download) |
 | security-framework-sys | 2.17.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/security-framework-sys/2.17.0/download) |
-| selectors | 0.36.1 | MPL-2.0 | [Source](https://crates.io/api/v1/crates/selectors/0.36.1/download) |
+| selectors | 0.38.0 | MPL-2.0 | [Source](https://crates.io/api/v1/crates/selectors/0.38.0/download) |
 | semver | 1.0.28 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/semver/1.0.28/download) |
-| serde | 1.0.228 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde/1.0.228/download) |
+| serde | 1.0.229 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde/1.0.229/download) |
 | serde-untagged | 0.1.9 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde-untagged/0.1.9/download) |
-| serde_core | 1.0.228 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde_core/1.0.228/download) |
-| serde_derive | 1.0.228 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde_derive/1.0.228/download) |
+| serde_core | 1.0.229 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde_core/1.0.229/download) |
+| serde_derive | 1.0.229 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde_derive/1.0.229/download) |
 | serde_derive_internals | 0.29.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde_derive_internals/0.29.1/download) |
-| serde_json | 1.0.151 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde_json/1.0.151/download) |
+| serde_json | 1.0.154 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde_json/1.0.154/download) |
 | serde_repr | 0.1.20 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde_repr/0.1.20/download) |
 | serde_spanned | 1.1.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde_spanned/1.1.1/download) |
 | serde_urlencoded | 0.7.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/serde_urlencoded/0.7.1/download) |
@@ -264,27 +261,29 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | smallvec | 1.15.2 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/smallvec/1.15.2/download) |
 | socket2 | 0.6.4 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/socket2/0.6.4/download) |
 | stable_deref_trait | 1.2.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/stable_deref_trait/1.2.1/download) |
+| static_vcruntime | 3.0.0 | MIT OR Apache-2.0 OR Zlib | [Source](https://crates.io/api/v1/crates/static_vcruntime/3.0.0/download) |
 | strength_reduce | 0.2.4 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/strength_reduce/0.2.4/download) |
 | string_cache | 0.9.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/string_cache/0.9.0/download) |
 | string_cache_codegen | 0.6.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/string_cache_codegen/0.6.1/download) |
 | strsim | 0.11.1 | MIT | [Source](https://crates.io/api/v1/crates/strsim/0.11.1/download) |
-| swift-rs | 1.0.7 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/swift-rs/1.0.7/download) |
+| swift-rs | 1.0.9 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/swift-rs/1.0.9/download) |
 | syn | 2.0.118 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/syn/2.0.118/download) |
+| syn | 3.0.9 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/syn/3.0.9/download) |
 | sync_wrapper | 1.0.2 | Apache-2.0 | [Source](https://crates.io/api/v1/crates/sync_wrapper/1.0.2/download) |
 | synstructure | 0.13.2 | MIT | [Source](https://crates.io/api/v1/crates/synstructure/0.13.2/download) |
 | system-configuration | 0.7.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/system-configuration/0.7.0/download) |
 | system-configuration-sys | 0.6.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/system-configuration-sys/0.6.0/download) |
-| tao | 0.35.3 | Apache-2.0 | [Source](https://crates.io/api/v1/crates/tao/0.35.3/download) |
-| tauri | 2.11.3 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/tauri/2.11.3/download) |
-| tauri-build | 2.6.3 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/tauri-build/2.6.3/download) |
-| tauri-codegen | 2.6.3 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/tauri-codegen/2.6.3/download) |
-| tauri-macros | 2.6.3 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/tauri-macros/2.6.3/download) |
-| tauri-plugin | 2.6.3 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/tauri-plugin/2.6.3/download) |
-| tauri-plugin-log | 2.8.0 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/tauri-plugin-log/2.8.0/download) |
-| tauri-plugin-opener | 2.5.4 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/tauri-plugin-opener/2.5.4/download) |
-| tauri-runtime | 2.11.3 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/tauri-runtime/2.11.3/download) |
-| tauri-runtime-wry | 2.11.3 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/tauri-runtime-wry/2.11.3/download) |
-| tauri-utils | 2.9.3 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/tauri-utils/2.9.3/download) |
+| tao | 0.37.1 | Apache-2.0 | [Source](https://crates.io/api/v1/crates/tao/0.37.1/download) |
+| tauri | 2.12.4 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/tauri/2.12.4/download) |
+| tauri-build | 2.7.3 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/tauri-build/2.7.3/download) |
+| tauri-codegen | 2.7.3 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/tauri-codegen/2.7.3/download) |
+| tauri-macros | 2.7.3 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/tauri-macros/2.7.3/download) |
+| tauri-plugin | 2.7.2 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/tauri-plugin/2.7.2/download) |
+| tauri-plugin-log | 2.10.1 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/tauri-plugin-log/2.10.1/download) |
+| tauri-plugin-opener | 2.7.1 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/tauri-plugin-opener/2.7.1/download) |
+| tauri-runtime | 2.12.2 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/tauri-runtime/2.12.2/download) |
+| tauri-runtime-wry | 2.12.2 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/tauri-runtime-wry/2.12.2/download) |
+| tauri-utils | 2.10.2 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/tauri-utils/2.10.2/download) |
 | tauri-winres | 0.3.6 | MIT | [Source](https://crates.io/api/v1/crates/tauri-winres/0.3.6/download) |
 | tempfile | 3.27.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/tempfile/3.27.0/download) |
 | tendril | 0.5.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/tendril/0.5.0/download) |
@@ -296,13 +295,11 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | time-core | 0.1.9 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/time-core/0.1.9/download) |
 | time-macros | 0.2.29 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/time-macros/0.2.29/download) |
 | tinystr | 0.8.3 | Unicode-3.0 | [Source](https://crates.io/api/v1/crates/tinystr/0.8.3/download) |
-| tokio | 1.52.3 | MIT | [Source](https://crates.io/api/v1/crates/tokio/1.52.3/download) |
+| tokio | 1.53.2 | MIT | [Source](https://crates.io/api/v1/crates/tokio/1.53.2/download) |
 | tokio-macros | 2.7.0 | MIT | [Source](https://crates.io/api/v1/crates/tokio-macros/2.7.0/download) |
 | tokio-native-tls | 0.3.1 | MIT | [Source](https://crates.io/api/v1/crates/tokio-native-tls/0.3.1/download) |
 | tokio-util | 0.7.18 | MIT | [Source](https://crates.io/api/v1/crates/tokio-util/0.7.18/download) |
-| toml | 0.9.12+spec-1.1.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/toml/0.9.12+spec-1.1.0/download) |
 | toml | 1.1.2+spec-1.1.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/toml/1.1.2+spec-1.1.0/download) |
-| toml_datetime | 0.7.5+spec-1.1.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/toml_datetime/0.7.5+spec-1.1.0/download) |
 | toml_datetime | 1.1.1+spec-1.1.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/toml_datetime/1.1.1+spec-1.1.0/download) |
 | toml_parser | 1.1.2+spec-1.1.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/toml_parser/1.1.2+spec-1.1.0/download) |
 | toml_writer | 1.1.1+spec-1.1.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/toml_writer/1.1.1+spec-1.1.0/download) |
@@ -313,36 +310,28 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | tracing | 0.1.44 | MIT | [Source](https://crates.io/api/v1/crates/tracing/0.1.44/download) |
 | tracing-core | 0.1.36 | MIT | [Source](https://crates.io/api/v1/crates/tracing-core/0.1.36/download) |
 | transpose | 0.2.3 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/transpose/0.2.3/download) |
-| tray-icon | 0.24.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/tray-icon/0.24.1/download) |
+| tray-icon | 0.25.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/tray-icon/0.25.1/download) |
 | try-lock | 0.2.5 | MIT | [Source](https://crates.io/api/v1/crates/try-lock/0.2.5/download) |
 | typeid | 1.0.3 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/typeid/1.0.3/download) |
 | typenum | 1.20.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/typenum/1.20.1/download) |
-| unic-char-property | 0.9.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/unic-char-property/0.9.0/download) |
-| unic-char-range | 0.9.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/unic-char-range/0.9.0/download) |
-| unic-common | 0.9.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/unic-common/0.9.0/download) |
-| unic-ucd-ident | 0.9.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/unic-ucd-ident/0.9.0/download) |
-| unic-ucd-version | 0.9.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/unic-ucd-version/0.9.0/download) |
 | unicode-ident | 1.0.24 | (MIT OR Apache-2.0) AND Unicode-3.0 | [Source](https://crates.io/api/v1/crates/unicode-ident/1.0.24/download) |
-| unicode-segmentation | 1.13.3 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/unicode-segmentation/1.13.3/download) |
 | url | 2.5.8 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/url/2.5.8/download) |
-| urlpattern | 0.3.0 | MIT | [Source](https://crates.io/api/v1/crates/urlpattern/0.3.0/download) |
+| urlpattern | 0.6.0 | MIT | [Source](https://crates.io/api/v1/crates/urlpattern/0.6.0/download) |
 | utf-8 | 0.7.6 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/utf-8/0.7.6/download) |
-| utf8-width | 0.1.8 | MIT | [Source](https://crates.io/api/v1/crates/utf8-width/0.1.8/download) |
 | utf8_iter | 1.0.4 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/utf8_iter/1.0.4/download) |
 | uuid | 1.23.3 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/uuid/1.23.3/download) |
-| value-bag | 1.12.0 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/value-bag/1.12.0/download) |
 | version_check | 0.9.5 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/version_check/0.9.5/download) |
 | walkdir | 2.5.0 | Unlicense OR MIT | [Source](https://crates.io/api/v1/crates/walkdir/2.5.0/download) |
 | want | 0.3.1 | MIT | [Source](https://crates.io/api/v1/crates/want/0.3.1/download) |
+| web-time | 1.1.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/web-time/1.1.0/download) |
 | web_atoms | 0.2.4 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/web_atoms/0.2.4/download) |
 | which | 4.4.2 | MIT | [Source](https://crates.io/api/v1/crates/which/4.4.2/download) |
 | whisper-rs | 0.12.0 | Unlicense | [Source](https://crates.io/api/v1/crates/whisper-rs/0.12.0/download) |
 | whisper-rs-sys | 0.10.0 | Unlicense | [Source](https://crates.io/api/v1/crates/whisper-rs-sys/0.10.0/download) |
-| window-vibrancy | 0.6.0 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/window-vibrancy/0.6.0/download) |
-| winnow | 0.7.15 | MIT | [Source](https://crates.io/api/v1/crates/winnow/0.7.15/download) |
+| window-vibrancy | 0.8.1 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/window-vibrancy/0.8.1/download) |
 | winnow | 1.0.3 | MIT | [Source](https://crates.io/api/v1/crates/winnow/1.0.3/download) |
 | writeable | 0.6.3 | Unicode-3.0 | [Source](https://crates.io/api/v1/crates/writeable/0.6.3/download) |
-| wry | 0.55.1 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/wry/0.55.1/download) |
+| wry | 0.57.0 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/wry/0.57.0/download) |
 | yoke | 0.8.3 | Unicode-3.0 | [Source](https://crates.io/api/v1/crates/yoke/0.8.3/download) |
 | yoke-derive | 0.8.2 | Unicode-3.0 | [Source](https://crates.io/api/v1/crates/yoke-derive/0.8.2/download) |
 | zerofrom | 0.1.8 | Unicode-3.0 | [Source](https://crates.io/api/v1/crates/zerofrom/0.1.8/download) |
@@ -357,8 +346,8 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 
 | Component | Version | Declared license |
 | --- | --- | --- |
-| @tauri-apps/api | 2.11.1 | Apache-2.0 OR MIT |
-| @tauri-apps/plugin-opener | 2.5.4 | MIT OR Apache-2.0 |
+| @tauri-apps/api | 2.12.4 | Apache-2.0 OR MIT |
+| @tauri-apps/plugin-opener | 2.7.2 | MIT OR Apache-2.0 |
 | @types/react | 19.2.17 | MIT |
 | csstype | 3.2.3 | MIT |
 | react | 19.2.7 | MIT |
