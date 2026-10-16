@@ -30,6 +30,6 @@ fn real_model() {
     let peak_rss_bytes = usage.ru_maxrss;
     #[cfg(not(target_os = "macos"))]
     let peak_rss_bytes = usage.ru_maxrss * 1024;
-    let result = serde_json::json!({"rustc": env!("HUMHUM_BUILD_RUSTC"), "build": {"target": env!("HUMHUM_BUILD_TARGET"), "profile": env!("HUMHUM_BUILD_PROFILE"), "target_features": env!("HUMHUM_BUILD_CARGO_CFG_TARGET_FEATURE"), "flags": env!("HUMHUM_BUILD_FLAGS")}, "backend": {"gpu": WhisperContextParameters::default().use_gpu, "blas": whisper_rs::SystemInfo::default().blas}, "system_info": whisper_rs::print_system_info(), "load_ms": load_ms, "peak_rss_bytes": peak_rss_bytes, "runs": runs});
+    let result = serde_json::json!({"rustc": env!("HUMHUM_BUILD_RUSTC"), "build": {"target": env!("HUMHUM_BUILD_TARGET"), "profile": env!("HUMHUM_BUILD_PROFILE"), "target_features": env!("HUMHUM_BUILD_CARGO_CFG_TARGET_FEATURE"), "opt_level": env!("HUMHUM_BUILD_OPT_LEVEL"), "debug": env!("HUMHUM_BUILD_DEBUG"), "flags": env!("HUMHUM_BUILD_FLAGS")}, "backend": {"gpu": WhisperContextParameters::default().use_gpu, "blas": whisper_rs::SystemInfo::default().blas}, "system_info": whisper_rs::print_system_info(), "load_ms": load_ms, "peak_rss_bytes": peak_rss_bytes, "runs": runs});
     fs::write(std::env::var("HUMHUM_BENCH_OUTPUT").expect("output path"), serde_json::to_vec_pretty(&result).unwrap()).unwrap();
 }
