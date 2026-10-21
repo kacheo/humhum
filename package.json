@@ -28,7 +28,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^4",
-    "@vitest/coverage-v8": "5.0.4",
+    "@vitest/coverage-v8": "5.0.5",
     "@wdio/cli": "^9.32.0",
     "@wdio/local-runner": "^9.32.0",
     "@wdio/mocha-framework": "^9.32.0",
@@ -38,7 +38,7 @@
     "tsx": "^4.23.15",
     "typescript": "^5",
     "vite": "^6",
-    "vitest": "5.0.4",
+    "vitest": "5.0.5",
     "webdriverio": "^9.32.0",
     "@types/node": "^24"
   },
