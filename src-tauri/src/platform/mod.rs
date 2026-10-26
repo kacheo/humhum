@@ -49,3 +49,16 @@ mod tests {
         }
     }
 }
+
+/// Drain Objective-C temporaries on background threads. Always synchronous;
+/// callers must never return an async operation that holds native temporaries.
+pub(crate) fn autorelease_pool<T>(work: impl FnOnce() -> T) -> T {
+    #[cfg(target_os = "macos")]
+    {
+        objc2::rc::autoreleasepool(|_| work())
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        work()
+    }
+}

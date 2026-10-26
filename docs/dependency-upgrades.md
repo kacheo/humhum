@@ -44,3 +44,21 @@ python3 scripts/transcription-benchmark.py --binary <test-executable> --models <
 Smoke mode runs `speech-01`, `speech-07`, `speech-09`, `speech-10`, silence and noise once per model, verifies model/corpus hashes and fails on blank speech or nonempty nonspeech output. Inspect raw text for missing sentences, repeated fragments and complete endings. `--model small_en --clips <IDs>` selects a smaller check; `--corpus <directory>` supports a scratch fixture with the same manifest format. Smoke reports are labelled and cannot serve as paired benchmark evidence. The default six-run benchmark remains optional and unchanged; no hosted benchmark campaign is required for this migration.
 
 Local single-pass checks passed on both models: `speech-10` matches the reference after case/punctuation normalization, without repeated boundary fragments; silence and noise are blank. A scratch 300-second Small English fixture preserved all four deliberately repeated sections and the final sentence (fixture SHA-256 `e49fe62faa2d3328d56a2dd3589185e951efc7f330f9396f94aedd8c41482d21`). The native debug app builds and launches, but a live microphone-to-paste check remains manual: macOS reports microphone, Accessibility and Input Monitoring denied for this test build. PR #41 stays draft until that check is completed. These checks establish functional behavior on the tested clips, not performance equivalence or general recognition accuracy.
+
+
+## Security patch updates for the memory lifecycle PR
+
+The dependency audit on PR #56 reported inherited advisories in Tokio 1.53.2
+and rustls-webpki 0.103.15. Update the lockfile to Tokio 1.53.3 and
+rustls-webpki 0.103.16, and set the direct production/test Tokio minimum to
+1.53.3. These are targeted patch updates; other dependency versions and audit
+exceptions remain unchanged. Regenerate the production dependency inventory,
+notices, and lockfile fingerprints from the updated graph.
+
+The patched ranges are documented in
+[RUSTSEC-2026-0386](https://rustsec.org/advisories/RUSTSEC-2026-0386.html)
+(Tokio AsyncFd I/O safety) and
+[RUSTSEC-2026-0382](https://rustsec.org/advisories/RUSTSEC-2026-0382.html)
+(certificate verification with distrusted intermediates). Keep the existing
+`cargo audit --file src-tauri/Cargo.lock --deny unsound` gate; no advisory is
+silenced for these updates.

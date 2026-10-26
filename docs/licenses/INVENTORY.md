@@ -296,7 +296,7 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | time-core | 0.1.9 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/time-core/0.1.9/download) |
 | time-macros | 0.2.29 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/time-macros/0.2.29/download) |
 | tinystr | 0.8.3 | Unicode-3.0 | [Source](https://crates.io/api/v1/crates/tinystr/0.8.3/download) |
-| tokio | 1.53.2 | MIT | [Source](https://crates.io/api/v1/crates/tokio/1.53.2/download) |
+| tokio | 1.53.3 | MIT | [Source](https://crates.io/api/v1/crates/tokio/1.53.3/download) |
 | tokio-macros | 2.7.0 | MIT | [Source](https://crates.io/api/v1/crates/tokio-macros/2.7.0/download) |
 | tokio-native-tls | 0.3.1 | MIT | [Source](https://crates.io/api/v1/crates/tokio-native-tls/0.3.1/download) |
 | tokio-util | 0.7.18 | MIT | [Source](https://crates.io/api/v1/crates/tokio-util/0.7.18/download) |

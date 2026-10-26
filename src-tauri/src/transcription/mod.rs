@@ -1,5 +1,11 @@
 use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::{
+    atomic::{AtomicBool, AtomicU8, AtomicUsize, Ordering},
+    OnceLock,
+};
+
+mod worker;
+use worker::{Engine, ModelCache, Worker};
 
 use serde::{Deserialize, Serialize};
 use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
@@ -36,51 +42,97 @@ impl std::fmt::Display for TranscriptionError {
     }
 }
 
-struct CachedCtx {
-    model: WhisperModel,
-    ctx: Arc<WhisperContext>,
+// The worker alone owns native resources; these atoms expose metadata only.
+static WORKER: OnceLock<Result<Worker, String>> = OnceLock::new();
+static CACHED_MODEL: AtomicU8 = AtomicU8::new(0);
+static INFERENCE_SAMPLES: AtomicUsize = AtomicUsize::new(0);
+
+pub(crate) fn memory_snapshot() -> (usize, &'static str, usize) {
+    let active = WORKER
+        .get()
+        .and_then(|worker| worker.as_ref().ok())
+        .is_some_and(Worker::is_busy) as usize;
+    let model = match CACHED_MODEL.load(Ordering::Relaxed) {
+        1 => "base_en",
+        2 => "small_en",
+        _ => "none",
+    };
+    (active, model, INFERENCE_SAMPLES.load(Ordering::Relaxed))
 }
 
-/// Loaded whisper context, cached across recordings because loading base.en
-/// costs ~500ms. Swapped when the requested model changes (LLD §3.3).
-/// `std::sync::Mutex::new` is const since Rust 1.63 — no `once_cell` needed,
-/// matching this codebase's "no lazy_static/once_cell" convention.
-static WHISPER_CTX: Mutex<Option<CachedCtx>> = Mutex::new(None);
-
-/// Load a context from an explicit path. `ModelNotReady` if absent (testable
-/// without a real model); `InferenceFailed` if present but unreadable.
-fn load_ctx_from(path: &Path) -> Result<Arc<WhisperContext>, TranscriptionError> {
+fn load_ctx_from(path: &Path) -> Result<WhisperContext, TranscriptionError> {
     if !path.exists() {
         return Err(TranscriptionError::ModelNotReady);
     }
-    let ctx = WhisperContext::new_with_params(path, WhisperContextParameters::default())
-        .map_err(|e| TranscriptionError::InferenceFailed(format!("load model: {e}")))?;
-    Ok(Arc::new(ctx))
+    WhisperContext::new_with_params(path, WhisperContextParameters::default())
+        .map_err(|e| TranscriptionError::InferenceFailed(format!("load model: {e}")))
 }
 
-/// Return a cached context for `model`, loading on first use or model change.
-fn get_or_load_ctx(model: WhisperModel) -> Result<Arc<WhisperContext>, TranscriptionError> {
-    // Recover from poisoning rather than panic-cascading every future call: the
-    // guard only wraps an Option<CachedCtx>, so the worst case is one reload.
-    let mut guard = WHISPER_CTX.lock().unwrap_or_else(|e| e.into_inner());
-    if let Some(cached) = guard.as_ref() {
-        if cached.model == model {
-            return Ok(cached.ctx.clone());
+struct WhisperEngine {
+    cache: ModelCache<WhisperContext>,
+}
+impl Engine for WhisperEngine {
+    fn run(
+        &mut self,
+        buffer: AudioBuffer,
+        model: WhisperModel,
+        cancel: &AtomicBool,
+    ) -> Result<String, TranscriptionError> {
+        check_cancelled(cancel)?;
+        if buffer.sample_rate != crate::audio::buffer::TARGET_SAMPLE_RATE {
+            return Err(TranscriptionError::InferenceFailed(
+                "expected 16 kHz mono audio".into(),
+            ));
         }
+        INFERENCE_SAMPLES.store(buffer.samples.len(), Ordering::Relaxed);
+        struct SamplesGuard;
+        impl Drop for SamplesGuard {
+            fn drop(&mut self) {
+                INFERENCE_SAMPLES.store(0, Ordering::Relaxed);
+            }
+        }
+        let _samples = SamplesGuard;
+        let ctx = self.cache.get_or_load(model, || {
+            CACHED_MODEL.store(0, Ordering::Relaxed);
+            check_cancelled(cancel)?;
+            let path = model
+                .model_file()
+                .path()
+                .ok_or(TranscriptionError::ModelNotReady)?;
+            let ctx = load_ctx_from(&path)?;
+            CACHED_MODEL.store(
+                match model {
+                    WhisperModel::BaseEn => 1,
+                    WhisperModel::SmallEn => 2,
+                },
+                Ordering::Relaxed,
+            );
+            Ok(ctx)
+        })?;
+        check_cancelled(cancel)?;
+        let text = transcribe_recording(&buffer.samples, |pcm| infer_recording(ctx, pcm, cancel));
+        check_cancelled(cancel)?;
+        text
     }
-    let path = model
-        .model_file()
-        .path()
-        .ok_or(TranscriptionError::ModelNotReady)?;
-    // Note: the ~500ms load runs under the lock; concurrent first-callers
-    // serialize. Acceptable for a single-user app (they'd share the same cached
-    // ctx anyway).
-    let ctx = load_ctx_from(&path)?;
-    *guard = Some(CachedCtx {
-        model,
-        ctx: ctx.clone(),
-    });
-    Ok(ctx)
+    fn clear(&mut self) {
+        self.cache.clear();
+        CACHED_MODEL.store(0, Ordering::Relaxed);
+    }
+}
+
+fn check_cancelled(cancel: &AtomicBool) -> Result<(), TranscriptionError> {
+    if cancel.load(Ordering::Acquire) {
+        Err(worker::cancelled())
+    } else {
+        Ok(())
+    }
+}
+
+// SAFETY: user_data points to an AtomicBool owned by the job's Arc. It
+// outlives the synchronous state.full call and all of its native callbacks.
+// Only atomic access occurs here; no allocation or unwinding crosses C ABI.
+unsafe extern "C" fn abort_inference(user_data: *mut std::ffi::c_void) -> bool {
+    unsafe { (&*user_data.cast::<AtomicBool>()).load(Ordering::Acquire) }
 }
 
 /// Transcribe the full 16 kHz mono recording once, then clean and guard output.
@@ -132,7 +184,12 @@ fn is_meaningful(text: &str) -> bool {
 
 /// Run whisper inference over a full 16 kHz mono recording (thin adapter; untested —
 /// covered manually via the real-model verification step).
-fn infer_recording(ctx: &WhisperContext, pcm: &[f32]) -> Result<String, TranscriptionError> {
+fn infer_recording(
+    ctx: &WhisperContext,
+    pcm: &[f32],
+    cancel: &AtomicBool,
+) -> Result<String, TranscriptionError> {
+    check_cancelled(cancel)?;
     let mut state = ctx
         .create_state()
         .map_err(|e| TranscriptionError::InferenceFailed(format!("create state: {e}")))?;
@@ -147,9 +204,16 @@ fn infer_recording(ctx: &WhisperContext, pcm: &[f32]) -> Result<String, Transcri
     params.set_print_progress(false);
     params.set_print_realtime(false);
     params.set_print_timestamps(false);
+    // Use the raw callback API: callback storage is borrowed from the job,
+    // rather than the convenience wrapper's closure/user-data ownership.
+    unsafe {
+        params.set_abort_callback(Some(abort_inference));
+        params.set_abort_callback_user_data((cancel as *const AtomicBool).cast_mut().cast());
+    }
     state
         .full(params, pcm)
         .map_err(|e| TranscriptionError::InferenceFailed(format!("inference: {e}")))?;
+    check_cancelled(cancel)?;
     collect_segment_text(state.as_iter().map(|segment| segment.to_str()))
 }
 
@@ -166,22 +230,25 @@ fn collect_segment_text<'a>(
     Ok(text)
 }
 
-/// Load the model (cached) and transcribe on the calling (blocking) thread.
-fn transcribe_blocking(
-    buffer: AudioBuffer,
-    model: WhisperModel,
-) -> Result<String, TranscriptionError> {
-    let ctx = get_or_load_ctx(model)?;
-    transcribe_recording(&buffer.samples, |pcm| infer_recording(&ctx, pcm))
-}
-
 pub async fn transcribe(
     buffer: AudioBuffer,
     model: WhisperModel,
 ) -> Result<String, TranscriptionError> {
-    tokio::task::spawn_blocking(move || transcribe_blocking(buffer, model))
-        .await
-        .map_err(|e| TranscriptionError::InferenceFailed(format!("join: {e}")))?
+    let worker = WORKER.get_or_init(|| {
+        Worker::start(
+            WhisperEngine {
+                cache: ModelCache::new(),
+            },
+            worker::IDLE_UNLOAD,
+        )
+        .map_err(|error| error.to_string())
+    });
+    match worker {
+        Ok(worker) => worker.submit(buffer, model).await,
+        Err(error) => Err(TranscriptionError::InferenceFailed(format!(
+            "start native worker: {error}; restart Humhum"
+        ))),
+    }
 }
 
 type BoxFuture<'a, T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + Send + 'a>>;
@@ -236,41 +303,39 @@ mod tests {
     use super::*;
 
     #[test]
+    fn native_abort_callback_reads_owned_cancellation_flag() {
+        let cancellation = Box::new(AtomicBool::new(false));
+        let data = (&*cancellation as *const AtomicBool).cast_mut().cast();
+        assert!(!unsafe { abort_inference(data) });
+        cancellation.store(true, Ordering::Release);
+        assert!(unsafe { abort_inference(data) });
+        assert!(matches!(
+            check_cancelled(&cancellation),
+            Err(TranscriptionError::InferenceFailed(_))
+        ));
+    }
+
+    #[test]
+    fn cancelled_job_does_not_load_a_model() {
+        let mut engine = WhisperEngine {
+            cache: ModelCache::new(),
+        };
+        let error = engine
+            .run(empty_buffer(), WhisperModel::BaseEn, &AtomicBool::new(true))
+            .unwrap_err();
+        assert_eq!(error.to_string(), "inference failed: cancelled");
+    }
+
+    #[test]
     fn missing_model_file_is_model_not_ready() {
         let dir = tempfile::tempdir().unwrap();
         let missing = dir.path().join("base.en.bin");
-        // `unwrap_err()` would require `Debug` on the Ok type (Arc<WhisperContext>),
+        // `unwrap_err()` would require `Debug` on the Ok type (WhisperContext),
         // which whisper-rs doesn't implement — match on the result instead.
         assert!(matches!(
             load_ctx_from(&missing),
             Err(TranscriptionError::ModelNotReady)
         ));
-    }
-
-    /// `get_or_load_ctx` (not just `load_ctx_from`) needs its own coverage: a
-    /// `$HOME` with no model file present drives the `model_file().path()` →
-    /// `load_ctx_from` → `ModelNotReady` chain end to end without needing a
-    /// real GGML model (the cache-hit/cache-store branches do need one, so
-    /// they're left uncovered — same class as the rest of the whisper-rs FFI
-    /// surface in this file).
-    #[test]
-    fn get_or_load_ctx_is_model_not_ready_without_a_downloaded_model() {
-        let _lock = crate::test_support::ENV_LOCK
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
-        let old = std::env::var("HOME").ok();
-        let home_dir = tempfile::tempdir().unwrap();
-        std::env::set_var("HOME", home_dir.path());
-
-        assert!(matches!(
-            get_or_load_ctx(WhisperModel::SmallEn),
-            Err(TranscriptionError::ModelNotReady)
-        ));
-
-        match old {
-            Some(v) => std::env::set_var("HOME", v),
-            None => std::env::remove_var("HOME"),
-        }
     }
 
     #[test]
@@ -337,11 +402,7 @@ mod tests {
         }
     }
 
-    /// `transcribe_blocking`/`transcribe`/`WhisperTranscriber::transcribe` are
-    /// thin dispatch (cache lookup → infer); with no model downloaded
-    /// they all short-circuit at `get_or_load_ctx` before ever touching real
-    /// whisper-rs inference (`infer_recording`, still uncovered — that needs a real
-    /// GGML model file and is out of scope for a unit test).
+    /// Production dispatch reports missing models without invoking native inference.
     #[tokio::test]
     async fn transcribe_is_model_not_ready_without_a_downloaded_model() {
         let _lock = crate::test_support::ENV_LOCK

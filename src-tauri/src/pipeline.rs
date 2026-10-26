@@ -772,6 +772,46 @@ mod tests {
         assert_eq!(phase.load(Ordering::SeqCst), RecordingPhase::Idle as u8);
     }
 
+    #[tokio::test(start_paused = true)]
+    async fn late_transcription_after_timeout_emits_no_transcript_and_never_pastes() {
+        struct DeferredTranscriber(Mutex<Option<tokio::sync::oneshot::Receiver<String>>>);
+        impl Transcriber for DeferredTranscriber {
+            fn transcribe(
+                &self,
+                _: AudioBuffer,
+                _: WhisperModel,
+            ) -> Pin<Box<dyn Future<Output = Result<String, TranscriptionError>> + Send + 'static>>
+            {
+                let receiver = self.0.lock().unwrap().take().unwrap();
+                Box::pin(async move { Ok(receiver.await.unwrap()) })
+            }
+        }
+        let (reply, receiver) = tokio::sync::oneshot::channel();
+        let transcriber: Arc<dyn Transcriber> =
+            Arc::new(DeferredTranscriber(Mutex::new(Some(receiver))));
+        let (paste, paste_called) = StubPaste::new(Ok(()));
+        let hotkey: Arc<dyn HotkeyCapture> = Arc::new(MockHotkey::default());
+        let phase = AtomicU8::new(RecordingPhase::Transcribing as u8);
+        let emitter = MockEmitter::default();
+        run_pipeline(
+            buf(),
+            WhisperModel::BaseEn,
+            &transcriber,
+            &paste,
+            &hotkey,
+            &phase,
+            &emitter,
+            CleanupMode::None,
+            None,
+        )
+        .await;
+        assert!(reply.send("abandoned transcript".into()).is_err());
+        tokio::task::yield_now().await;
+        assert_eq!(events(&emitter), vec!["pipeline-error:inference_failed"]);
+        assert!(!paste_called.load(Ordering::SeqCst));
+        assert_eq!(phase.load(Ordering::SeqCst), RecordingPhase::Idle as u8);
+    }
+
     /// WS2: a hung paste must time out into a `pipeline-error` and reset to `Idle`
     /// — never wedge the phase in `Pasting`.
     #[tokio::test(start_paused = true)]

@@ -45805,7 +45805,7 @@ Attribution source: https://github.com/tauri-apps/tauri/blob/59b63ab500da9859f12
 ========================================================================
 MIT License (MIT)
 
-Components: tokio 1.53.2, tokio-util 0.7.18
+Components: tokio 1.53.3, tokio-util 0.7.18
 
 MIT License
 
