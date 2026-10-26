@@ -98,10 +98,10 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use cpal::SampleFormat;
+use cpal::{Sample, SampleFormat};
 use tokio::sync::oneshot;
 
-use buffer::{duration_ms, resample_to_16k, to_mono_f32, TARGET_SAMPLE_RATE};
+use buffer::{duration_ms, resample_to_16k, TARGET_SAMPLE_RATE};
 
 /// Absolute ceiling on how long a single capture thread will hold the input
 /// stream (and therefore the microphone) before self-terminating, even if it
@@ -168,12 +168,58 @@ impl Default for CpalAudioCapture {
     }
 }
 
-fn append(buf: &Arc<Mutex<Vec<f32>>>, dropped: &Arc<AtomicU64>, mono: Vec<f32>) {
-    // Non-blocking: never stall the OS audio thread on lock contention.
+// Metadata only; reset when the capture guard releases its buffer.
+static CAPTURE_SAMPLES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+pub(crate) fn captured_sample_count() -> usize {
+    CAPTURE_SAMPLES.load(Ordering::Relaxed)
+}
+
+fn capture_sample_limit(rate: u32) -> Result<usize, AudioError> {
+    usize::try_from(rate)
+        .ok()
+        .filter(|rate| *rate > 0)
+        .and_then(|rate| rate.checked_mul(330))
+        .ok_or_else(|| AudioError::StreamError("invalid capture sample limit".into()))
+}
+
+fn append<T>(
+    buf: &Arc<Mutex<Vec<f32>>>,
+    dropped: &Arc<AtomicU64>,
+    data: &[T],
+    channels: u16,
+    limit: usize,
+) where
+    T: cpal::Sample,
+    f32: cpal::FromSample<T>,
+{
+    let channels = usize::from(channels.max(1));
+    // Convert directly into the bounded buffer: no per-callback PCM copies,
+    // and no conversion/allocation once the recording reaches its sample cap.
     match buf.try_lock() {
-        Ok(mut b) => b.extend_from_slice(&mono),
+        Ok(mut b) => {
+            let count = (data.len() / channels).min(limit.saturating_sub(b.len()));
+            if b.capacity() < b.len() + count {
+                // Grow geometrically, but never request storage past the cap.
+                let capacity = b
+                    .capacity()
+                    .saturating_mul(2)
+                    .max(b.len() + count)
+                    .min(limit);
+                let additional = capacity - b.len();
+                b.reserve_exact(additional);
+            }
+            for frame in data.chunks_exact(channels).take(count) {
+                let mono = frame
+                    .iter()
+                    .map(|sample| f32::from_sample(*sample))
+                    .sum::<f32>()
+                    / channels as f32;
+                b.push(mono);
+            }
+            CAPTURE_SAMPLES.store(b.len(), Ordering::Relaxed);
+        }
         Err(_) => {
-            dropped.fetch_add(mono.len() as u64, Ordering::Relaxed);
+            dropped.fetch_add((data.len() / channels) as u64, Ordering::Relaxed);
         }
     }
 }
@@ -260,6 +306,13 @@ fn run_capture(
         }
     };
     let rate = config.sample_rate();
+    let limit = match capture_sample_limit(rate) {
+        Ok(limit) => limit,
+        Err(error) => {
+            let _ = ready_tx.send(Err(error));
+            return;
+        }
+    };
     let channels = config.channels();
     let fmt = config.sample_format();
     let stream_config: cpal::StreamConfig = config.into();
@@ -271,7 +324,7 @@ fn run_capture(
             SampleFormat::F32 => device.build_input_stream(
                 stream_config,
                 move |data: &[f32], _: &cpal::InputCallbackInfo| {
-                    append(&buf, &fd, to_mono_f32(data, channels))
+                    append(&buf, &fd, data, channels, limit)
                 },
                 log_stream_error,
                 None,
@@ -279,7 +332,7 @@ fn run_capture(
             SampleFormat::I16 => device.build_input_stream(
                 stream_config,
                 move |data: &[i16], _: &cpal::InputCallbackInfo| {
-                    append(&buf, &fd, to_mono_f32(data, channels))
+                    append(&buf, &fd, data, channels, limit)
                 },
                 log_stream_error,
                 None,
@@ -287,7 +340,7 @@ fn run_capture(
             SampleFormat::U16 => device.build_input_stream(
                 stream_config,
                 move |data: &[u16], _: &cpal::InputCallbackInfo| {
-                    append(&buf, &fd, to_mono_f32(data, channels))
+                    append(&buf, &fd, data, channels, limit)
                 },
                 log_stream_error,
                 None,
@@ -339,6 +392,7 @@ impl Drop for RecordingGuard {
             let _ = active.thread.join();
         }
         self.is_recording.store(false, Ordering::SeqCst);
+        CAPTURE_SAMPLES.store(0, Ordering::Relaxed);
     }
 }
 
@@ -462,6 +516,32 @@ pub fn create() -> Box<dyn AudioCapture> {
 mod tests {
     use super::*;
     use std::time::Duration;
+
+    #[test]
+    fn capture_limit_truncates_and_refuses_further_samples() {
+        let buf = Arc::new(Mutex::new(vec![1.0, 2.0]));
+        let dropped = Arc::new(AtomicU64::new(0));
+        append(&buf, &dropped, &[3.0f32, 4.0, 5.0], 1, 4);
+        append(&buf, &dropped, &[6.0f32], 1, 4);
+        assert_eq!(*buf.lock().unwrap(), vec![1.0, 2.0, 3.0, 4.0]);
+        assert_eq!(capture_sample_limit(48_000).unwrap(), 15_840_000);
+        assert!(capture_sample_limit(0).is_err());
+    }
+
+    #[test]
+    fn bounded_capture_downmixes_before_counting_samples() {
+        let buf = Arc::new(Mutex::new(Vec::new()));
+        let dropped = Arc::new(AtomicU64::new(0));
+        append(
+            &buf,
+            &dropped,
+            &[0.0f32, 1.0, -1.0, 1.0, 0.25, 0.75, 9.0],
+            2,
+            2,
+        );
+        assert_eq!(*buf.lock().unwrap(), vec![0.5, 0.0]);
+        assert_eq!(dropped.load(Ordering::Relaxed), 0);
+    }
 
     /// Serializes the tests that spawn a real cpal capture thread, so
     /// concurrent CoreAudio device open/teardown from separate test threads
@@ -721,7 +801,7 @@ mod tests {
     fn append_extends_buffer_when_lock_is_free() {
         let buf = Arc::new(Mutex::new(Vec::<f32>::new()));
         let dropped = Arc::new(AtomicU64::new(0));
-        append(&buf, &dropped, vec![1.0, 2.0, 3.0]);
+        append(&buf, &dropped, &[1.0f32, 2.0, 3.0], 1, 100);
         assert_eq!(*buf.lock().unwrap(), vec![1.0, 2.0, 3.0]);
         assert_eq!(dropped.load(Ordering::Relaxed), 0);
     }
@@ -734,7 +814,7 @@ mod tests {
         let buf = Arc::new(Mutex::new(Vec::<f32>::new()));
         let dropped = Arc::new(AtomicU64::new(0));
         let _held = buf.lock().unwrap(); // simulate contention from another thread
-        append(&buf, &dropped, vec![1.0, 2.0, 3.0, 4.0]);
+        append(&buf, &dropped, &[1.0f32, 2.0, 3.0, 4.0], 1, 100);
         assert_eq!(dropped.load(Ordering::Relaxed), 4);
     }
 

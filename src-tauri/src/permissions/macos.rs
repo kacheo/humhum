@@ -113,11 +113,11 @@ impl MacosPermissions {
 
 impl Permissions for MacosPermissions {
     fn check(&self) -> PermissionsState {
-        PermissionsState {
+        crate::platform::autorelease_pool(|| PermissionsState {
             microphone: Self::microphone_granted(),
             accessibility: Self::accessibility_granted(),
             input_monitoring: Self::input_monitoring_granted(),
-        }
+        })
     }
 
     fn request_microphone(&self) -> Result<(), ()> {

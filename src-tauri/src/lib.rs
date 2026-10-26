@@ -1,3 +1,4 @@
+mod memory_diagnostics;
 pub mod audio;
 pub mod cleanup;
 pub mod commands;
@@ -121,6 +122,7 @@ pub fn run() {
             // `recording::*` uses `tauri::async_runtime`, callable from any thread.
             let handle = app.handle().clone();
             let app_state = app.state::<state::AppState>();
+            memory_diagnostics::start(app_state.recording_phase.clone());
             app_state.hotkey.set_handler(Box::new(move |event| {
                 let app = handle.clone();
                 let st = app.state::<state::AppState>();

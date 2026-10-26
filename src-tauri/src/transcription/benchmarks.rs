@@ -23,7 +23,9 @@ fn real_model() {
     let smoke = std::env::var("HUMHUM_BENCH_SMOKE").as_deref() == Ok("1");
     for _ in 0..if smoke { 1 } else { 6 } {
         let start = Instant::now();
-        let text = match transcribe_recording(&samples, |p| infer_recording(&ctx, p)) {
+        let text = match transcribe_recording(&samples, |p| {
+            infer_recording(&ctx, p, &AtomicBool::new(false))
+        }) {
             Ok(text) => text,
             Err(TranscriptionError::EmptyResult) => String::new(),
             Err(error) => panic!("inference failed: {error}"),
