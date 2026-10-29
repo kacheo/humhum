@@ -2,7 +2,7 @@
 
 Humhum is a free, open-source macOS menu bar app for voice dictation. Hold a global shortcut, speak, and paste locally transcribed text into the active app.
 
-**Installer beta: Apple Silicon Macs, macOS 13 or later, English transcription.** Download [Humhum v0.1.6 beta](https://github.com/kacheo/humhum/releases/tag/v0.1.6). Intel Macs are not yet supported.
+**Installer beta: Apple Silicon Macs, macOS 13 or later, English transcription.** Download [Humhum v0.1.7 beta](https://github.com/kacheo/humhum/releases/tag/v0.1.7). Intel Macs are not yet supported.
 
 <img src="assets/screenshots/preferences.png" alt="Humhum General preferences" width="720">
 
@@ -10,11 +10,11 @@ Humhum is a free, open-source macOS menu bar app for voice dictation. Hold a glo
 
 Screenshots show the existing UI with synthetic state.
 
-Humhum was previously named Wipzi. See [v0.1.6 beta verification](docs/v0.1.6-readiness.md).
+Humhum was previously named Wipzi. See [v0.1.7 beta verification](docs/v0.1.7-readiness.md).
 
 ## Install and first run
 
-1. Download `Humhum_0.1.6_aarch64.dmg` and `SHA256SUMS.txt` from [the v0.1.6 beta release](https://github.com/kacheo/humhum/releases/tag/v0.1.6). The installer is Developer ID signed, notarized, and stapled. To verify the download, put both files in the same directory and run `shasum -a 256 -c SHA256SUMS.txt` there.
+1. Download `Humhum_0.1.7_aarch64.dmg` and `SHA256SUMS.txt` from [the v0.1.7 beta release](https://github.com/kacheo/humhum/releases/tag/v0.1.7). The installer is Developer ID signed, notarized, and stapled. To verify the download, put both files in the same directory and run `shasum -a 256 -c SHA256SUMS.txt` there.
 2. Open the DMG and drag Humhum into Applications. Quit older Humhum/Wipzi copies, eject the DMG, and open `/Applications/Humhum.app`.
 3. Follow onboarding to grant Microphone, Accessibility, and Input Monitoring permissions. Select your shortcut; it is applied before the Try it step.
 4. Download Base English (about 148 MB). Small English is optional (about 488 MB); allow additional free space for downloads and operation.
