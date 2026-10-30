@@ -37,3 +37,5 @@
 .prefs__source { margin-top: auto; padding: 16px 4px 0; display: flex; flex-direction: column; font-size: 11px; color: var(--color-text-secondary); }
 .prefs .prefs__source button { border: 0; background: transparent; color: var(--color-accent); text-decoration: underline; padding: 0; text-align: left; font-size: 11px; }
 .prefs__source-error { margin: 6px 0 0; color: var(--color-danger); }
+
+.prefs__version { user-select: text; overflow-wrap: anywhere; }
