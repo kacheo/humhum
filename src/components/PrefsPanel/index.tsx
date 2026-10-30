@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getVersion } from "@tauri-apps/api/app";
 import { usePrefsStore } from "../../stores/prefs";
 import { ipc } from "../../lib/ipc";
 import { openExternal } from "../../lib/opener";
@@ -16,6 +17,16 @@ import "./index.css";
  *  (an unsaved API key, an in-progress hotkey recording) and every tab's
  *  mount effect fires on first render regardless of which tab is active. */
 export function PrefsPanel() {
+  const [version, setVersion] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    void getVersion().then(
+      (value) => { if (active) setVersion(`Version ${value}`); },
+      () => { if (active) setVersion("Version unavailable"); },
+    );
+    return () => { active = false; };
+  }, []);
+
   const [saveError, setSaveError] = useState<string | null>(null);
   const [sourceError, setSourceError] = useState<string | null>(null);
   const prefs = usePrefsStore((s) => s.prefs);
@@ -30,6 +41,7 @@ export function PrefsPanel() {
         <div className="prefs__brand">Humhum<small>Preferences</small></div>
         <PrefsTabs active={activeTab} onSelect={setActiveTab} />
         <div className="prefs__source">
+          {version && <span className="prefs__version">{version}</span>}
           <span>Humhum · AGPLv3</span>
           <button type="button" onClick={() => {
             setSourceError(null);

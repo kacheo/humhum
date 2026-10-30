@@ -5,6 +5,9 @@ import { PrefsPanel } from ".";
 import { usePrefsStore } from "../../stores/prefs";
 import { useRecordingStore } from "../../stores/recording";
 
+vi.mock("@tauri-apps/api/app", () => ({ getVersion: vi.fn().mockResolvedValue("9.8.7") }));
+import { getVersion } from "@tauri-apps/api/app";
+
 vi.mock("../../lib/opener", () => ({ openExternal: vi.fn().mockResolvedValue(undefined) }));
 import { openExternal } from "../../lib/opener";
 
@@ -53,6 +56,24 @@ async function renderPanel() {
   render(<PrefsPanel />);
   await waitFor(() => expect(ipc.getModelStatus).toHaveBeenCalled()); // flush mount effect
 }
+
+test("shows the running app version in the sidebar across tabs", async () => {
+  await renderPanel();
+  expect(await screen.findByText("Version 9.8.7")).toBeVisible();
+  for (const label of ["Shortcut", "AI", "Permissions"]) {
+    await userEvent.click(screen.getByRole("tab", { name: label }));
+    expect(screen.getByText("Version 9.8.7")).toBeVisible();
+  }
+});
+
+test("keeps Preferences usable when version lookup fails", async () => {
+  vi.mocked(getVersion).mockRejectedValueOnce(new Error("Unavailable"));
+  await renderPanel();
+  expect(await screen.findByText("Version unavailable")).toBeVisible();
+  await userEvent.click(screen.getByRole("tab", { name: "AI" }));
+  expect(screen.getByRole("heading", { name: "Text cleanup" })).toBeVisible();
+  expect(screen.getByRole("button", { name: /Source and license/i })).toBeEnabled();
+});
 
 test("renders all tabs", async () => {
   await renderPanel();
