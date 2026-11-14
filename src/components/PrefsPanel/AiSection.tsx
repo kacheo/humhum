@@ -1,9 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePrefsStore } from "../../stores/prefs";
 import { useRecordingStore } from "../../stores/recording";
 import { ipc } from "../../lib/ipc";
 import type { CleanupAggressiveness, CleanupMode, ModelStatus, WhisperModel } from "../../lib/types";
-import { ApiKeyInput } from "../ApiKeyInput";
+import { CloudApiSettings } from "../CloudApiSettings";
 import { OllamaTest } from "../OllamaTest";
 import { ModelStatusBadge } from "../ModelStatusBadge";
 
@@ -17,6 +17,7 @@ const MODELS: { id: WhisperModel; label: string }[] = [
  *  gated symmetrically on `cleanupMode`, and Aggressiveness — which applies
  *  to either backend — is shown only once a backend is selected. */
 export function AiSection() {
+  const [keyBusy, setKeyBusy] = useState(false);
   const prefs = usePrefsStore((s) => s.prefs);
   const modelStatus = useRecordingStore((s) => s.modelStatus);
   const downloadProgress = useRecordingStore((s) => s.downloadProgress);
@@ -89,6 +90,7 @@ export function AiSection() {
           <span>Mode</span>
           <select
             value={prefs.cleanupMode}
+            disabled={keyBusy}
             onChange={(e) => setField("cleanupMode", e.target.value as CleanupMode)}
           >
             <option value="none">None</option>
@@ -115,13 +117,7 @@ export function AiSection() {
         )}
 
         {prefs.cleanupMode === "api" && (
-          <>
-            <div className="prefs__row prefs__row--col">
-              <span>API key</span>
-              <ApiKeyInput provider={prefs.apiProvider} onTest={(p, k) => ipc.testApiKey(p, k)} />
-              <p className="prefs__hint">Testing a valid key saves it immediately in Keychain. Cloud cleanup sends transcript text to your provider.</p>
-            </div>
-          </>
+          <CloudApiSettings provider={prefs.apiProvider} onProviderChange={(p) => setField("apiProvider", p)} onBusyChange={setKeyBusy} />
         )}
 
         {prefs.cleanupMode !== "none" && (

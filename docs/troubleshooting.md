@@ -22,9 +22,20 @@ Run Ollama locally, install the model selected in Humhum (the default is `llama3
 
 ## Cloud cleanup and Keychain
 
-Select Cloud API and OpenAI or Anthropic, enter that provider's key, click **Test**, then save Preferences. A successful key test stores the key in macOS Keychain. An invalid key, unavailable provider, or Keychain error requires correction before relying on cloud cleanup. Verify billing and provider privacy settings in the provider's own account.
+1. Open **Preferences → AI → Text cleanup**, select **Cloud API**, and choose **OpenAI** or **Anthropic**. The same controls are available during onboarding.
+2. Enter that provider's API key and click **Verify & Save**. Verification makes a small billable request using fixed sample text against the cleanup model: `gpt-4o-mini` for OpenAI or Claude Haiku 4.5 for Anthropic. OpenAI API billing is separate from a ChatGPT subscription.
+3. Wait for **Key verified and saved**, then click **Save** to apply provider and cleanup-mode changes. During onboarding, these choices are applied before the Try it step.
 
-Humhum does not currently offer an in-app key removal button. To remove keys, quit Humhum, open Keychain Access, and delete only entries with service **`humhum-api`** and account **`openai-key`** or **`anthropic-key`**. Do not delete unrelated entries. Selecting None disables cleanup without deleting stored keys.
+Keys are stored separately per provider in macOS Keychain. **Key saved in Keychain** means a credential is stored, not that its current billing or access has been rechecked. The field stays empty after saving or reopening the app. To replace a key, enter a new one and click **Verify & Save**; an unsuccessful verification keeps the previous key. To delete the selected provider's key, click **Remove key**. Saving, replacing, and removing keys take effect immediately for subsequent dictations using the saved provider; **Discard** does not undo those actions. A dictation already processing may finish with its existing configuration.
+
+- **Key rejected:** check the key and its permission to use the cleanup endpoint and model.
+- **Rate limit or quota reached:** check API billing, credits, and usage limits, or retry later.
+- **Could not reach the cleanup service or model:** check connectivity and provider availability. Verification times out after five seconds.
+- **Unable to access Keychain:** unlock your login keychain, then use **Refresh status** or retry the action. This is distinct from **No key saved**.
+
+Cloud cleanup sends transcript text, not audio. Verify billing and privacy settings in the provider's account. Selecting **None** disables cleanup without deleting keys. If Cloud API remains selected after key removal, dictation reports that no key is configured; select None and save to use raw local transcripts.
+
+For manual removal after quitting Humhum, open Keychain Access and delete only entries with service **`humhum-api`** and account **`openai-key`** or **`anthropic-key`**.
 
 ## Uninstall and remove local data
 

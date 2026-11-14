@@ -73,15 +73,9 @@ const specs: SpecDef[] = [
   { name: "modelDownload", files: ["modelDownload.e2e.ts"], seedOnboardingComplete: true },
   {
     name: "apiKeyTest",
-    files: ["apiKeyTest.e2e.ts"],
+    files: ["apiKeyTest.e2e.ts", "apiKeyPersist.read.e2e.ts"],
     seedOnboardingComplete: true,
     needsKeychain: true,
-    blocked:
-      "store_api_key fails with macOS errSecNoDefaultKeychain (-25307) from this spawn context " +
-      "even against an explicit scratch default keychain — likely a sandboxed-shell session-bootstrap " +
-      "gap, not a code bug (raw `security` CLI ops against the same scratch keychain succeed from the " +
-      "same shell). The UI reaches this error after selecting Cloud API. " +
-      "Needs verification from a real Terminal/CI session before unblocking.",
   },
   {
     name: "settingsPersist",
@@ -222,7 +216,7 @@ async function runOne(spec: SpecDef): Promise<boolean> {
     if (spec.needsKeychain) {
       keychain = await createScratchKeychain((revertSync) => {
         activeKeychainRevert = revertSync;
-      });
+      }, homeDir);
     }
 
     const { sha256, sizeBytes } = await hashFixture(fixturePath);

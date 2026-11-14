@@ -517,6 +517,8 @@ mod tests {
         let audio = Arc::new(MockAudio::default());
         let hotkey = Arc::new(MockHotkey::default());
         let state = AppState {
+            key_actions: Default::default(),
+            cleanup_prefs: Default::default(),
             audio: audio.clone(),
             hotkey: hotkey.clone(),
             permissions: Arc::new(MockPermissions {
@@ -1160,6 +1162,8 @@ mod tests {
     /// directly here, reusing every other existing fake.
     fn state_with_audio(audio: Arc<dyn AudioCapture>) -> AppState {
         AppState {
+            key_actions: Default::default(),
+            cleanup_prefs: Default::default(),
             audio,
             hotkey: Arc::new(MockHotkey::default()),
             permissions: Arc::new(MockPermissions { granted: true }),
