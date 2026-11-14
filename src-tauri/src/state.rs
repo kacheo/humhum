@@ -20,6 +20,7 @@ use crate::permissions::Permissions;
 /// here would be dead state. `whisper_ctx` / `model_manager` are deferred to
 /// Phases 9 / 14; `cleanup` holds the Phase-12 cleanup config.
 pub struct AppState {
+    pub key_actions: crate::cleanup::keys::KeyActions,
     pub audio: Arc<dyn AudioCapture>,
     pub hotkey: Arc<dyn HotkeyCapture>,
     pub permissions: Arc<dyn Permissions>,
@@ -47,6 +48,7 @@ impl AppState {
     /// Wire the live platform handles via the [`crate::platform`] factories.
     pub fn new() -> Self {
         Self {
+            key_actions: Default::default(),
             audio: Arc::from(crate::platform::create_audio()),
             hotkey: Arc::from(crate::platform::create_hotkey()),
             permissions: Arc::from(crate::platform::create_permissions()),

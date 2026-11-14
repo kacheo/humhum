@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { usePrefsStore } from "../../stores/prefs";
-import { ipc } from "../../lib/ipc";
-import { ApiKeyInput } from "../ApiKeyInput";
+import { CloudApiSettings } from "../CloudApiSettings";
 
 /** Cleanup step. Off, Local (Ollama), and Cloud API are all selectable (Phase
  *  12); the cloud-API key is tested/stored via the ApiKeyInput below. A mode is
@@ -42,11 +41,9 @@ export function CleanupStep({ onReady }: { onReady: (ready: boolean) => void }) 
           </label>
         </>
       )}
-      {prefs.cleanupMode === "api" && <div className="onb-row onb-row--col">
-        <span>Cloud API key</span>
-        <ApiKeyInput provider={prefs.apiProvider} onTest={(p, k) => ipc.testApiKey(p, k)} />
-        <p className="onb-hint">Testing a valid key saves it immediately in Keychain. Cloud cleanup sends transcript text to your provider.</p>
-      </div>}
+      {prefs.cleanupMode === "api" && (
+        <CloudApiSettings provider={prefs.apiProvider} onProviderChange={(p) => setField("apiProvider", p)} onboarding />
+      )}
     </section>
   );
 }

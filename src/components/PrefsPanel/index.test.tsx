@@ -22,6 +22,8 @@ vi.mock("../../lib/ipc", () => ({
     savePrefs: vi.fn().mockResolvedValue(undefined),
     loadPrefs: vi.fn(),
     testApiKey: vi.fn().mockResolvedValue(undefined),
+    hasApiKey: vi.fn().mockResolvedValue(false),
+    removeApiKey: vi.fn().mockResolvedValue(undefined),
     // All granted so the Permissions section shows status rows with no action
     // buttons and the existing section assertions are unaffected.
     checkPermissions: vi.fn().mockResolvedValue({ microphone: true, accessibility: true, inputMonitoring: true }),
@@ -283,8 +285,21 @@ test("clicking Test on the Cloud API key calls test_api_key with the provider an
   await renderPanel();
   await userEvent.click(screen.getByRole("tab", { name: "AI" }));
   await userEvent.type(screen.getByLabelText("API key"), "sk-live-1");
-  await userEvent.click(screen.getByRole("button", { name: "Test" }));
+  await userEvent.click(screen.getByRole("button", { name: "Verify & Save" }));
   await waitFor(() => expect(ipc.testApiKey).toHaveBeenCalledWith("open_ai", "sk-live-1"));
+});
+
+test("cloud provider changes are saved and discarded like other preferences", async () => {
+  await renderPanel();
+  await userEvent.click(screen.getByRole("tab", { name: "AI" }));
+  await userEvent.selectOptions(screen.getByLabelText("Mode"), "api");
+  await userEvent.selectOptions(screen.getByLabelText("Provider"), "anthropic");
+  expect(screen.getByPlaceholderText("Anthropic API key")).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
+  await waitFor(() => expect(ipc.savePrefs).toHaveBeenCalledWith(expect.objectContaining({ apiProvider: "anthropic", cleanupMode: "api" })));
+  await userEvent.selectOptions(screen.getByLabelText("Provider"), "open_ai");
+  await userEvent.click(screen.getByRole("button", { name: "Discard" }));
+  expect(screen.getByLabelText("Provider")).toHaveValue("anthropic");
 });
 
 test("selecting an input device is picked up as a dirtying change", async () => {

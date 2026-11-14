@@ -3,7 +3,7 @@ import { usePrefsStore } from "../../stores/prefs";
 import { useRecordingStore } from "../../stores/recording";
 import { ipc } from "../../lib/ipc";
 import type { CleanupAggressiveness, CleanupMode, ModelStatus, WhisperModel } from "../../lib/types";
-import { ApiKeyInput } from "../ApiKeyInput";
+import { CloudApiSettings } from "../CloudApiSettings";
 import { OllamaTest } from "../OllamaTest";
 import { ModelStatusBadge } from "../ModelStatusBadge";
 
@@ -115,13 +115,7 @@ export function AiSection() {
         )}
 
         {prefs.cleanupMode === "api" && (
-          <>
-            <div className="prefs__row prefs__row--col">
-              <span>API key</span>
-              <ApiKeyInput provider={prefs.apiProvider} onTest={(p, k) => ipc.testApiKey(p, k)} />
-              <p className="prefs__hint">Testing a valid key saves it immediately in Keychain. Cloud cleanup sends transcript text to your provider.</p>
-            </div>
-          </>
+          <CloudApiSettings provider={prefs.apiProvider} onProviderChange={(p) => setField("apiProvider", p)} />
         )}
 
         {prefs.cleanupMode !== "none" && (

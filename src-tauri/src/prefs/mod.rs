@@ -119,6 +119,16 @@ pub fn read_api_key(provider: ApiProvider) -> Result<Option<String>, PrefsError>
     }
 }
 
+/// Delete only this provider's key. An already absent key is a success.
+pub fn remove_api_key(provider: ApiProvider) -> Result<(), PrefsError> {
+    let entry = Entry::new(API_KEYCHAIN_SERVICE, api_account(provider))
+        .map_err(|e| PrefsError::KeychainError(e.to_string()))?;
+    match entry.delete_credential() {
+        Ok(()) | Err(KeyringError::NoEntry) => Ok(()),
+        Err(e) => Err(PrefsError::KeychainError(e.to_string())),
+    }
+}
+
 #[cfg(target_os = "macos")]
 mod macos;
 
@@ -194,6 +204,23 @@ pub fn save_prefs(prefs: &Prefs) -> Result<(), PrefsError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn removing_key_is_idempotent_and_provider_specific() {
+        let _lock = crate::test_support::ENV_LOCK
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        store_api_key(ApiProvider::OpenAi, "openai-test").unwrap();
+        store_api_key(ApiProvider::Anthropic, "anthropic-test").unwrap();
+        remove_api_key(ApiProvider::OpenAi).unwrap();
+        remove_api_key(ApiProvider::OpenAi).unwrap();
+        assert_eq!(read_api_key(ApiProvider::OpenAi).unwrap(), None);
+        assert_eq!(
+            read_api_key(ApiProvider::Anthropic).unwrap().as_deref(),
+            Some("anthropic-test")
+        );
+        remove_api_key(ApiProvider::Anthropic).unwrap();
+    }
 
     /// Serializes tests that mutate the shared process `$HOME` env var (read
     /// by `settings_path`) — it's process-wide, so concurrent `cargo test`

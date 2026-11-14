@@ -73,7 +73,7 @@ const specs: SpecDef[] = [
   { name: "modelDownload", files: ["modelDownload.e2e.ts"], seedOnboardingComplete: true },
   {
     name: "apiKeyTest",
-    files: ["apiKeyTest.e2e.ts"],
+    files: ["apiKeyTest.e2e.ts", "apiKeyPersist.read.e2e.ts"],
     seedOnboardingComplete: true,
     needsKeychain: true,
     blocked:

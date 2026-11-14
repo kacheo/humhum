@@ -1,4 +1,5 @@
 pub mod anthropic;
+pub mod keys;
 pub mod ollama;
 pub mod openai;
 
@@ -57,6 +58,7 @@ impl CleanupError {
         match self {
             CleanupError::NoKeyConfigured => "no_key_configured",
             CleanupError::KeyRejected(_) => "key_rejected",
+            CleanupError::Unavailable(status) if status == "429" => "rate_limited",
             CleanupError::Unavailable(_) => "unavailable",
             CleanupError::ModelNotFound => "model_not_found",
             CleanupError::InvalidProvider => "invalid_provider",
@@ -325,8 +327,8 @@ fn is_truncated(output_tokens: Option<usize>, max_output_tokens: u32) -> bool {
     matches!(output_tokens, Some(n) if n >= max_output_tokens as usize)
 }
 
-/// Verify a cloud cleanup API key by making the cheapest authenticated request
-/// the provider offers and mapping the HTTP outcome to a `CleanupError`.
+/// Verify access to the actual cleanup endpoint and model with synthetic text.
+/// This is a small billable request; it never contains a user's transcript.
 /// `base_url` has no trailing slash (e.g. `https://api.openai.com/v1`); tests
 /// pass a mockito server URL. Never logs the key, request, or response body.
 pub async fn verify_key(
@@ -334,15 +336,31 @@ pub async fn verify_key(
     key: &str,
     base_url: &str,
 ) -> Result<(), CleanupError> {
-    let client = reqwest::Client::new();
+    if key.trim().is_empty() {
+        return Err(CleanupError::KeyRejected("empty key".into()));
+    }
+    let client = reqwest::Client::builder()
+        .timeout(CLEANUP_TIMEOUT)
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .map_err(|_| CleanupError::Unavailable("client error".into()))?;
+    let base_url = base_url.trim_end_matches('/');
     let req = match provider {
-        ApiProvider::OpenAi => client.get(format!("{base_url}/models")).bearer_auth(key),
+        ApiProvider::OpenAi => client
+            .post(format!("{base_url}/responses"))
+            .bearer_auth(key)
+            .json(&serde_json::json!({
+                "model": OPENAI_CLEANUP_MODEL,
+                "input": "Reply OK.",
+                "max_output_tokens": 16,
+                "store": false
+            })),
         ApiProvider::Anthropic => client
             .post(format!("{base_url}/messages"))
             .header("x-api-key", key)
             .header("anthropic-version", "2023-06-01")
             .json(&serde_json::json!({
-                "model": "claude-3-5-haiku-latest",
+                "model": ANTHROPIC_CLEANUP_MODEL,
                 "max_tokens": 1,
                 "messages": [{ "role": "user", "content": "hi" }]
             })),
@@ -350,9 +368,9 @@ pub async fn verify_key(
     let resp = req
         .send()
         .await
-        .map_err(|e| CleanupError::Unavailable(e.to_string()))?;
+        .map_err(|_| CleanupError::Unavailable("network or timeout".into()))?;
     let status = resp.status();
-    // Both probes (`GET /models`, `POST /messages`) return exactly 200 on
+    // Both probes (`POST /responses`, `POST /messages`) return exactly 200 on
     // success — require that precisely, since this is the gate that authorizes
     // persisting the key. Any other 2xx is anomalous and treated as unavailable.
     if status == reqwest::StatusCode::OK {
@@ -603,8 +621,14 @@ mod tests {
         let mut server = mockito::Server::new_async().await;
         // Guard the auth-header contract, not just path+method.
         let m = server
-            .mock("GET", "/models")
+            .mock("POST", "/responses")
             .match_header("authorization", "Bearer sk-test")
+            .match_body(mockito::Matcher::PartialJson(serde_json::json!({
+                "model": OPENAI_CLEANUP_MODEL,
+                "input": "Reply OK.",
+                "max_output_tokens": 16,
+                "store": false
+            })))
             .with_status(200)
             .create_async()
             .await;
@@ -617,7 +641,7 @@ mod tests {
     async fn openai_401_is_key_rejected() {
         let mut server = mockito::Server::new_async().await;
         server
-            .mock("GET", "/models")
+            .mock("POST", "/responses")
             .with_status(401)
             .create_async()
             .await;
@@ -631,7 +655,7 @@ mod tests {
     async fn openai_403_is_key_rejected() {
         let mut server = mockito::Server::new_async().await;
         server
-            .mock("GET", "/models")
+            .mock("POST", "/responses")
             .with_status(403)
             .create_async()
             .await;
@@ -645,7 +669,7 @@ mod tests {
     async fn openai_500_is_unavailable() {
         let mut server = mockito::Server::new_async().await;
         server
-            .mock("GET", "/models")
+            .mock("POST", "/responses")
             .with_status(500)
             .create_async()
             .await;
@@ -656,19 +680,17 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn rate_limit_429_is_unavailable_not_rejected() {
-        // A 429 means the key is likely valid but the check is inconclusive —
-        // deliberately `unavailable` (don't store), never `key_rejected`.
+    async fn rate_limit_429_is_not_key_rejected() {
         let mut server = mockito::Server::new_async().await;
         server
-            .mock("GET", "/models")
+            .mock("POST", "/responses")
             .with_status(429)
             .create_async()
             .await;
         let err = verify_key(ApiProvider::OpenAi, "sk", &server.url())
             .await
             .unwrap_err();
-        assert_eq!(err.code(), "unavailable");
+        assert_eq!(err.code(), "rate_limited");
     }
 
     #[tokio::test]

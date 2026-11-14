@@ -308,6 +308,8 @@ pub fn run() {
             commands::get_model_status,
             commands::store_api_key,
             commands::test_api_key,
+            commands::has_api_key,
+            commands::remove_api_key,
             commands::test_ollama,
             commands::check_permissions,
             commands::request_microphone,

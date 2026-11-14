@@ -106,6 +106,9 @@ pub fn set_prefs(
     prefs: Prefs,
     state: tauri::State<'_, crate::state::AppState>,
 ) -> Result<(), AppError> {
+    // Serialize credential mutations and preference saves so a late key check
+    // cannot reactivate a provider from an older preference snapshot.
+    let mut config = state.cleanup.write().unwrap();
     prefs::save_prefs(&prefs)?;
     // Best-effort: a flaky/unsigned-dev SMAppService must not block persisting
     // the rest of prefs (which already succeeded above).
@@ -114,8 +117,8 @@ pub fn set_prefs(
     }
     // Rebuild the cleanup config so a mode/provider/key/aggressiveness change
     // takes effect on the next dictation (Phase 12).
-    *state.cleanup.write().unwrap() =
-        cleanup::build_cleanup_config(&prefs, |p| prefs::read_api_key(p).ok().flatten());
+    *config = cleanup::build_cleanup_config(&prefs, |p| prefs::read_api_key(p).ok().flatten());
+    drop(config);
     // Propagate an input-device change so it takes effect on the next `start()`.
     state
         .audio
@@ -175,12 +178,49 @@ pub fn store_api_key(_provider: String, _key: String) -> Result<(), AppError> {
 /// Verify a cloud cleanup API key against the provider and, on success, store it
 /// in the Keychain. Never logs the key.
 #[tauri::command]
-pub async fn test_api_key(provider: String, key: String) -> Result<(), AppError> {
+pub async fn test_api_key(
+    provider: String,
+    key: String,
+    state: tauri::State<'_, crate::state::AppState>,
+) -> Result<(), AppError> {
     let p = parse_provider(&provider)?;
-    run_test_api_key(p, &key, &default_base_url(p), |p, k| {
-        prefs::store_api_key(p, k).map_err(AppError::from)
+    let action = state.key_actions.begin(p);
+    run_test_api_key(p, key.trim(), &default_base_url(p), |p, k| {
+        state.key_actions.complete(action, || {
+            update_api_key(&state, || prefs::store_api_key(p, k), prefs::load_prefs)
+        })
     })
     .await
+}
+
+/// Report presence only; never return the credential to the webview.
+#[tauri::command]
+pub fn has_api_key(provider: String) -> Result<bool, AppError> {
+    Ok(prefs::read_api_key(parse_provider(&provider)?)?.is_some())
+}
+
+#[tauri::command]
+pub fn remove_api_key(
+    provider: String,
+    state: tauri::State<'_, crate::state::AppState>,
+) -> Result<(), AppError> {
+    let p = parse_provider(&provider)?;
+    let action = state.key_actions.begin(p);
+    state.key_actions.complete(action, || {
+        update_api_key(&state, || prefs::remove_api_key(p), prefs::load_prefs)
+    })
+}
+
+fn update_api_key(
+    state: &crate::state::AppState,
+    update: impl FnOnce() -> Result<(), prefs::PrefsError>,
+    load_prefs: impl FnOnce() -> Prefs,
+) -> Result<(), AppError> {
+    let mut config = state.cleanup.write().unwrap();
+    update()?;
+    *config =
+        cleanup::build_cleanup_config(&load_prefs(), |p| prefs::read_api_key(p).ok().flatten());
+    Ok(())
 }
 
 /// Verify an Ollama setup for the Preferences **Test** button: confirm the server
@@ -238,7 +278,7 @@ mod tests {
     async fn stores_key_only_after_successful_verify() {
         let mut server = mockito::Server::new_async().await;
         server
-            .mock("GET", "/models")
+            .mock("POST", "/responses")
             .with_status(200)
             .create_async()
             .await;
@@ -256,7 +296,7 @@ mod tests {
     async fn does_not_store_when_verify_fails() {
         let mut server = mockito::Server::new_async().await;
         server
-            .mock("GET", "/models")
+            .mock("POST", "/responses")
             .with_status(401)
             .create_async()
             .await;
@@ -282,22 +322,33 @@ mod tests {
             .unwrap_or_else(|e| e.into_inner());
         let mut server = mockito::Server::new_async().await;
         server
-            .mock("GET", "/models")
+            .mock("POST", "/responses")
             .with_status(200)
             .create_async()
             .await;
         let old = std::env::var("HUMHUM_OPENAI_BASE_URL").ok();
         std::env::set_var("HUMHUM_OPENAI_BASE_URL", server.url());
+        let app = mock_app_with_state(stub_app_state(true, true));
+        prefs::remove_api_key(ApiProvider::OpenAi).unwrap();
+        assert!(!has_api_key("open_ai".into()).unwrap());
 
-        let result = test_api_key("open_ai".into(), "test-command-key".into()).await;
+        let result = test_api_key("open_ai".into(), "test-command-key".into(), app.state()).await;
+        assert!(has_api_key("open_ai".into()).unwrap());
 
         let stored = prefs::read_api_key(ApiProvider::OpenAi);
         // Clean up via the same (cfg(test)-swapped) service the wrapper used, not a
         // hardcoded literal — otherwise cleanup would target the production service
         // while the wrapper wrote to the `-test` one.
-        let entry = keyring::Entry::new(prefs::API_KEYCHAIN_SERVICE, "openai-key")
-            .expect("valid keychain entry");
-        let _ = entry.delete_credential();
+        remove_api_key("open_ai".into(), app.state()).unwrap();
+        remove_api_key("open_ai".into(), app.state()).unwrap();
+        assert!(!has_api_key("open_ai".into()).unwrap());
+        assert!(app
+            .state::<crate::state::AppState>()
+            .cleanup
+            .read()
+            .unwrap()
+            .provider
+            .is_none());
 
         match old {
             Some(v) => std::env::set_var("HUMHUM_OPENAI_BASE_URL", v),
@@ -306,6 +357,50 @@ mod tests {
 
         assert!(result.is_ok());
         assert_eq!(stored.unwrap(), Some("test-command-key".to_string()));
+    }
+
+    #[test]
+    fn key_mutations_rebuild_active_provider_without_restart() {
+        let _lock = crate::test_support::ENV_LOCK
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        let state = stub_app_state(true, true);
+        let cloud_prefs = || Prefs {
+            cleanup_mode: cleanup::CleanupMode::Api,
+            ..Prefs::default()
+        };
+        update_api_key(
+            &state,
+            || prefs::store_api_key(ApiProvider::OpenAi, "first-key"),
+            cloud_prefs,
+        )
+        .unwrap();
+        assert!(state.cleanup.read().unwrap().provider.is_some());
+        update_api_key(
+            &state,
+            || prefs::store_api_key(ApiProvider::OpenAi, "replacement-key"),
+            cloud_prefs,
+        )
+        .unwrap();
+        assert_eq!(
+            prefs::read_api_key(ApiProvider::OpenAi).unwrap().as_deref(),
+            Some("replacement-key")
+        );
+        assert!(state.cleanup.read().unwrap().provider.is_some());
+        let failed = update_api_key(
+            &state,
+            || Err(prefs::PrefsError::KeychainError("denied".into())),
+            cloud_prefs,
+        );
+        assert_eq!(failed.unwrap_err().code(), "keychain_error");
+        assert!(state.cleanup.read().unwrap().provider.is_some());
+        update_api_key(
+            &state,
+            || prefs::remove_api_key(ApiProvider::OpenAi),
+            cloud_prefs,
+        )
+        .unwrap();
+        assert!(state.cleanup.read().unwrap().provider.is_none());
     }
 
     #[test]
@@ -348,6 +443,9 @@ mod tests {
 
     #[test]
     fn default_base_url_prefers_env_override_else_prod_url() {
+        let _lock = crate::test_support::ENV_LOCK
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         // Clean slate regardless of ambient env (this var is only touched here).
         std::env::remove_var("HUMHUM_OPENAI_BASE_URL");
         assert_eq!(
@@ -415,8 +513,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_api_key_rejects_invalid_provider() {
+        let app = mock_app_with_state(stub_app_state(true, true));
         assert_eq!(
-            test_api_key("not_a_provider".into(), "key".into())
+            test_api_key("not_a_provider".into(), "key".into(), app.state())
                 .await
                 .unwrap_err()
                 .code(),
@@ -426,6 +525,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_api_key_rejects_bad_key_without_storing() {
+        let _lock = crate::test_support::ENV_LOCK
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        let app = mock_app_with_state(stub_app_state(true, true));
+        prefs::store_api_key(ApiProvider::Anthropic, "previous-key").unwrap();
         // Anthropic (not OpenAI) so this doesn't race
         // `default_base_url_prefers_env_override_else_prod_url`'s env var.
         let mut server = mockito::Server::new_async().await;
@@ -435,9 +539,12 @@ mod tests {
             .create_async()
             .await;
         std::env::set_var("HUMHUM_ANTHROPIC_BASE_URL", server.url());
-        let result = test_api_key("anthropic".into(), "bad-key".into()).await;
+        let result = test_api_key("anthropic".into(), "bad-key".into(), app.state()).await;
         std::env::remove_var("HUMHUM_ANTHROPIC_BASE_URL");
+        let stored = prefs::read_api_key(ApiProvider::Anthropic).unwrap();
+        prefs::remove_api_key(ApiProvider::Anthropic).unwrap();
         assert_eq!(result.unwrap_err().code(), "key_rejected");
+        assert_eq!(stored.as_deref(), Some("previous-key"));
     }
 
     #[tokio::test]
@@ -605,6 +712,7 @@ mod tests {
     /// own tests; these only confirm the IPC wrappers delegate correctly.
     fn stub_app_state(perms_granted: bool, model_ready: bool) -> crate::state::AppState {
         crate::state::AppState {
+            key_actions: Default::default(),
             audio: std::sync::Arc::new(StubAudio),
             hotkey: std::sync::Arc::new(StubHotkey),
             permissions: std::sync::Arc::new(StubPermissions(perms_granted)),
