@@ -80,3 +80,61 @@ test("savePrefs settles isSaving back to false", async () => {
   expect(usePrefsStore.getState().isSaving).toBe(false);
   expect(ipc.savePrefs).toHaveBeenCalledTimes(1);
 });
+
+test("edits made during a save remain dirty and discard uses the saved snapshot", async () => {
+  let finish!: () => void;
+  vi.mocked(ipc.savePrefs).mockImplementationOnce(() => new Promise<void>((resolve) => { finish = resolve; }));
+  usePrefsStore.getState().setField("hotkey", "saved shortcut");
+  const saving = usePrefsStore.getState().savePrefs();
+  await vi.waitFor(() => expect(ipc.savePrefs).toHaveBeenCalled());
+  usePrefsStore.getState().setField("hotkey", "new draft");
+  finish();
+  await saving;
+  expect(usePrefsStore.getState().prefs.hotkey).toBe("new draft");
+  expect(usePrefsStore.getState().isDirty).toBe(true);
+  usePrefsStore.getState().discardChanges();
+  expect(usePrefsStore.getState().prefs.hotkey).toBe("saved shortcut");
+});
+
+test("overlapping saves persist their snapshots in order and retain the latest baseline", async () => {
+  let finishFirst!: () => void;
+  let finishSecond!: () => void;
+  vi.mocked(ipc.savePrefs)
+    .mockImplementationOnce(() => new Promise<void>((resolve) => { finishFirst = resolve; }))
+    .mockImplementationOnce(() => new Promise<void>((resolve) => { finishSecond = resolve; }));
+  usePrefsStore.getState().setField("hotkey", "first");
+  const first = usePrefsStore.getState().savePrefs();
+  await vi.waitFor(() => expect(ipc.savePrefs).toHaveBeenCalledTimes(1));
+  usePrefsStore.getState().setField("hotkey", "second");
+  const second = usePrefsStore.getState().savePrefs();
+  expect(ipc.savePrefs).toHaveBeenCalledTimes(1);
+  finishFirst();
+  await first;
+  await vi.waitFor(() => expect(ipc.savePrefs).toHaveBeenCalledTimes(2));
+  expect(usePrefsStore.getState().isSaving).toBe(true);
+  expect(usePrefsStore.getState().savedPrefs.hotkey).toBe("first");
+  expect(usePrefsStore.getState().isDirty).toBe(true);
+  expect(ipc.savePrefs).toHaveBeenLastCalledWith(expect.objectContaining({ hotkey: "second" }));
+  finishSecond();
+  await second;
+  expect(usePrefsStore.getState().savedPrefs.hotkey).toBe("second");
+  expect(usePrefsStore.getState().isDirty).toBe(false);
+  expect(usePrefsStore.getState().isSaving).toBe(false);
+});
+
+test("a failed queued save preserves the successful baseline and allows retry", async () => {
+  vi.mocked(ipc.savePrefs).mockResolvedValueOnce(undefined).mockRejectedValueOnce("keychain_error");
+  usePrefsStore.getState().setField("hotkey", "first");
+  const first = usePrefsStore.getState().savePrefs();
+  usePrefsStore.getState().setField("hotkey", "second");
+  const second = usePrefsStore.getState().savePrefs();
+  await first;
+  await expect(second).rejects.toBe("keychain_error");
+  expect(usePrefsStore.getState().savedPrefs.hotkey).toBe("first");
+  expect(usePrefsStore.getState().isDirty).toBe(true);
+  expect(usePrefsStore.getState().isSaving).toBe(false);
+  vi.mocked(ipc.savePrefs).mockResolvedValueOnce(undefined);
+  await usePrefsStore.getState().savePrefs();
+  expect(usePrefsStore.getState().savedPrefs.hotkey).toBe("second");
+  expect(usePrefsStore.getState().isDirty).toBe(false);
+});

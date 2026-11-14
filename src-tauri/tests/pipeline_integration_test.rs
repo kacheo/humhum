@@ -230,6 +230,7 @@ fn build_state(
     let hotkey = Arc::new(MockHotkey::default());
     let state = AppState {
         key_actions: Default::default(),
+        cleanup_prefs: Default::default(),
         audio,
         hotkey: hotkey.clone(),
         permissions: Arc::new(MockPermissions),

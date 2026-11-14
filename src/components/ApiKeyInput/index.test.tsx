@@ -117,3 +117,149 @@ test("a remounted editor refreshes when an earlier verification finishes", async
   await act(async () => finish());
   expect(await screen.findByText("Key saved in Keychain")).toBeInTheDocument();
 });
+
+function keyChanged(provider = "open_ai") {
+  window.dispatchEvent(new CustomEvent("humhum-api-key-changed", { detail: provider }));
+}
+
+test.each([
+  ["saving", "success"], ["saving", "failure"],
+  ["removing", "success"], ["removing", "failure"],
+])("reconciles an external change after %s ends in %s", async (action, outcome) => {
+  const removing = action === "removing";
+  vi.mocked(ipc.hasApiKey).mockResolvedValue(removing);
+  let resolve!: () => void;
+  let reject!: (error: string) => void;
+  const pending = new Promise<void>((yes, no) => { resolve = yes; reject = no; });
+  const onTest = vi.fn(() => pending);
+  if (removing) vi.mocked(ipc.removeApiKey).mockReturnValueOnce(pending);
+  render(<ApiKeyInput provider="open_ai" onTest={onTest} />);
+  await screen.findByText(removing ? "Key saved in Keychain" : "No key saved");
+  if (!removing) await userEvent.type(screen.getByLabelText("API key"), "draft-key");
+  await userEvent.click(screen.getByRole("button", { name: removing ? "Remove key" : "Verify & Save" }));
+  const externallySaved = outcome === "success" ? removing : !removing;
+  vi.mocked(ipc.hasApiKey).mockResolvedValue(externallySaved);
+  act(() => keyChanged());
+  await act(async () => { if (outcome === "success") resolve(); else reject("unavailable"); });
+  expect(await screen.findByText(externallySaved ? "Key saved in Keychain" : "No key saved")).toBeInTheDocument();
+  expect(ipc.hasApiKey).toHaveBeenCalledTimes(2);
+  if (outcome === "failure") {
+    expect(screen.getByRole("status")).toHaveTextContent(/could not reach/i);
+    if (!removing) expect(screen.getByLabelText("API key")).toHaveValue("draft-key");
+  }
+});
+
+test.each(["saving", "removing"])("external changes clear obsolete %s success feedback", async (action) => {
+  const removing = action === "removing";
+  vi.mocked(ipc.hasApiKey).mockResolvedValue(removing);
+  render(<ApiKeyInput provider="open_ai" onTest={vi.fn().mockResolvedValue(undefined)} />);
+  await screen.findByText(removing ? "Key saved in Keychain" : "No key saved");
+  if (!removing) await userEvent.type(screen.getByLabelText("API key"), "key");
+  await userEvent.click(screen.getByRole("button", { name: removing ? "Remove key" : "Verify & Save" }));
+  expect(screen.getByRole("status")).toHaveTextContent(removing ? "Key removed" : "Key verified and saved");
+  act(() => keyChanged("anthropic"));
+  expect(screen.getByRole("status")).toBeInTheDocument();
+  act(() => keyChanged());
+  await screen.findByText(removing ? "Key saved in Keychain" : "No key saved");
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+});
+
+test("an earlier editor's completion is reconciled after a remounted editor's ordinary failure", async () => {
+  let finishOld!: () => void;
+  const oldEditor = render(<ApiKeyInput provider="open_ai" onTest={() => new Promise<void>((resolve) => { finishOld = resolve; })} />);
+  await screen.findByText("No key saved");
+  await userEvent.type(screen.getByLabelText("API key"), "old-secret");
+  await userEvent.click(screen.getByRole("button", { name: "Verify & Save" }));
+  oldEditor.unmount();
+  let failNew!: (error: string) => void;
+  render(<ApiKeyInput provider="open_ai" onTest={() => new Promise<void>((_, reject) => { failNew = reject; })} />);
+  await screen.findByText("No key saved");
+  expect(screen.getByLabelText("API key")).toHaveValue("");
+  await userEvent.type(screen.getByLabelText("API key"), "new-secret");
+  await userEvent.click(screen.getByRole("button", { name: "Verify & Save" }));
+  vi.mocked(ipc.hasApiKey).mockResolvedValue(true);
+  await act(async () => finishOld());
+  await act(async () => failNew("key_rejected"));
+  expect(await screen.findByText("Key saved in Keychain")).toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent(/key rejected/i);
+  expect(screen.getByLabelText("API key")).toHaveValue("new-secret");
+});
+
+test("ignores a stale same-provider lookup after external invalidation", async () => {
+  let finishOld!: (saved: boolean) => void;
+  vi.mocked(ipc.hasApiKey).mockImplementationOnce(() => new Promise((resolve) => { finishOld = resolve; })).mockResolvedValue(true);
+  render(<ApiKeyInput provider="open_ai" />);
+  act(() => keyChanged());
+  await screen.findByText("Key saved in Keychain");
+  await act(async () => finishOld(false));
+  expect(screen.getByText("Key saved in Keychain")).toBeInTheDocument();
+});
+
+test("late verification cannot update another provider's status, feedback, or secret draft", async () => {
+  let finish!: () => void;
+  const onTest = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
+  const { rerender } = render(<ApiKeyInput provider="open_ai" onTest={onTest} />);
+  await screen.findByText("No key saved");
+  await userEvent.type(screen.getByLabelText("API key"), "openai-secret");
+  await userEvent.click(screen.getByRole("button", { name: "Verify & Save" }));
+  rerender(<ApiKeyInput provider="anthropic" onTest={onTest} />);
+  await screen.findByText("No key saved");
+  expect(screen.getByLabelText("API key")).toHaveValue("");
+  await userEvent.type(screen.getByLabelText("API key"), "anthropic-draft");
+  await act(async () => finish());
+  expect(screen.getByLabelText("API key")).toHaveValue("anthropic-draft");
+  expect(screen.getByText("No key saved")).toBeInTheDocument();
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  expect(ipc.hasApiKey).toHaveBeenCalledTimes(2);
+});
+
+test.each([
+  ["key_rejected", /key rejected/i],
+  ["keychain_error", /unlock your login keychain/i],
+  ["io_error", /could not update cleanup settings/i],
+  ["serialize_error", /could not update cleanup settings/i],
+  ["key_action_superseded", /newer key action/i],
+])("maps %s to safe actionable feedback and keeps the draft", async (code, message) => {
+  render(<ApiKeyInput provider="anthropic" onTest={vi.fn().mockRejectedValue(new Error(code))} />);
+  await screen.findByText("No key saved");
+  await userEvent.type(screen.getByLabelText("API key"), "retry-secret");
+  await userEvent.click(screen.getByRole("button", { name: "Verify & Save" }));
+  expect(await screen.findByRole("status")).toHaveTextContent(message);
+  expect(screen.getByLabelText("API key")).toHaveValue("retry-secret");
+  expect(screen.getByRole("button", { name: "Verify & Save" })).toBeEnabled();
+});
+
+test("failed removal retains the saved credential and can be retried", async () => {
+  vi.mocked(ipc.hasApiKey).mockResolvedValue(true);
+  vi.mocked(ipc.removeApiKey).mockRejectedValueOnce("keychain_error");
+  const onBusyChange = vi.fn();
+  render(<ApiKeyInput provider="anthropic" onBusyChange={onBusyChange} />);
+  await screen.findByText("Key saved in Keychain");
+  await userEvent.click(screen.getByRole("button", { name: "Remove key" }));
+  expect(await screen.findByRole("status")).toHaveTextContent(/unlock your login keychain/i);
+  expect(screen.getByText("Key saved in Keychain")).toBeInTheDocument();
+  expect(onBusyChange).toHaveBeenLastCalledWith(false);
+  await userEvent.click(screen.getByRole("button", { name: "Remove key" }));
+  expect(await screen.findByText("No key saved")).toBeInTheDocument();
+  expect(ipc.removeApiKey).toHaveBeenLastCalledWith("anthropic");
+});
+
+test.each(["saving", "removing"])("never renders or logs secret-bearing %s errors", async (action) => {
+  const removing = action === "removing";
+  const secret = "sk-private-do-not-expose";
+  const spies = (["log", "warn", "error"] as const).map((method) => vi.spyOn(console, method).mockImplementation(() => {}));
+  try {
+    vi.mocked(ipc.hasApiKey).mockResolvedValue(removing);
+    const error = new Error(`keychain_error: provider echoed ${secret}`);
+    if (removing) vi.mocked(ipc.removeApiKey).mockRejectedValueOnce(error);
+    render(<ApiKeyInput provider="open_ai" onTest={vi.fn().mockRejectedValue(error)} />);
+    await screen.findByText(removing ? "Key saved in Keychain" : "No key saved");
+    if (!removing) await userEvent.type(screen.getByLabelText("API key"), secret);
+    await userEvent.click(screen.getByRole("button", { name: removing ? "Remove key" : "Verify & Save" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Could not complete the key action. Try again.");
+    expect(document.body.textContent).not.toContain(secret);
+    expect(spies.flatMap((spy) => spy.mock.calls).flat().join(" ")).not.toContain(secret);
+  } finally {
+    spies.forEach((spy) => spy.mockRestore());
+  }
+});

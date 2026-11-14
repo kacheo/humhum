@@ -121,6 +121,21 @@ const ANTHROPIC_CLEANUP_MODEL: &str = "claude-haiku-4-5-20251001";
 const OPENAI_BASE_URL: &str = "https://api.openai.com";
 const ANTHROPIC_BASE_URL: &str = "https://api.anthropic.com/v1/";
 
+fn cloud_base_url(provider: ApiProvider) -> String {
+    #[cfg(test)]
+    if let Ok(url) = std::env::var(match provider {
+        ApiProvider::OpenAi => "HUMHUM_TEST_CLEANUP_OPENAI_BASE_URL",
+        ApiProvider::Anthropic => "HUMHUM_TEST_CLEANUP_ANTHROPIC_BASE_URL",
+    }) {
+        return url;
+    }
+    match provider {
+        ApiProvider::OpenAi => OPENAI_BASE_URL,
+        ApiProvider::Anthropic => ANTHROPIC_BASE_URL,
+    }
+    .into()
+}
+
 /// Build the cloud provider for the selected `ApiProvider` with a stored key.
 fn build_cloud_provider(
     provider: ApiProvider,
@@ -131,13 +146,13 @@ fn build_cloud_provider(
         ApiProvider::OpenAi => std::sync::Arc::new(openai::OpenAiProvider {
             api_key: key,
             model: OPENAI_CLEANUP_MODEL.to_string(),
-            base_url: OPENAI_BASE_URL.to_string(),
+            base_url: cloud_base_url(provider),
             aggressiveness,
         }),
         ApiProvider::Anthropic => std::sync::Arc::new(anthropic::AnthropicProvider {
             api_key: key,
             model: ANTHROPIC_CLEANUP_MODEL.to_string(),
-            base_url: ANTHROPIC_BASE_URL.to_string(),
+            base_url: cloud_base_url(provider),
             aggressiveness,
         }),
     }

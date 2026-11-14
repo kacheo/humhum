@@ -1,10 +1,11 @@
-mod memory_diagnostics;
 pub mod audio;
 pub mod cleanup;
 pub mod commands;
 pub mod error;
 pub mod events;
 pub mod hotkey;
+mod logging;
+mod memory_diagnostics;
 pub mod models;
 pub mod paste;
 pub mod permissions;
@@ -94,9 +95,7 @@ pub fn run() {
             // problems for support. Info level; the high-frequency per-keystroke
             // tap trace is compiled out of release (see hotkey/macos.rs).
             app.handle().plugin(
-                tauri_plugin_log::Builder::default()
-                    .level(log::LevelFilter::Info)
-                    .build(),
+                logging::builder().build(),
             )?;
 
             // Startup permission gate (LLD §9.4): check the three macOS
@@ -148,10 +147,12 @@ pub fn run() {
 
             // Build the initial cleanup config from prefs (Phase 12). Reads any
             // stored API key from the Keychain; `set_prefs` rebuilds it on change.
-            *app_state.cleanup.write().unwrap() = cleanup::build_cleanup_config(
-                &prefs::load_prefs(),
-                |p| prefs::read_api_key(p).ok().flatten(),
-            );
+            let initial_prefs = prefs::load_prefs();
+            let config = cleanup::build_cleanup_config(&initial_prefs, |p| {
+                prefs::read_api_key(p).ok().flatten()
+            });
+            *app_state.cleanup.write().unwrap() = config;
+            *app_state.cleanup_prefs.lock().unwrap() = initial_prefs;
 
             // Seed the preferred input device (Bluetooth-avoidance fix) from
             // prefs; `set_prefs` propagates any later change.

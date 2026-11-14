@@ -21,6 +21,9 @@ use crate::permissions::Permissions;
 /// Phases 9 / 14; `cleanup` holds the Phase-12 cleanup config.
 pub struct AppState {
     pub key_actions: crate::cleanup::keys::KeyActions,
+    /// Canonical applied preferences and serialization for configuration writes.
+    /// Keychain/disk I/O may hold this mutex, never the recording-facing lock.
+    pub cleanup_prefs: Mutex<crate::prefs::Prefs>,
     pub audio: Arc<dyn AudioCapture>,
     pub hotkey: Arc<dyn HotkeyCapture>,
     pub permissions: Arc<dyn Permissions>,
@@ -49,6 +52,7 @@ impl AppState {
     pub fn new() -> Self {
         Self {
             key_actions: Default::default(),
+            cleanup_prefs: Default::default(),
             audio: Arc::from(crate::platform::create_audio()),
             hotkey: Arc::from(crate::platform::create_hotkey()),
             permissions: Arc::from(crate::platform::create_permissions()),

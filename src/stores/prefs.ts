@@ -22,31 +22,45 @@ interface PrefsState {
   isSaving: boolean;
   loadPrefs: () => Promise<void>; // invokes get_prefs
   setField: <K extends keyof Prefs>(key: K, value: Prefs[K]) => void;
-  savePrefs: () => Promise<void>; // invokes set_prefs; clears isDirty
+  savePrefs: () => Promise<void>; // serializes snapshots through set_prefs
   discardChanges: () => void;
 }
 
-export const usePrefsStore = create<PrefsState>((set, get) => ({
-  prefs: { ...defaultPrefs },
-  savedPrefs: { ...defaultPrefs },
-  isDirty: false,
-  isSaving: false,
-  loadPrefs: async () => {
-    const prefs = await ipc.loadPrefs();
-    set({ prefs, savedPrefs: { ...prefs }, isDirty: false });
-  },
-  setField: (key, value) =>
-    set((s) => ({ prefs: { ...s.prefs, [key]: value }, isDirty: true })),
-  savePrefs: async () => {
-    set({ isSaving: true });
-    try {
-      const { prefs } = get();
-      await ipc.savePrefs(prefs);
-      set({ savedPrefs: { ...prefs }, isDirty: false });
-    } finally {
-      set({ isSaving: false });
-    }
-  },
-  discardChanges: () =>
-    set((s) => ({ prefs: { ...s.savedPrefs }, isDirty: false })),
-}));
+export const usePrefsStore = create<PrefsState>((set, get) => {
+  let saveQueue = Promise.resolve();
+  let pendingSaves = 0;
+  return {
+    prefs: { ...defaultPrefs },
+    savedPrefs: { ...defaultPrefs },
+    isDirty: false,
+    isSaving: false,
+    loadPrefs: async () => {
+      const prefs = await ipc.loadPrefs();
+      set({ prefs, savedPrefs: { ...prefs }, isDirty: false });
+    },
+    setField: (key, value) =>
+      set((s) => ({ prefs: { ...s.prefs, [key]: value }, isDirty: true })),
+    savePrefs: async () => {
+      const prefs = { ...get().prefs };
+      pendingSaves += 1;
+      set({ isSaving: true });
+      const saving = saveQueue.then(async () => {
+        await ipc.savePrefs(prefs);
+        set((s) => ({
+          savedPrefs: prefs,
+          isDirty: (Object.keys(prefs) as (keyof Prefs)[]).some((key) => s.prefs[key] !== prefs[key]),
+        }));
+      });
+      // A failed write rejects its caller, but must not block later saves.
+      saveQueue = saving.catch(() => {});
+      try {
+        await saving;
+      } finally {
+        pendingSaves -= 1;
+        set({ isSaving: pendingSaves > 0 });
+      }
+    },
+    discardChanges: () =>
+      set((s) => ({ prefs: { ...s.savedPrefs }, isDirty: false })),
+  };
+});

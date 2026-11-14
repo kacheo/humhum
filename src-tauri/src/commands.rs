@@ -1,14 +1,6 @@
 //! Tauri command handlers — the IPC surface declared in `src/lib/ipc.ts`.
 //!
-//! These are stubs that return `AppError::Internal("not implemented")`. Their
-//! purpose is to make the IPC contract compiler-enforced: every command name in
-//! `ipc.ts` must resolve to a real Rust symbol with a matching signature, wired
-//! via `generate_handler!` in `lib.rs`. As later phases implement real logic,
-//! commands migrate into their owning modules (e.g. license → `license/mod.rs`).
-//!
-//! Parameters are underscore-prefixed because these stubs don't read them yet.
-//! Tauri strips a single leading underscore when matching JS argument keys
-//! (`_prefs` still binds the `prefs` key), so the IPC contract is unchanged.
+//! Each command is registered in `lib.rs`; errors cross IPC as safe wire codes.
 
 use crate::cleanup::{self, ApiProvider, CleanupError};
 use crate::error::AppError;
@@ -106,19 +98,12 @@ pub fn set_prefs(
     prefs: Prefs,
     state: tauri::State<'_, crate::state::AppState>,
 ) -> Result<(), AppError> {
-    // Serialize credential mutations and preference saves so a late key check
-    // cannot reactivate a provider from an older preference snapshot.
-    let mut config = state.cleanup.write().unwrap();
-    prefs::save_prefs(&prefs)?;
+    save_cleanup_prefs(&state, &prefs, prefs::read_api_key, prefs::save_prefs)?;
     // Best-effort: a flaky/unsigned-dev SMAppService must not block persisting
     // the rest of prefs (which already succeeded above).
     if let Err(e) = prefs::set_launch_at_login(prefs.launch_at_login) {
         log::warn!("failed to apply launch-at-login: {e}");
     }
-    // Rebuild the cleanup config so a mode/provider/key/aggressiveness change
-    // takes effect on the next dictation (Phase 12).
-    *config = cleanup::build_cleanup_config(&prefs, |p| prefs::read_api_key(p).ok().flatten());
-    drop(config);
     // Propagate an input-device change so it takes effect on the next `start()`.
     state
         .audio
@@ -135,6 +120,27 @@ pub fn set_prefs(
         }
         Err(e) => log::warn!("invalid hotkey combo on set_prefs: {e}"),
     }
+    Ok(())
+}
+
+/// Serialize writes independently of recording. A failed credential lookup is
+/// not confirmed absence: leave both persisted and active settings unchanged.
+fn save_cleanup_prefs(
+    state: &crate::state::AppState,
+    prefs: &Prefs,
+    read_key: impl FnOnce(ApiProvider) -> Result<Option<String>, prefs::PrefsError>,
+    persist: impl FnOnce(&Prefs) -> Result<(), prefs::PrefsError>,
+) -> Result<(), AppError> {
+    let mut saved = state.cleanup_prefs.lock().unwrap();
+    let key = if prefs.cleanup_mode == cleanup::CleanupMode::Api {
+        read_key(prefs.api_provider)?
+    } else {
+        None
+    };
+    let config = cleanup::build_cleanup_config(prefs, |_| key.clone());
+    persist(prefs)?;
+    *state.cleanup.write().unwrap() = config;
+    *saved = prefs.clone();
     Ok(())
 }
 
@@ -187,7 +193,7 @@ pub async fn test_api_key(
     let action = state.key_actions.begin(p);
     run_test_api_key(p, key.trim(), &default_base_url(p), |p, k| {
         state.key_actions.complete(action, || {
-            update_api_key(&state, || prefs::store_api_key(p, k), prefs::load_prefs)
+            update_api_key(&state, p, Some(k), || prefs::store_api_key(p, k))
         })
     })
     .await
@@ -207,19 +213,24 @@ pub fn remove_api_key(
     let p = parse_provider(&provider)?;
     let action = state.key_actions.begin(p);
     state.key_actions.complete(action, || {
-        update_api_key(&state, || prefs::remove_api_key(p), prefs::load_prefs)
+        update_api_key(&state, p, None, || prefs::remove_api_key(p))
     })
 }
 
 fn update_api_key(
     state: &crate::state::AppState,
+    provider: ApiProvider,
+    key: Option<&str>,
     update: impl FnOnce() -> Result<(), prefs::PrefsError>,
-    load_prefs: impl FnOnce() -> Prefs,
 ) -> Result<(), AppError> {
-    let mut config = state.cleanup.write().unwrap();
+    let saved = state.cleanup_prefs.lock().unwrap();
     update()?;
-    *config =
-        cleanup::build_cleanup_config(&load_prefs(), |p| prefs::read_api_key(p).ok().flatten());
+    // Use the committed value and last applied preferences. Reloading disk or
+    // Keychain here could silently replace working settings on a read failure.
+    if saved.cleanup_mode == cleanup::CleanupMode::Api && saved.api_provider == provider {
+        let config = cleanup::build_cleanup_config(&saved, |_| key.map(str::to_owned));
+        *state.cleanup.write().unwrap() = config;
+    }
     Ok(())
 }
 
@@ -360,45 +371,156 @@ mod tests {
     }
 
     #[test]
+    fn credential_io_does_not_hold_the_recording_snapshot_lock() {
+        let state = stub_app_state(true, true);
+        update_api_key(&state, ApiProvider::OpenAi, Some("verified-key"), || {
+            assert!(
+                state.cleanup.try_read().is_ok(),
+                "recording must be able to snapshot while Keychain access is pending"
+            );
+            Ok(())
+        })
+        .unwrap();
+    }
+
+    #[test]
+    fn preference_io_does_not_hold_the_recording_snapshot_lock() {
+        let state = stub_app_state(true, true);
+        let cloud = Prefs {
+            cleanup_mode: cleanup::CleanupMode::Api,
+            ..Prefs::default()
+        };
+        save_cleanup_prefs(
+            &state,
+            &cloud,
+            |_| {
+                assert!(state.cleanup.try_read().is_ok());
+                Ok(Some("saved-key".into()))
+            },
+            |_| {
+                assert!(state.cleanup.try_read().is_ok());
+                Ok(())
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            state.cleanup.read().unwrap().mode,
+            cleanup::CleanupMode::Api
+        );
+    }
+
+    #[test]
+    fn failed_preference_reads_or_writes_preserve_the_applied_configuration() {
+        let state = stub_app_state(true, true);
+        let local = Prefs {
+            cleanup_mode: cleanup::CleanupMode::Local,
+            ..Prefs::default()
+        };
+        save_cleanup_prefs(&state, &local, |_| unreachable!(), |_| Ok(())).unwrap();
+        let original = state.cleanup.read().unwrap().provider.clone().unwrap();
+        let cloud = Prefs {
+            cleanup_mode: cleanup::CleanupMode::Api,
+            ..Prefs::default()
+        };
+        let error = save_cleanup_prefs(
+            &state,
+            &cloud,
+            |_| Err(prefs::PrefsError::KeychainError("locked".into())),
+            |_| panic!("unreadable credential must not overwrite saved preferences"),
+        )
+        .unwrap_err();
+        assert_eq!(error.code(), "keychain_error");
+        let error = save_cleanup_prefs(
+            &state,
+            &cloud,
+            |_| Ok(Some("key".into())),
+            |_| Err(prefs::PrefsError::IoError("denied".into())),
+        )
+        .unwrap_err();
+        assert_eq!(error.code(), "io_error");
+        assert_eq!(
+            state.cleanup_prefs.lock().unwrap().cleanup_mode,
+            cleanup::CleanupMode::Local
+        );
+        assert!(std::sync::Arc::ptr_eq(
+            &original,
+            state.cleanup.read().unwrap().provider.as_ref().unwrap()
+        ));
+    }
+
+    #[tokio::test]
+    async fn committed_key_is_used_on_the_next_request_without_keychain_or_prefs_reload() {
+        let _lock = crate::test_support::ENV_LOCK
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        let mut server = mockito::Server::new_async().await;
+        std::env::set_var("HUMHUM_TEST_CLEANUP_OPENAI_BASE_URL", server.url());
+        let state = stub_app_state(true, true);
+        // No settings file or credential store is involved: commits must use
+        // canonical saved preferences and the known successful mutation result.
+        *state.cleanup_prefs.lock().unwrap() = Prefs {
+            cleanup_mode: cleanup::CleanupMode::Api,
+            ..Prefs::default()
+        };
+        for key in ["first-key", "replacement-key"] {
+            let request = server.mock("POST", "/v1/responses")
+                .match_header("authorization", format!("Bearer {key}").as_str())
+                .with_status(200)
+                .with_header("content-type", "application/json")
+                .with_body(r#"{"output":[{"type":"message","role":"assistant","content":[{"type":"output_text","annotations":[],"logprobs":[],"text":"Cleaned."}]}]}"#)
+                .create_async().await;
+            update_api_key(&state, ApiProvider::OpenAi, Some(key), || Ok(())).unwrap();
+            let provider = state.cleanup.read().unwrap().provider.clone().unwrap();
+            assert_eq!(provider.clean("messy").await.unwrap(), "Cleaned.");
+            request.assert_async().await;
+        }
+        let current = state.cleanup.read().unwrap().provider.clone().unwrap();
+        update_api_key(&state, ApiProvider::Anthropic, None, || Ok(())).unwrap();
+        assert!(std::sync::Arc::ptr_eq(
+            &current,
+            state.cleanup.read().unwrap().provider.as_ref().unwrap()
+        ));
+        update_api_key(&state, ApiProvider::OpenAi, None, || Ok(())).unwrap();
+        assert!(state.cleanup.read().unwrap().provider.is_none());
+        assert_eq!(
+            state.cleanup.read().unwrap().mode,
+            cleanup::CleanupMode::Api
+        );
+        std::env::remove_var("HUMHUM_TEST_CLEANUP_OPENAI_BASE_URL");
+    }
+
+    #[test]
     fn key_mutations_rebuild_active_provider_without_restart() {
         let _lock = crate::test_support::ENV_LOCK
             .lock()
             .unwrap_or_else(|e| e.into_inner());
         let state = stub_app_state(true, true);
-        let cloud_prefs = || Prefs {
+        *state.cleanup_prefs.lock().unwrap() = Prefs {
             cleanup_mode: cleanup::CleanupMode::Api,
             ..Prefs::default()
         };
-        update_api_key(
-            &state,
-            || prefs::store_api_key(ApiProvider::OpenAi, "first-key"),
-            cloud_prefs,
-        )
+        update_api_key(&state, ApiProvider::OpenAi, Some("first-key"), || {
+            prefs::store_api_key(ApiProvider::OpenAi, "first-key")
+        })
         .unwrap();
         assert!(state.cleanup.read().unwrap().provider.is_some());
-        update_api_key(
-            &state,
-            || prefs::store_api_key(ApiProvider::OpenAi, "replacement-key"),
-            cloud_prefs,
-        )
+        update_api_key(&state, ApiProvider::OpenAi, Some("replacement-key"), || {
+            prefs::store_api_key(ApiProvider::OpenAi, "replacement-key")
+        })
         .unwrap();
         assert_eq!(
             prefs::read_api_key(ApiProvider::OpenAi).unwrap().as_deref(),
             Some("replacement-key")
         );
         assert!(state.cleanup.read().unwrap().provider.is_some());
-        let failed = update_api_key(
-            &state,
-            || Err(prefs::PrefsError::KeychainError("denied".into())),
-            cloud_prefs,
-        );
+        let failed = update_api_key(&state, ApiProvider::OpenAi, Some("failed-key"), || {
+            Err(prefs::PrefsError::KeychainError("denied".into()))
+        });
         assert_eq!(failed.unwrap_err().code(), "keychain_error");
         assert!(state.cleanup.read().unwrap().provider.is_some());
-        update_api_key(
-            &state,
-            || prefs::remove_api_key(ApiProvider::OpenAi),
-            cloud_prefs,
-        )
+        update_api_key(&state, ApiProvider::OpenAi, None, || {
+            prefs::remove_api_key(ApiProvider::OpenAi)
+        })
         .unwrap();
         assert!(state.cleanup.read().unwrap().provider.is_none());
     }
@@ -713,6 +835,7 @@ mod tests {
     fn stub_app_state(perms_granted: bool, model_ready: bool) -> crate::state::AppState {
         crate::state::AppState {
             key_actions: Default::default(),
+            cleanup_prefs: Default::default(),
             audio: std::sync::Arc::new(StubAudio),
             hotkey: std::sync::Arc::new(StubHotkey),
             permissions: std::sync::Arc::new(StubPermissions(perms_granted)),

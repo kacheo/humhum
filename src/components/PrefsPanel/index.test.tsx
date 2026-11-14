@@ -50,6 +50,9 @@ const DEFAULTS = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(ipc.hasApiKey).mockReset().mockResolvedValue(false);
+  vi.mocked(ipc.testApiKey).mockReset().mockResolvedValue(undefined);
+  vi.mocked(ipc.removeApiKey).mockReset().mockResolvedValue(undefined);
   usePrefsStore.setState({ prefs: { ...DEFAULTS }, savedPrefs: { ...DEFAULTS }, isDirty: false, isSaving: false });
   useRecordingStore.getState().reset();
 });
@@ -345,4 +348,60 @@ test("active model download disables repeated download clicks", async () => {
   await userEvent.click(screen.getByRole("tab", { name: "AI" }));
   act(() => useRecordingStore.getState().setDownloadProgress("base_en", 64));
   expect(screen.getByRole("button", { name: "Download Base (English)" })).toBeDisabled();
+});
+
+test.each(["verification", "removal"])("cloud %s blocks provider and mode changes until failure settles", async (action) => {
+  const removing = action === "removal";
+  vi.mocked(ipc.hasApiKey).mockResolvedValue(true);
+  let fail!: (error: string) => void;
+  const pending = new Promise<void>((_, reject) => { fail = reject; });
+  if (removing) vi.mocked(ipc.removeApiKey).mockReturnValueOnce(pending);
+  else vi.mocked(ipc.testApiKey).mockReturnValueOnce(pending);
+  await renderPanel();
+  await userEvent.click(screen.getByRole("tab", { name: "AI" }));
+  await userEvent.selectOptions(screen.getByLabelText("Mode"), "api");
+  await screen.findByText("Key saved in Keychain");
+  await userEvent.type(screen.getByLabelText("API key"), "retry-draft");
+  await userEvent.click(screen.getByRole("button", { name: removing ? "Remove key" : "Verify & Save" }));
+  expect(screen.getByLabelText("Provider")).toBeDisabled();
+  expect(screen.getByLabelText("Mode")).toBeDisabled();
+  await userEvent.selectOptions(screen.getByLabelText("Provider"), "anthropic");
+  await userEvent.selectOptions(screen.getByLabelText("Mode"), "none");
+  expect(usePrefsStore.getState().prefs.apiProvider).toBe("open_ai");
+  expect(usePrefsStore.getState().prefs.cleanupMode).toBe("api");
+  await act(async () => fail("keychain_error"));
+  expect(await screen.findByText(/unlock your login keychain/i)).toBeInTheDocument();
+  expect(screen.getByLabelText("API key")).toHaveValue("retry-draft");
+  expect(screen.getByLabelText("Provider")).toBeEnabled();
+  expect(screen.getByLabelText("Mode")).toBeEnabled();
+});
+
+test.each(["saving", "removing"])("immediate key %s survives Discard while provider and mode preferences revert", async (action) => {
+  const removing = action === "removing";
+  let anthropicSaved = removing;
+  vi.mocked(ipc.hasApiKey).mockImplementation(async (provider) => provider === "anthropic" && anthropicSaved);
+  vi.mocked(ipc.testApiKey).mockImplementationOnce(async () => { anthropicSaved = true; });
+  vi.mocked(ipc.removeApiKey).mockImplementationOnce(async () => { anthropicSaved = false; });
+  await renderPanel();
+  await userEvent.click(screen.getByRole("tab", { name: "AI" }));
+  await userEvent.selectOptions(screen.getByLabelText("Mode"), "api");
+  await userEvent.selectOptions(screen.getByLabelText("Provider"), "anthropic");
+  await screen.findByText(removing ? "Key saved in Keychain" : "No key saved");
+  if (!removing) await userEvent.type(screen.getByLabelText("API key"), "anthropic-secret");
+  await userEvent.click(screen.getByRole("button", { name: removing ? "Remove key" : "Verify & Save" }));
+  expect(await screen.findByText(removing ? "Key removed" : "Key verified and saved")).toBeInTheDocument();
+  if (removing) expect(ipc.removeApiKey).toHaveBeenCalledWith("anthropic");
+  else expect(ipc.testApiKey).toHaveBeenCalledWith("anthropic", "anthropic-secret");
+  expect(ipc.savePrefs).not.toHaveBeenCalled();
+  expect(JSON.stringify(usePrefsStore.getState().prefs)).not.toContain("anthropic-secret");
+  await userEvent.click(screen.getByRole("button", { name: "Discard" }));
+  expect(usePrefsStore.getState().prefs.apiProvider).toBe("open_ai");
+  expect(screen.getByLabelText("Mode")).toHaveValue("none");
+  expect(screen.queryByLabelText("API key")).not.toBeInTheDocument();
+  await userEvent.selectOptions(screen.getByLabelText("Mode"), "api");
+  await userEvent.selectOptions(screen.getByLabelText("Provider"), "anthropic");
+  expect(await screen.findByText(removing ? "No key saved" : "Key saved in Keychain")).toBeInTheDocument();
+  expect(screen.getByLabelText("API key")).toHaveValue("");
+  expect(ipc.testApiKey).toHaveBeenCalledTimes(removing ? 0 : 1);
+  expect(ipc.removeApiKey).toHaveBeenCalledTimes(removing ? 1 : 0);
 });

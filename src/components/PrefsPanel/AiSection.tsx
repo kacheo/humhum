@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePrefsStore } from "../../stores/prefs";
 import { useRecordingStore } from "../../stores/recording";
 import { ipc } from "../../lib/ipc";
@@ -17,6 +17,7 @@ const MODELS: { id: WhisperModel; label: string }[] = [
  *  gated symmetrically on `cleanupMode`, and Aggressiveness — which applies
  *  to either backend — is shown only once a backend is selected. */
 export function AiSection() {
+  const [keyBusy, setKeyBusy] = useState(false);
   const prefs = usePrefsStore((s) => s.prefs);
   const modelStatus = useRecordingStore((s) => s.modelStatus);
   const downloadProgress = useRecordingStore((s) => s.downloadProgress);
@@ -89,6 +90,7 @@ export function AiSection() {
           <span>Mode</span>
           <select
             value={prefs.cleanupMode}
+            disabled={keyBusy}
             onChange={(e) => setField("cleanupMode", e.target.value as CleanupMode)}
           >
             <option value="none">None</option>
@@ -115,7 +117,7 @@ export function AiSection() {
         )}
 
         {prefs.cleanupMode === "api" && (
-          <CloudApiSettings provider={prefs.apiProvider} onProviderChange={(p) => setField("apiProvider", p)} />
+          <CloudApiSettings provider={prefs.apiProvider} onProviderChange={(p) => setField("apiProvider", p)} onBusyChange={setKeyBusy} />
         )}
 
         {prefs.cleanupMode !== "none" && (

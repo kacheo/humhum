@@ -27,6 +27,8 @@ function keyError(error: unknown): string {
     case "key_rejected": return "Key rejected. Check the key and its access to the cleanup model.";
     case "rate_limited": return "Rate limit or quota reached. Check provider billing or try again later.";
     case "keychain_error": return "Could not access Keychain. Unlock your login keychain and try again.";
+    case "io_error":
+    case "serialize_error": return "Could not update cleanup settings. Check your configuration and try again.";
     case "unavailable": return "Could not reach the cleanup service or model. Check your connection and try again.";
     case "key_action_superseded": return "A newer key action replaced this request. Check the current saved-key status.";
     default: return "Could not complete the key action. Try again.";
@@ -52,6 +54,9 @@ function ProviderKeyInput({
   const [refresh, setRefresh] = useState(0);
   const mounted = useRef(false);
   const operationInFlight = useRef(false);
+  const needsRefresh = useRef(false);
+  const ownChange = useRef<Event | null>(null);
+  const lookupVersion = useRef(0);
 
   useEffect(() => {
     mounted.current = true;
@@ -62,9 +67,11 @@ function ProviderKeyInput({
   // Notify the current editor with provider identity only, never key material.
   useEffect(() => {
     const changed = (event: Event) => {
-      if ((event as CustomEvent<ApiProvider>).detail === provider && !operationInFlight.current) {
-        setRefresh((n) => n + 1);
-      }
+      if ((event as CustomEvent<ApiProvider>).detail !== provider || event === ownChange.current) return;
+      lookupVersion.current += 1;
+      setResult((current) => current?.ok ? null : current);
+      if (operationInFlight.current) needsRefresh.current = true;
+      else setRefresh((n) => n + 1);
     };
     window.addEventListener(KEY_CHANGED_EVENT, changed);
     return () => window.removeEventListener(KEY_CHANGED_EVENT, changed);
@@ -72,10 +79,11 @@ function ProviderKeyInput({
 
   useEffect(() => {
     let active = true;
+    const version = ++lookupVersion.current;
     setStatus("checking");
     void ipc.hasApiKey(provider).then(
-      (saved) => { if (active) setStatus(saved ? "saved" : "missing"); },
-      () => { if (active) setStatus("error"); },
+      (saved) => { if (active && version === lookupVersion.current) setStatus(saved ? "saved" : "missing"); },
+      () => { if (active && version === lookupVersion.current) setStatus("error"); },
     );
     return () => { active = false; };
   }, [provider, refresh]);
@@ -92,7 +100,9 @@ function ProviderKeyInput({
     try {
       if (next === "saving") await onTest(provider, key.trim());
       else await ipc.removeApiKey(provider);
-      window.dispatchEvent(new CustomEvent<ApiProvider>(KEY_CHANGED_EVENT, { detail: provider }));
+      ownChange.current = new CustomEvent<ApiProvider>(KEY_CHANGED_EVENT, { detail: provider });
+      window.dispatchEvent(ownChange.current);
+      ownChange.current = null;
       if (!mounted.current) return;
       setKey("");
       setStatus(next === "saving" ? "saved" : "missing");
@@ -101,11 +111,16 @@ function ProviderKeyInput({
       if (mounted.current) {
         setResult({ ok: false, msg: keyError(error) });
         const code = error instanceof Error ? error.message : String(error);
-        if (code === "key_action_superseded") setRefresh((n) => n + 1);
+        if (code === "key_action_superseded") needsRefresh.current = true;
       }
     } finally {
       operationInFlight.current = false;
       if (mounted.current) {
+        if (needsRefresh.current) {
+          needsRefresh.current = false;
+          setResult((current) => current?.ok ? null : current);
+          setRefresh((n) => n + 1);
+        }
         setAction(null);
         onBusyChange?.(false);
       }

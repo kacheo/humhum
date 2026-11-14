@@ -123,10 +123,28 @@ pub fn read_api_key(provider: ApiProvider) -> Result<Option<String>, PrefsError>
 pub fn remove_api_key(provider: ApiProvider) -> Result<(), PrefsError> {
     let entry = Entry::new(API_KEYCHAIN_SERVICE, api_account(provider))
         .map_err(|e| PrefsError::KeychainError(e.to_string()))?;
-    match entry.delete_credential() {
-        Ok(()) | Err(KeyringError::NoEntry) => Ok(()),
-        Err(e) => Err(PrefsError::KeychainError(e.to_string())),
+    remove_api_key_with(
+        || match entry.delete_credential() {
+            Ok(()) | Err(KeyringError::NoEntry) => Ok(()),
+            Err(e) => Err(PrefsError::KeychainError(e.to_string())),
+        },
+        || read_api_key(provider),
+    )
+}
+
+fn remove_api_key_with(
+    delete: impl FnOnce() -> Result<(), PrefsError>,
+    read: impl FnOnce() -> Result<Option<String>, PrefsError>,
+) -> Result<(), PrefsError> {
+    delete()?;
+    // keyring's macOS backend discards SecKeychainItemDelete's OSStatus.
+    // Confirm absence before telling the user removal succeeded.
+    if read()?.is_some() {
+        return Err(PrefsError::KeychainError(
+            "credential still present after removal".into(),
+        ));
     }
+    Ok(())
 }
 
 #[cfg(target_os = "macos")]
@@ -206,6 +224,18 @@ mod tests {
     use super::*;
 
     #[test]
+    fn removal_rejects_native_false_success_and_unconfirmed_absence() {
+        let retained = remove_api_key_with(|| Ok(()), || Ok(Some("still-saved".into())));
+        assert_eq!(retained.unwrap_err().code(), "keychain_error");
+        let unreadable = remove_api_key_with(
+            || Ok(()),
+            || Err(PrefsError::KeychainError("read denied".into())),
+        );
+        assert_eq!(unreadable.unwrap_err().code(), "keychain_error");
+        assert!(remove_api_key_with(|| Ok(()), || Ok(None)).is_ok());
+    }
+
+    #[test]
     fn removing_key_is_idempotent_and_provider_specific() {
         let _lock = crate::test_support::ENV_LOCK
             .lock()
@@ -262,13 +292,19 @@ mod tests {
     #[test]
     fn fresh_identity_does_not_import_or_modify_legacy_settings() {
         let temp = tempfile::tempdir().unwrap();
-        let legacy = temp.path().join("Library/Application Support/wipzi/settings.json");
+        let legacy = temp
+            .path()
+            .join("Library/Application Support/wipzi/settings.json");
         let mut old = Prefs::default();
         old.onboarding_complete = true;
         save_to(&legacy, &old).unwrap();
         let before = std::fs::read(&legacy).unwrap();
         let current = settings_file(temp.path());
-        assert_eq!(current, temp.path().join("Library/Application Support/humhum/settings.json"));
+        assert_eq!(
+            current,
+            temp.path()
+                .join("Library/Application Support/humhum/settings.json")
+        );
         assert!(!load_from(&current).onboarding_complete);
         save_to(&current, &Prefs::default()).unwrap();
         assert_eq!(std::fs::read(&legacy).unwrap(), before);
@@ -276,7 +312,9 @@ mod tests {
 
     #[test]
     fn fresh_identity_keychain_does_not_read_or_overwrite_legacy_keys() {
-        let _lock = crate::test_support::ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _lock = crate::test_support::ENV_LOCK
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         let legacy = Entry::new("wipzi-api-test", "openai-key").unwrap();
         legacy.set_password("legacy-test-value").unwrap();
         let result = read_api_key(ApiProvider::OpenAi);
