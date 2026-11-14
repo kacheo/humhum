@@ -225,7 +225,7 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | rustc-hash | 2.1.2 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/rustc-hash/2.1.2/download) |
 | rustc_version | 0.4.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/rustc_version/0.4.1/download) |
 | rustfft | 6.4.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/rustfft/6.4.1/download) |
-| rustix | 1.1.4 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/rustix/1.1.4/download) |
+| rustix | 1.1.6 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/rustix/1.1.6/download) |
 | rustls-pki-types | 1.14.1 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/rustls-pki-types/1.14.1/download) |
 | ryu | 1.0.23 | Apache-2.0 OR BSL-1.0 | [Source](https://crates.io/api/v1/crates/ryu/1.0.23/download) |
 | same-file | 1.0.6 | Unlicense OR MIT | [Source](https://crates.io/api/v1/crates/same-file/1.0.6/download) |

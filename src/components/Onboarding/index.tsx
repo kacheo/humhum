@@ -17,6 +17,7 @@ const STEPS = ["Permissions", "Shortcut", "Cleanup", "Model", "Try it"] as const
 export function Onboarding() {
   const [step, setStep] = useState(0);
   const [ready, setReady] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [prepareError, setPrepareError] = useState<string | null>(null);
   const preparationInFlight = useRef(false);
@@ -27,7 +28,7 @@ export function Onboarding() {
     await usePrefsStore.getState().savePrefs();
   }
   async function next() {
-    if (preparationInFlight.current) return;
+    if (busy || preparationInFlight.current) return;
     if (step === STEPS.length - 2) {
       preparationInFlight.current = true;
       setPreparing(true);
@@ -51,7 +52,7 @@ export function Onboarding() {
     setStep((s) => s + 1);
   }
   function back() {
-    if (preparationInFlight.current) return;
+    if (busy || preparationInFlight.current) return;
     setPrepareError(null);
     setReady(false);
     setStep((s) => Math.max(0, s - 1));
@@ -71,14 +72,14 @@ export function Onboarding() {
       <div className="onboarding__body">
         {step === 0 && <PermissionsStep onReady={setReady} />}
         {step === 1 && <HotkeyStep onReady={setReady} />}
-        {step === 2 && <CleanupStep onReady={setReady} />}
+        {step === 2 && <CleanupStep onReady={setReady} onBusyChange={setBusy} />}
         {step === 3 && <ModelDownloadStep onReady={setReady} />}
         {step === 4 && <DemoStep onReady={setReady} onSkip={() => void complete()} />}
       </div>
       {prepareError && <p className="onb-error" role="alert">{prepareError}</p>}
       <footer className="onboarding__nav">
-        <button type="button" onClick={back} disabled={step === 0 || preparing}>Back</button>
-        <button type="button" className="onboarding__next primary-action" onClick={() => void next()} disabled={!ready || preparing}>
+        <button type="button" onClick={back} disabled={step === 0 || preparing || busy}>Back</button>
+        <button type="button" className="onboarding__next primary-action" onClick={() => void next()} disabled={!ready || preparing || busy}>
           {preparing ? "Preparing…" : isLast ? "Finish" : "Next"}
         </button>
       </footer>

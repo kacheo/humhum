@@ -77,10 +77,14 @@ export function startMockServer(modelFixturePath: string): Promise<MockServerHan
         return sendJson(res, 200, { ok: true });
       }
 
-      // --- OpenAI test-key probe (GET {base}/models) ----------------------
-      if (url.pathname === "/openai/models" && req.method === "GET") {
+      // --- OpenAI cleanup-model verification -----------------------------
+      if (url.pathname === "/openai/responses" && req.method === "POST") {
+        const body = JSON.parse(await readBody(req));
+        if (body.model !== "gpt-4o-mini" || body.input !== "Reply OK." || body.store !== false) {
+          return sendJson(res, 400, { error: "unexpected verification request" });
+        }
         if (state.apiKeyResult === "success") {
-          return sendJson(res, 200, { data: [] });
+          return sendJson(res, 200, { output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "OK" }] }] });
         }
         return sendJson(res, 401, { error: "invalid api key" });
       }

@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
+  ApiProvider,
   ModelStatus,
   PermissionsState,
   Prefs,
@@ -20,11 +21,17 @@ export const ipc = {
   getModelStatus: (model: string) =>
     invoke<ModelStatus>("get_model_status", { model }),
 
-  storeApiKey: (provider: string, key: string) =>
+  storeApiKey: (provider: ApiProvider, key: string) =>
     invoke<void>("store_api_key", { provider, key }),
 
-  testApiKey: (provider: string, key: string) =>
+  testApiKey: (provider: ApiProvider, key: string) =>
     invoke<void>("test_api_key", { provider, key }),
+
+  hasApiKey: (provider: ApiProvider) =>
+    invoke<boolean>("has_api_key", { provider }),
+
+  removeApiKey: (provider: ApiProvider) =>
+    invoke<void>("remove_api_key", { provider }),
 
   testOllama: (baseUrl: string, model: string) =>
     invoke<void>("test_ollama", { baseUrl, model }),

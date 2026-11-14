@@ -39,10 +39,14 @@ test("model commands pass through the model id", async () => {
 });
 
 test("api key commands pass provider and key", async () => {
-  await ipc.storeApiKey("openai", "sk-1");
-  expect(invoke).toHaveBeenCalledWith("store_api_key", { provider: "openai", key: "sk-1" });
-  await ipc.testApiKey("openai", "sk-1");
-  expect(invoke).toHaveBeenCalledWith("test_api_key", { provider: "openai", key: "sk-1" });
+  await ipc.storeApiKey("open_ai", "sk-1");
+  expect(invoke).toHaveBeenCalledWith("store_api_key", { provider: "open_ai", key: "sk-1" });
+  await ipc.testApiKey("open_ai", "sk-1");
+  expect(invoke).toHaveBeenCalledWith("test_api_key", { provider: "open_ai", key: "sk-1" });
+  await ipc.hasApiKey("anthropic");
+  expect(invoke).toHaveBeenCalledWith("has_api_key", { provider: "anthropic" });
+  await ipc.removeApiKey("open_ai");
+  expect(invoke).toHaveBeenCalledWith("remove_api_key", { provider: "open_ai" });
 });
 
 test("testOllama passes baseUrl and model", async () => {

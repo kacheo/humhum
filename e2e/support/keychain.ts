@@ -7,6 +7,7 @@
 import { execFile, execFileSync } from "node:child_process";
 import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
+import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 
@@ -56,6 +57,7 @@ async function currentUserSearchList(): Promise<string[]> {
  */
 export async function createScratchKeychain(
   onRevertReady?: (revertSync: () => void) => void,
+  isolatedHome?: string,
 ): Promise<ScratchKeychain> {
   const previousDefault = await currentDefaultKeychain();
   const previousSearchList = await currentUserSearchList();
@@ -94,12 +96,30 @@ export async function createScratchKeychain(
 
   onRevertReady?.(restoreSync);
 
-  await exec("security", ["unlock-keychain", "-p", SCRATCH_PASSWORD, scratchPath]);
-  // No auto-lock during the (short) test run — avoids a re-prompt mid-spec.
-  await exec("security", ["set-keychain-settings", scratchPath]);
-  // Global flips — recoverable from here on via the revert registered above.
-  await exec("security", ["default-keychain", "-s", scratchPath]);
-  await exec("security", ["list-keychains", "-d", "user", "-s", scratchPath, ...previousSearchList]);
+  try {
+    await exec("security", ["unlock-keychain", "-p", SCRATCH_PASSWORD, scratchPath]);
+    // No auto-lock during the (short) test run — avoids a re-prompt mid-spec.
+    await exec("security", ["set-keychain-settings", scratchPath]);
+    // Global flips — recoverable from here on via the revert registered above.
+    await exec("security", ["default-keychain", "-s", scratchPath]);
+    await exec("security", ["list-keychains", "-d", "user", "-s", scratchPath, ...previousSearchList]);
+
+    if (isolatedHome) {
+      // SecKeychainCopyDomainDefault (used by keyring) resolves user preferences
+      // under HOME. The spawned app's scratch HOME therefore needs its own
+      // default/search list, even though the real user's default was set above.
+      // Only the scratch keychain is visible here; deleting isolatedHome removes
+      // these preferences during the runner's normal and signal teardown.
+      await mkdir(path.join(isolatedHome, "Library/Preferences"), { recursive: true });
+      const env = { ...process.env, HOME: isolatedHome };
+      await exec("security", ["default-keychain", "-d", "user", "-s", scratchPath], { env });
+      await exec("security", ["list-keychains", "-d", "user", "-s", scratchPath], { env });
+    }
+  } catch (error) {
+    // The runner has no handle yet if setup rejects; restore global state here.
+    await restore();
+    throw error;
+  }
 
   return { path: scratchPath, previousDefault, restore, restoreSync };
 }

@@ -3,7 +3,11 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, vi } from "vitest";
 
 // ApiKeyInput is enabled but never clicked in these tests, so testApiKey is an inert spy.
-vi.mock("../../lib/ipc", () => ({ ipc: { testApiKey: vi.fn().mockResolvedValue(undefined) } }));
+vi.mock("../../lib/ipc", () => ({ ipc: {
+  testApiKey: vi.fn().mockResolvedValue(undefined),
+  hasApiKey: vi.fn().mockResolvedValue(false),
+  removeApiKey: vi.fn().mockResolvedValue(undefined),
+} }));
 import { CleanupStep } from "./CleanupStep";
 import { usePrefsStore } from "../../stores/prefs";
 
@@ -56,9 +60,11 @@ test("Test on the Cloud API key calls test_api_key with the typed key", async ()
   render(<CleanupStep onReady={() => {}} />);
   await userEvent.click(screen.getByLabelText("Cloud API"));
   await userEvent.type(screen.getByLabelText("API key"), "sk-onb-1");
-  await userEvent.click(screen.getByRole("button", { name: "Test" }));
+  await userEvent.selectOptions(screen.getByLabelText("Provider"), "anthropic");
+  await userEvent.type(screen.getByLabelText("API key"), "sk-anthropic");
+  await userEvent.click(screen.getByRole("button", { name: "Verify & Save" }));
   const { ipc } = await import("../../lib/ipc");
-  expect(ipc.testApiKey).toHaveBeenCalledWith("open_ai", "sk-onb-1");
+  expect(ipc.testApiKey).toHaveBeenCalledWith("anthropic", "sk-anthropic");
 });
 
 test("cloud credentials are hidden for Off and Local", async () => {

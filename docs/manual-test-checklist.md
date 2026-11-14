@@ -8,6 +8,9 @@ Run these checks on a signed Humhum build before publishing:
 - [ ] A recording continues past 60 seconds and auto-stops at the five-minute safety limit.
 - [ ] Raw transcription pastes into the focused field; clipboard fallback works when paste is unavailable.
 - [ ] Local Ollama cleanup and cloud cleanup using a newly entered API key work when configured.
+- [ ] Both Preferences and onboarding offer OpenAI/Anthropic selection and show the correct saved-key status per provider.
+- [ ] Verify & Save uses the selected provider; replacing a key affects the next dictation without restart, and a rejected replacement keeps the prior key.
+- [ ] Remove key clears only the selected provider's key and updates the next dictation. Removing a key while an earlier verification is pending must not let that old request recreate it.
 - [ ] Quitting and reopening preserves Humhum preferences and Keychain keys.
 - [ ] Source and license opens the Humhum GitHub repository.
 - [ ] A second signed Humhum build with the same bundle ID and Team ID retains permission grants.
