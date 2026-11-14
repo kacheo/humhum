@@ -22,7 +22,11 @@ jobs:
       - run: npm ci
       - name: Validate Tauri test service imports
         run: node --input-type=module -e 'await import("@wdio/tauri-service")'
-      - run: npx tauri build --debug --features e2e-harness --bundles app
+      - name: Build isolated E2E harness
+        run: |
+          node e2e/support/stageCapability.mjs stage
+          trap 'node e2e/support/stageCapability.mjs unstage' EXIT
+          npx tauri build --debug --features e2e-harness --bundles app
       - run: npm run test:e2e
       - name: Upload logs on failure
         if: failure()

@@ -107,10 +107,11 @@ struct ModelSpec {
     size_bytes: u64,
 }
 
-/// `<home>/Library/Application Support/humhum/models/<filename>` — pure so
+/// The active profile’s model directory under `<home>` — pure so
 /// it is testable without touching `$HOME` (mirrors `prefs::settings_file`).
 fn model_file_in(home: &Path, model: ModelFile) -> PathBuf {
-    home.join("Library/Application Support/humhum/models")
+    crate::profile::data_root(home)
+        .join("models")
         .join(model.filename())
 }
 
@@ -670,11 +671,20 @@ mod tests {
     #[test]
     fn fresh_identity_models_do_not_use_legacy_downloads() {
         let temp = tempfile::tempdir().unwrap();
-        let legacy = temp.path().join("Library/Application Support/wipzi/models/base.en.bin");
+        let legacy = temp
+            .path()
+            .join("Library/Application Support/wipzi/models/base.en.bin");
         std::fs::create_dir_all(legacy.parent().unwrap()).unwrap();
         std::fs::write(&legacy, b"legacy-model").unwrap();
         let current = model_file_in(temp.path(), ModelFile::BaseEn);
-        assert_eq!(current, temp.path().join("Library/Application Support/humhum/models/base.en.bin"));
+        assert_eq!(
+            current,
+            temp.path().join(if crate::profile::IS_DEV {
+                "Library/Application Support/humhum-dev/models/base.en.bin"
+            } else {
+                "Library/Application Support/humhum/models/base.en.bin"
+            })
+        );
         assert!(!current.exists());
         assert_eq!(std::fs::read(&legacy).unwrap(), b"legacy-model");
     }
@@ -684,7 +694,11 @@ mod tests {
         let p = model_file_in(Path::new("/Users/x"), ModelFile::BaseEn);
         assert_eq!(
             p,
-            Path::new("/Users/x/Library/Application Support/humhum/models/base.en.bin")
+            Path::new(if crate::profile::IS_DEV {
+                "/Users/x/Library/Application Support/humhum-dev/models/base.en.bin"
+            } else {
+                "/Users/x/Library/Application Support/humhum/models/base.en.bin"
+            })
         );
     }
 
@@ -1164,7 +1178,11 @@ mod tests {
         let p = model_file_in(Path::new("/Users/x"), ModelFile::SmallEn);
         assert_eq!(
             p,
-            Path::new("/Users/x/Library/Application Support/humhum/models/small.en.bin")
+            Path::new(if crate::profile::IS_DEV {
+                "/Users/x/Library/Application Support/humhum-dev/models/small.en.bin"
+            } else {
+                "/Users/x/Library/Application Support/humhum/models/small.en.bin"
+            })
         );
     }
 
@@ -1180,9 +1198,11 @@ mod tests {
         std::env::set_var("HOME", "/Users/x");
         assert_eq!(
             ModelFile::SmallEn.path(),
-            Some(PathBuf::from(
+            Some(PathBuf::from(if crate::profile::IS_DEV {
+                "/Users/x/Library/Application Support/humhum-dev/models/small.en.bin"
+            } else {
                 "/Users/x/Library/Application Support/humhum/models/small.en.bin"
-            ))
+            }))
         );
 
         match old_home {
@@ -1358,7 +1378,10 @@ mod tests {
         };
         let _url = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_URL", "http://example.test/unused");
         let _sha = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SHA256", &hex);
-        let _size = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SIZE_BYTES", &payload.len().to_string());
+        let _size = EnvVarGuard::set(
+            "HUMHUM_MODEL_BASE_EN_SIZE_BYTES",
+            &payload.len().to_string(),
+        );
 
         let final_path = ModelFile::BaseEn.path().unwrap();
         std::fs::create_dir_all(final_path.parent().unwrap()).unwrap();
@@ -1412,7 +1435,10 @@ mod tests {
         };
         let _url = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_URL", "http://example.test/unused");
         let _sha = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SHA256", &hex);
-        let _size = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SIZE_BYTES", &payload.len().to_string());
+        let _size = EnvVarGuard::set(
+            "HUMHUM_MODEL_BASE_EN_SIZE_BYTES",
+            &payload.len().to_string(),
+        );
 
         let final_path = ModelFile::BaseEn.path().unwrap();
         std::fs::create_dir_all(final_path.parent().unwrap()).unwrap();
@@ -1448,7 +1474,10 @@ mod tests {
         };
         let _url = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_URL", "http://example.test/unused");
         let _sha = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SHA256", &hex);
-        let _size = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SIZE_BYTES", &payload.len().to_string());
+        let _size = EnvVarGuard::set(
+            "HUMHUM_MODEL_BASE_EN_SIZE_BYTES",
+            &payload.len().to_string(),
+        );
 
         // The interrupted-finalize state: a hash-valid `.tmp`, no final `.bin`.
         let final_path = ModelFile::BaseEn.path().unwrap();
@@ -1530,7 +1559,10 @@ mod tests {
             &format!("{}/base.bin", server.url()),
         );
         let _sha = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SHA256", &hex);
-        let _size = EnvVarGuard::set("HUMHUM_MODEL_BASE_EN_SIZE_BYTES", &payload.len().to_string());
+        let _size = EnvVarGuard::set(
+            "HUMHUM_MODEL_BASE_EN_SIZE_BYTES",
+            &payload.len().to_string(),
+        );
 
         let emitter = FakeProgressEmitter::default();
         let result = ModelManager::new()

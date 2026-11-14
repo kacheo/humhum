@@ -9,6 +9,8 @@ rust-version = "1.90"
 
 [features]
 default = []
+# Explicit isolated local app; never enabled for production releases.
+dev-app = []
 # Debug-only E2E test harness: registers an embedded WebDriver server
 # (tauri-plugin-wdio-webdriver) and two window/process-control IPC commands
 # (`e2e_show_window`, `e2e_quit_app`) used by the WebdriverIO suite under

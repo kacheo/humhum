@@ -12,6 +12,7 @@ pub mod permissions;
 pub mod pipeline;
 pub mod platform;
 pub mod prefs;
+mod profile;
 pub mod recording;
 pub mod state;
 #[cfg(test)]
@@ -38,7 +39,7 @@ fn show_prefs_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
                 "prefs",
                 tauri::WebviewUrl::App("prefs.html".into()),
             )
-            .title("Humhum Preferences")
+            .title(format!("{} Preferences", profile::APP_NAME))
             .inner_size(500.0, 560.0)
             .resizable(false)
             .center()
@@ -59,6 +60,8 @@ fn show_prefs_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let context = tauri::generate_context!();
+    profile::validate_identifier(&context.config().identifier).expect("application identity");
     let builder = tauri::Builder::default().manage(state::AppState::new());
     // Embedded WebDriver server for the WDIO E2E suite under `e2e/` — compiled
     // in only under the `e2e-harness` feature, which is absent from every real
@@ -228,7 +231,7 @@ pub fn run() {
             // System tray (LLD §12): the menu-bar presence + the only way to
             // reopen Preferences or quit once windows are closed.
             let prefs_item = MenuItem::with_id(app, "preferences", "Preferences…", true, None::<&str>)?;
-            let quit_item = PredefinedMenuItem::quit(app, Some("Quit Humhum"))?;
+            let quit_item = PredefinedMenuItem::quit(app, Some(&format!("Quit {}", profile::APP_NAME)))?;
             let menu = Menu::with_items(app, &[&prefs_item, &quit_item])?;
             let tray = TrayIconBuilder::with_id("main");
             // Platform tray icon. On macOS the menu bar expects a monochrome
@@ -246,7 +249,7 @@ pub fn run() {
             let tray =
                 tray.icon(app.default_window_icon().expect("bundled default icon").clone());
             let tray = tray
-                .tooltip("Humhum")
+                .tooltip(profile::APP_NAME)
                 .menu(&menu)
                 .show_menu_on_left_click(true)
                 .on_menu_event(|app, event| {
@@ -318,6 +321,6 @@ pub fn run() {
             commands::open_input_monitoring_settings,
             commands::list_input_devices,
         ])
-        .run(tauri::generate_context!())
+        .run(context)
         .expect("error while running tauri application");
 }
