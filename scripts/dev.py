@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import time
 
 DEV_ID = 'com.kacheo.humhum.dev'
 PROD_ID = 'com.kacheo.humhum'
@@ -118,7 +119,12 @@ JSON.stringify(result);'''
             raise DevError('Configured signing identity is not available in the Keychain.')
         return identity
 
+    def require_unstaged_harness(self):
+        if (self.root / 'src-tauri/capabilities/e2e.json').exists():
+            raise DevError('E2E capability is staged; finish the harness build and unstage it before using Dev.')
+
     def build(self):
+        self.require_unstaged_harness()
         env = dict(self.env)
         for key in ('APPLE_ID', 'APPLE_PASSWORD', 'APPLE_API_KEY', 'APPLE_API_ISSUER',
                     'APPLE_API_KEY_PATH', 'APPLE_CERTIFICATE', 'APPLE_CERTIFICATE_PASSWORD'):
@@ -169,39 +175,67 @@ JSON.stringify(result);'''
             if old_signature and old_signature[1] != requirement:
                 raise DevError('Signing requirement changed; installed Dev app preserved. Restore the original signing identity.')
             self.install_path.parent.mkdir(parents=True, exist_ok=True)
-            with tempfile.TemporaryDirectory(prefix='.humhum-dev-', dir=self.install_path.parent) as directory:
-                staging = Path(directory)
-                incoming = staging / 'Humhum Dev.app'
+            staging = Path(tempfile.mkdtemp(prefix='.humhum-dev-', dir=self.install_path.parent))
+            incoming = staging / 'Humhum Dev.app'
+            previous = staging / 'previous.app'
+            succeeded = False
+            try:
                 # copytree preserves symlinks, executable modes, and extended attributes.
                 shutil.copytree(built, incoming, symlinks=True)
                 self.signature(incoming)
                 self.require_no_apps(dev_only=True)
-                previous = staging / 'previous.app'
                 if old_signature:
                     self.archive(self.install_path, self.backup_root / 'previous.tar.gz')
-                    os.replace(self.install_path, previous)
                 try:
+                    # Include the first rename in the rollback boundary: Ctrl-C
+                    # immediately after it must not discard the previous app.
+                    if old_signature:
+                        os.replace(self.install_path, previous)
                     os.replace(incoming, self.install_path)
                     self.signature(self.install_path)
                 except BaseException:
-                    if self.install_path.exists():
-                        shutil.rmtree(self.install_path)
-                    if previous.exists():
-                        os.replace(previous, self.install_path)
+                    try:
+                        if previous.exists():
+                            if self.install_path.exists():
+                                shutil.rmtree(self.install_path)
+                            os.replace(previous, self.install_path)
+                        elif not old_signature and not incoming.exists() and self.install_path.exists():
+                            shutil.rmtree(self.install_path)
+                    except BaseException as rollback_error:
+                        raise DevError(f'Rollback failed; recovery copy retained at {previous}; '
+                                       f'archive: {self.backup_root / "previous.tar.gz"}') from rollback_error
                     raise
+                succeeded = True
+            finally:
+                # Never discard the saved app if restoring it failed.
+                if succeeded or not previous.exists():
+                    shutil.rmtree(staging)
             shutil.rmtree(built)
             print(f'Installed: {self.install_path}\n{requirement}\nUse npm run dev:open to launch.')
 
     def open(self):
-        self.require_no_apps()
-        self.signature(self.install_path)
-        self.command(['/usr/bin/open', str(self.install_path)])
+        with self.lock():
+            self.require_no_apps()
+            self.signature(self.install_path)
+            self.command(['/usr/bin/open', str(self.install_path)])
+            # LaunchServices returns before the app necessarily registers. Keep
+            # installers blocked until their running-app checks can see it.
+            deadline = time.monotonic() + 10
+            while not any(app.get('bundleId') == DEV_ID and app.get('path') and
+                          Path(app['path']).resolve() == self.install_path
+                          for app in self.running_apps()):
+                if time.monotonic() >= deadline:
+                    raise DevError('Dev did not start within 10 seconds; check dev:doctor and the Dev logs.')
+                time.sleep(0.1)
 
     def ui(self):
-        self.require_no_apps()
-        env = dict(self.env)
-        env['CARGO_TARGET_DIR'] = str(self.target_root)
-        self.command(['npx', 'tauri', 'dev', '--config', 'src-tauri/tauri.dev.conf.json'], capture=False, env=env)
+        with self.lock():
+            self.require_no_apps()
+            self.require_unstaged_harness()
+            env = dict(self.env)
+            env['CARGO_TARGET_DIR'] = str(self.target_root)
+            env.pop('CARGO_BUILD_TARGET', None)
+            self.command(['npx', 'tauri', 'dev', '--config', 'src-tauri/tauri.dev.conf.json'], capture=False, env=env)
 
     def known_copies(self):
         yield self.home / 'Applications/Humhum PR66.app'

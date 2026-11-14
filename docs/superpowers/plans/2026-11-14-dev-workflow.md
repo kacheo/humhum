@@ -7,7 +7,7 @@
 
 - [x] Task 1: Add isolated Dev identity/storage, feature/config validation, and distinguishable app resources. Test default/Dev paths and mismatch failures.
 - [x] Task 2: Add dev:install/open/doctor/clean commands. Test signer validation, conflict detection, rollback, install locking, archival/protected paths, and paths with spaces.
-- [ ] Task 3: Document signed testing versus isolated hot reload and credential E2E. Run suites, build/install signed app, and obtain independent review.
+- [x] Task 3: Document signed testing versus isolated hot reload and credential E2E. Run suites, build/install signed app, and obtain independent review.
 
 ## Review focus
 - A failed installation must leave the previous installed app usable.
@@ -23,3 +23,9 @@
 - Task 2: lifecycle tests failed before the CLI existed; 17 lifecycle tests now pass; complete release suite 43 tests passed.
 - Ruling: Correct the existing E2E workflow’s missing capability stage/unstage when updating its documented commands, ensuring the documented harness build and CI use the same required setup.
 - Signed build A installed successfully at ~/Applications/Humhum Dev.app. Official Humhum remains running; interactive permission/dictation checks are pending.
+- Task 3: frontend coverage 204 tests, 91.7% branches; both final Rust profiles 391 unit + 2 integration, 6 ignored; all 50 release/lifecycle tests pass; notices regenerated/check passed; harness builds and credential E2E storage/cold-restart removal pass, login Keychain default/search restored.
+- Final review: independent reviewer found launch lock bypass (Important) and removal of recovery copy after failed rollback (graded Minor by reviewer, upgraded Important because recovery should preserve the usable app). Fixed both with failing-then-passing regression tests; also covered Ctrl-C after the previous-app rename, asynchronous launch acknowledgement, and staged E2E capability conflicts. Lifecycle suite 24/24; full script suite 50/50.
+- Ruling: Reviewer set aside malicious external filesystem replacement, power-loss durability, arbitrary duplicate deletion, certificate rollover automation, and claims of permission retention without interactive testing. Retain the bounded allowlist/signing approach; leave those concerns out of this local development workflow. A machine/process outside the workflow can still interrupt or bypass it; manual permission testing remains required.
+- Two changed signed native binaries installed successfully with identical designated requirements. This verifies signature stability only, not TCC retention.
+- Applied previewed cleanup: archived PR66 app, legacy dev backup app, and generated harness bundle. Doctor/Spotlight now list only official Humhum and canonical Humhum Dev. Official app remains running and unchanged.
+- Remaining manual acceptance: initial Dev permissions, cross-rebuild grants, Dev key save/replace/remove in UI, and live-provider dictation. Official-app-running launch refusal verified. No interactive pass is claimed.

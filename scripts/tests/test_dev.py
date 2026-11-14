@@ -28,6 +28,7 @@ class DevTests(unittest.TestCase):
         self.calls = []
         self.signature = 'designated => identifier "com.kacheo.humhum.dev" and anchor apple generic and certificate leaf[subject.OU] = TEAM123456'
         self.apps = []
+        self.open_launches = True
         self.runner = patch.object(self.flow, 'command', side_effect=self.command)
         self.runner.start()
         self.addCleanup(self.runner.stop)
@@ -49,6 +50,8 @@ class DevTests(unittest.TestCase):
             return 'Identifier=com.kacheo.humhum.dev\nAuthority=Developer ID Application: Test (TEAM123456)\nTeamIdentifier=TEAM123456\nflags=0x10000(runtime)'
         if argv[:3] == ['/usr/bin/codesign', '-d', '-r-']:
             return self.signature
+        if argv[0] == '/usr/bin/open' and self.open_launches:
+            self.apps = [{'bundleId':'com.kacheo.humhum.dev', 'path':str(self.flow.install_path), 'executable':str(self.flow.install_path / 'Contents/MacOS/humhum'), 'pid':456}]
         if argv[0] == 'npx':
             return ''
         return ''
@@ -192,6 +195,90 @@ class DevTests(unittest.TestCase):
         with self.assertRaisesRegex(self.dev.DevError, 'running'):
             self.flow.clean(True)
         self.assertTrue(stale.exists())
+
+    def test_launch_commands_obey_operation_lock(self):
+        self.make_app(self.flow.install_path)
+        for action in (self.flow.open, self.flow.ui):
+            with self.subTest(action=action.__name__), self.flow.lock():
+                with self.assertRaisesRegex(self.dev.DevError, 'operation'):
+                    action()
+
+    def test_launch_stays_locked_through_startup_and_ui_lifetime(self):
+        self.make_app(self.flow.install_path)
+        original = self.command
+        def locked_command(argv, **kwargs):
+            if argv[0] in ('/usr/bin/open', 'npx'):
+                with self.assertRaisesRegex(self.dev.DevError, 'operation'), self.flow.lock():
+                    pass
+            return original(argv, **kwargs)
+        with patch.object(self.flow, 'command', side_effect=locked_command):
+            self.flow.open()
+            self.apps = []
+            self.flow.ui()
+
+    def test_open_waits_for_launch_acknowledgement_and_times_out(self):
+        self.make_app(self.flow.install_path)
+        self.open_launches = False
+        with patch('time.monotonic', side_effect=[0, 11]):
+            with self.assertRaisesRegex(self.dev.DevError, 'start'):
+                self.flow.open()
+
+    def test_failed_verification_rolls_back_installed_app(self):
+        old = self.make_app(self.flow.install_path)
+        (old / 'Contents/MacOS/humhum').write_text('old')
+        original = self.flow.signature
+        def verify(app):
+            if app == old and (app / 'Contents/MacOS/humhum').read_text() == 'new':
+                raise self.dev.DevError('post-swap verification failure')
+            return original(app)
+        with patch.object(self.flow, 'signature', side_effect=verify):
+            with self.assertRaisesRegex(self.dev.DevError, 'post-swap'):
+                self.install()
+        self.assertEqual((old / 'Contents/MacOS/humhum').read_text(), 'old')
+        self.assertTrue(self.app.exists())
+
+    def test_failed_restoration_preserves_staged_previous_app(self):
+        old = self.make_app(self.flow.install_path)
+        (old / 'Contents/MacOS/humhum').write_text('old')
+        signature = self.flow.signature
+        replace = os.replace
+        def verify(app):
+            if app == old and (app / 'Contents/MacOS/humhum').read_text() == 'new':
+                raise self.dev.DevError('post-swap verification failure')
+            return signature(app)
+        def fail_restore(src, dst):
+            if Path(src).name == 'previous.app' and Path(dst) == old:
+                raise OSError('restore failed')
+            return replace(src, dst)
+        with patch.object(self.flow, 'signature', side_effect=verify), patch.object(self.dev.os, 'replace', side_effect=fail_restore):
+            with self.assertRaisesRegex(self.dev.DevError, 'recovery'):
+                self.install()
+        saved = list(old.parent.glob('.humhum-dev-*/previous.app/Contents/MacOS/humhum'))
+        self.assertEqual(len(saved), 1)
+        self.assertEqual(saved[0].read_text(), 'old')
+        self.assertTrue((self.flow.backup_root / 'previous.tar.gz').exists())
+
+    def test_interruption_after_previous_rename_restores_app(self):
+        old = self.make_app(self.flow.install_path)
+        (old / 'Contents/MacOS/humhum').write_text('old')
+        replace = os.replace
+        def interrupted(src, dst):
+            result = replace(src, dst)
+            if Path(src) == old:
+                raise KeyboardInterrupt()
+            return result
+        with patch.object(self.dev.os, 'replace', side_effect=interrupted):
+            with self.assertRaises(KeyboardInterrupt):
+                self.install()
+        self.assertEqual((old / 'Contents/MacOS/humhum').read_text(), 'old')
+
+    def test_staged_harness_blocks_dev_build(self):
+        staged = self.root / 'src-tauri/capabilities/e2e.json'
+        staged.parent.mkdir(parents=True)
+        staged.write_text('{}')
+        with self.assertRaisesRegex(self.dev.DevError, 'E2E'):
+            self.flow.build()
+        self.assertFalse(any(c[0][0] == 'npx' for c in self.calls))
 
     def test_build_excludes_notarization_credentials_and_uses_separate_target(self):
         self.flow.env.update(APPLE_ID='private', APPLE_PASSWORD='private')

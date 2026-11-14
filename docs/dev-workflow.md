@@ -18,7 +18,7 @@ npm run dev:doctor
 npm run dev:open
 ```
 
-`dev:install` builds a host-architecture release app with bundled frontend assets, signs and verifies it, and replaces the same Dev installation. It does not launch it. Quit Dev before replacing it; official Humhum may remain running during the build/install. `dev:open` refuses to launch while another Humhum bundle or unbundled native development process is running. Stop a hot-reload session with Ctrl-C.
+`dev:install` builds a host-architecture release app with bundled frontend assets, signs and verifies it, and replaces the same Dev installation. It does not launch it. Quit Dev before replacing it; official Humhum may remain running during the build/install. `dev:open` refuses to launch while another Humhum bundle or unbundled native development process is running. Stop a hot-reload session with Ctrl-C. Launch commands share the install/cleanup lock: `dev:open` waits for the new process to appear, and `dev:ui` retains the lock until its session exits.
 
 On the first Dev launch, grant its own Microphone, Accessibility, and Input Monitoring permissions. The official app's grants are separate. Follow any macOS first-open security prompt. Later builds use the same certificate, bundle ID, and install path; verify permission retention across two builds before relying on it. Signing checks alone do not prove macOS retained the grants.
 
@@ -46,7 +46,7 @@ Doctor reports the signing requirement, running processes, indexed copies, and a
 
 Backups are compressed archives in `~/Library/Application Support/humhum-dev/build-backups`, rather than loose launchable apps. `previous.tar.gz` holds the most recently replaced installation. Cleanup archives live in `legacy/`; a leftover build is archived as `last-build.tar.gz` before rebuilding. Successful installation removes the loose Dev build bundle.
 
-Failed builds/signature checks leave the installed app intact. A failed swap restores the previous installation. A signing-requirement change stops replacement: restore the original certificate/configuration rather than resetting permissions. To intentionally change signing identity, archive the old installation manually, remove it, and expect new grants; never overwrite official Humhum. Backup archives can be unpacked to a temporary directory for inspection/recovery; do not leave extracted backups among installed apps.
+Failed builds/signature checks leave the installed app intact. A failed swap restores the previous installation, including an interruption during the rename. If restoration itself fails, the error names the retained recovery app and compressed backup. A signing-requirement change stops replacement: restore the original certificate/configuration rather than resetting permissions. To intentionally change signing identity, archive the old installation manually, remove it, and expect new grants; never overwrite official Humhum. Backup archives can be unpacked to a temporary directory for inspection/recovery; do not leave extracted backups among installed apps.
 
 ## Acceptance checklist
 
