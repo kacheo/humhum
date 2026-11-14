@@ -2,7 +2,7 @@
 
 Public pull requests and pushes to `main` run frontend and Rust checks on GitHub-hosted macOS runners with read-only repository access and no signing secrets. The E2E workflow runs on trusted `main` pushes or manual dispatch, also on a GitHub-hosted runner. Public pull requests never execute on a persistent self-hosted runner.
 
-The API-key E2E case remains excluded from the default suite until Keychain behavior is verified in a normal runner session. Its Rust Keychain round-trip test and manual release check remain required.
+The default E2E suite includes the API-key case, including storage and cold-restart removal. Each run isolates HOME and the user-domain default/search Keychains in a scratch session, restoring the original session afterward. Providers are mocked; manual live-provider and permission-retention checks remain separate.
 
 The release workflow runs only by manual dispatch from `main`, takes an existing reviewed version tag as `release_tag`, and uses the `release` environment. Tag pushes do not start installer builds. Add Apple signing secrets and review the tagged commit before each release. Use environment approvals and tag rules when the GitHub plan supports them; see [the release guide](release.md). The release job checks that package, Tauri, and tag versions match, builds and notarizes the installer, verifies it, then uploads the `.dmg` with an exact source-tag link.
 

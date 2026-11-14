@@ -11,7 +11,12 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "tsx e2e/run-all.ts",
     "tauri": "tauri",
-    "test:release": "python3 -m unittest discover -s scripts/tests -v"
+    "test:release": "python3 -m unittest discover -s scripts/tests -v",
+    "dev:install": "bash scripts/dev.sh install",
+    "dev:open": "bash scripts/dev.sh open",
+    "dev:doctor": "bash scripts/dev.sh doctor",
+    "dev:clean": "bash scripts/dev.sh clean",
+    "dev:ui": "bash scripts/dev.sh ui"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.12.3",

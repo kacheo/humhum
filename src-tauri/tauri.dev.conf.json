@@ -1,0 +1,40 @@
+{
+  "productName": "Humhum Dev",
+  "identifier": "com.kacheo.humhum.dev",
+  "build": {
+    "features": [
+      "dev-app"
+    ]
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "overlay",
+        "url": "overlay.html",
+        "decorations": false,
+        "alwaysOnTop": true,
+        "transparent": true,
+        "visible": false,
+        "width": 320,
+        "height": 100
+      },
+      {
+        "label": "prefs",
+        "url": "prefs.html",
+        "title": "Humhum Dev Preferences",
+        "visible": false,
+        "resizable": false,
+        "width": 720,
+        "height": 600
+      }
+    ]
+  },
+  "bundle": {
+    "icon": [
+      "icons/dev/32x32.png",
+      "icons/dev/128x128.png",
+      "icons/dev/128x128@2x.png",
+      "icons/dev/icon.icns"
+    ]
+  }
+}

@@ -4,7 +4,7 @@ Open an issue before a large change. Contributions are licensed under AGPL-3.0-o
 
 ## Development
 
-The supported development target is Apple Silicon macOS 13+. Install Node.js 24, Rust 1.90+ (stable recommended), Xcode Command Line Tools, CMake, and Python 3. Run `npm ci`, then `npm run tauri dev`. Unsigned development builds have a different signing identity from releases and may need their own permission grants.
+The supported development target is Apple Silicon macOS 13+. Install Node.js 24, Rust 1.90+ (stable recommended), Xcode Command Line Tools, CMake, and Python 3. Run `npm ci`, then `npm run dev:ui` for isolated UI development. For native testing, use the signed `npm run dev:install` / `npm run dev:open` workflow. See [Dev setup and duplicate cleanup](docs/dev-workflow.md). Contributors do not need signing credentials for UI development.
 
 The React frontend lives in `src`: components render onboarding, Preferences, and the recording overlay; Zustand stores hold UI state; `src/lib/ipc.ts` defines calls into Tauri. The Rust backend in `src-tauri/src` handles audio capture, local Whisper transcription, model downloads, optional text cleanup, Keychain preferences, permissions, hotkeys, and pasting. `e2e` exercises the real debug app with a mock server and temporary preferences.
 
@@ -20,7 +20,7 @@ cargo test --manifest-path src-tauri/Cargo.toml --locked
 
 Rust network tests start loopback mock servers, and Keychain tests use an isolated `humhum-api-test` namespace. Run them in a normal macOS session; restrictive sandboxes may block these operations.
 
-For UI integration checks, build with `npx tauri build --debug --features e2e-harness --bundles app`, then run `npm run test:e2e`. The API-key case is excluded until its session/Keychain behavior is verified; see [CI notes](docs/ci.md). Never enable `e2e-harness` in a production release.
+For UI integration checks, stage the harness capability, build the E2E app, then unstage it and run `npm run test:e2e`; see [the E2E commands](docs/dev-workflow.md#automated-e2e). The API-key case is included with scratch-HOME and scratch-Keychain isolation; see [CI notes](docs/ci.md). Never enable `e2e-harness` in a production release.
 
 ## Review expectations
 

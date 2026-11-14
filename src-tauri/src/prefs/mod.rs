@@ -85,10 +85,7 @@ impl std::fmt::Display for PrefsError {
 /// code identity), and never overwrite/delete the user's real stored API keys.
 /// `pub(crate)` so `commands.rs`'s real-wrapper test can clean up via the same
 /// (cfg-swapped) service instead of a hardcoded literal.
-#[cfg(not(test))]
-pub(crate) const API_KEYCHAIN_SERVICE: &str = "humhum-api";
-#[cfg(test)]
-pub(crate) const API_KEYCHAIN_SERVICE: &str = "humhum-api-test";
+pub(crate) const API_KEYCHAIN_SERVICE: &str = crate::profile::KEYCHAIN_SERVICE;
 
 /// Keychain account name per provider. Stable strings — changing them orphans
 /// any previously stored key.
@@ -169,10 +166,10 @@ pub fn default_prefs() -> Prefs {
 /// The settings.json path under a given home directory (pure — testable without
 /// touching the process environment).
 fn settings_file(home: &std::path::Path) -> std::path::PathBuf {
-    home.join("Library/Application Support/humhum/settings.json")
+    crate::profile::data_root(home).join("settings.json")
 }
 
-/// `~/Library/Application Support/humhum/settings.json`, or `None` if
+/// The active profile’s settings file, or `None` if
 /// `$HOME` is unset.
 fn settings_path() -> Option<std::path::PathBuf> {
     let home = std::env::var_os("HOME")?;
@@ -302,8 +299,11 @@ mod tests {
         let current = settings_file(temp.path());
         assert_eq!(
             current,
-            temp.path()
-                .join("Library/Application Support/humhum/settings.json")
+            temp.path().join(if crate::profile::IS_DEV {
+                "Library/Application Support/humhum-dev/settings.json"
+            } else {
+                "Library/Application Support/humhum/settings.json"
+            })
         );
         assert!(!load_from(&current).onboarding_complete);
         save_to(&current, &Prefs::default()).unwrap();
@@ -368,9 +368,11 @@ mod tests {
         std::env::set_var("HOME", "/Users/x");
         assert_eq!(
             settings_path(),
-            Some(std::path::PathBuf::from(
+            Some(std::path::PathBuf::from(if crate::profile::IS_DEV {
+                "/Users/x/Library/Application Support/humhum-dev/settings.json"
+            } else {
                 "/Users/x/Library/Application Support/humhum/settings.json"
-            ))
+            }))
         );
 
         match old_home {
@@ -566,7 +568,11 @@ mod tests {
         let p = settings_file(std::path::Path::new("/Users/x"));
         assert_eq!(
             p,
-            std::path::Path::new("/Users/x/Library/Application Support/humhum/settings.json")
+            std::path::Path::new(if crate::profile::IS_DEV {
+                "/Users/x/Library/Application Support/humhum-dev/settings.json"
+            } else {
+                "/Users/x/Library/Application Support/humhum/settings.json"
+            })
         );
     }
 

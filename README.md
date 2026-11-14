@@ -49,7 +49,7 @@ Install Node.js 24, Rust 1.90+ (stable recommended), Xcode Command Line Tools, C
 git clone https://github.com/kacheo/humhum.git
 cd humhum
 npm ci
-npm run tauri dev
+npm run dev:ui
 ```
 
 Run checks separately:
@@ -61,6 +61,8 @@ npm run test:release
 npm run build
 cargo test --manifest-path src-tauri/Cargo.toml --locked
 ```
+
+For native testing with a stable signed installation, use `npm run dev:install` and `npm run dev:open`; see [the Dev workflow](docs/dev-workflow.md) for signing setup, permission checks, and cleanup of duplicate copies.
 
 `npm run tauri build` creates an unsigned development bundle. Signed releases use [the release guide](docs/release.md). No license key or payment is required to use Humhum.
 
