@@ -46218,7 +46218,7 @@ THE SOFTWARE.
 ========================================================================
 MIT License (MIT)
 
-Components: nix 0.29.0
+Components: nix 0.31.3
 
 The MIT License (MIT)
 

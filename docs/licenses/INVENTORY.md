@@ -169,7 +169,7 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | muda | 0.20.0 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/muda/0.20.0/download) |
 | native-tls | 0.2.18 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/native-tls/0.2.18/download) |
 | new_debug_unreachable | 1.0.6 | MIT | [Source](https://crates.io/api/v1/crates/new_debug_unreachable/1.0.6/download) |
-| nix | 0.29.0 | MIT | [Source](https://crates.io/api/v1/crates/nix/0.29.0/download) |
+| nix | 0.31.3 | MIT | [Source](https://crates.io/api/v1/crates/nix/0.31.3/download) |
 | nom | 7.1.3 | MIT | [Source](https://crates.io/api/v1/crates/nom/7.1.3/download) |
 | num-complex | 0.4.6 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/num-complex/0.4.6/download) |
 | num-conv | 0.2.2 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/num-conv/0.2.2/download) |
