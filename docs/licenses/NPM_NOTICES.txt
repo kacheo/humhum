@@ -236,7 +236,7 @@ Creator: Person: Daniel Thompson-Yvetot
 
 ========================================================================
 
-@tauri-apps/plugin-opener 2.7.2 (MIT OR Apache-2.0)
+@tauri-apps/plugin-opener 2.7.3 (MIT OR Apache-2.0)
 
 LICENSE.spdx
 
@@ -407,7 +407,7 @@ SOFTWARE.
 
 ========================================================================
 
-zustand 5.0.15 (MIT)
+zustand 5.1.0 (MIT)
 
 LICENSE
 
