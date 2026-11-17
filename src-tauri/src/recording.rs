@@ -86,6 +86,18 @@ pub fn start<E>(state: &AppState, emitter: &E) -> Result<(), AppError>
 where
     E: RecordingEmitter + PipelineEmitter + Clone + 'static,
 {
+    // Preserve the disabled IPC error even while configuration owns control.
+    if !state.dictation_enabled.load(Ordering::SeqCst) {
+        return Err(AppError::DictationDisabled);
+    }
+    // Never wait on a toggle that may be joining this event-tap thread.
+    let _control = state
+        .dictation_control
+        .try_lock()
+        .map_err(|_| AppError::AlreadyRecording)?;
+    if !state.dictation_enabled.load(Ordering::SeqCst) {
+        return Err(AppError::DictationDisabled);
+    }
     if !state.permissions.check().all_granted() {
         // Surface the blocked attempt so the press isn't silent — the overlay
         // shows this and points at Preferences → Permissions to fix it.
@@ -158,6 +170,9 @@ where
         return Err(AppError::AlreadyRecording);
     }
 
+    // Native menu updates from emitters may wait for the main thread. Release
+    // control before emitting; Recording now makes toggles reject the operation.
+    drop(_control);
     state.hotkey.play_cue(AudioCue::Start);
     // Phase is now `Recording` and the capture stream is armed with a live,
     // deliverable stop handle before this emit.
@@ -517,6 +532,8 @@ mod tests {
         let audio = Arc::new(MockAudio::default());
         let hotkey = Arc::new(MockHotkey::default());
         let state = AppState {
+            dictation_control: Default::default(),
+            dictation_enabled: std::sync::atomic::AtomicBool::new(true),
             key_actions: Default::default(),
             cleanup_prefs: Default::default(),
             audio: audio.clone(),
@@ -540,6 +557,41 @@ mod tests {
             hotkey,
             emitter: MockEmitter::default(),
         }
+    }
+
+    #[test]
+    fn disabled_start_does_not_arm_audio_or_emit_errors() {
+        let h = harness(false);
+        h.state.dictation_enabled.store(false, Ordering::SeqCst);
+        assert_eq!(
+            start(&h.state, &h.emitter).unwrap_err().code(),
+            "dictation_disabled"
+        );
+        assert!(!h.audio.armed.load(Ordering::SeqCst));
+        assert!(signals(&h.emitter).is_empty());
+    }
+
+    #[test]
+    fn disabled_start_during_configuration_still_reports_disabled() {
+        let h = harness(false);
+        h.state.dictation_enabled.store(false, Ordering::SeqCst);
+        let _configuration = h.state.dictation_control.lock().unwrap();
+        assert_eq!(
+            start(&h.state, &h.emitter).unwrap_err().code(),
+            "dictation_disabled"
+        );
+        assert!(!h.audio.armed.load(Ordering::SeqCst));
+    }
+
+    #[test]
+    fn start_during_toggle_returns_without_waiting_or_arming_audio() {
+        let h = harness(true);
+        let _toggle = h.state.dictation_control.lock().unwrap();
+        assert_eq!(
+            start(&h.state, &h.emitter).unwrap_err().code(),
+            "already_recording"
+        );
+        assert!(!h.audio.armed.load(Ordering::SeqCst));
     }
 
     fn signals(e: &MockEmitter) -> Vec<RecordingSignal> {
@@ -1162,6 +1214,8 @@ mod tests {
     /// directly here, reusing every other existing fake.
     fn state_with_audio(audio: Arc<dyn AudioCapture>) -> AppState {
         AppState {
+            dictation_control: Default::default(),
+            dictation_enabled: std::sync::atomic::AtomicBool::new(true),
             key_actions: Default::default(),
             cleanup_prefs: Default::default(),
             audio,

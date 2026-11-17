@@ -26,6 +26,7 @@ const cannedPrefs: Prefs = {
   ollamaBaseUrl: "http://localhost:11434/v1/",
   whisperModel: "small_en",
   launchAtLogin: true,
+  dictationEnabled: true,
   onboardingComplete: true,
 };
 

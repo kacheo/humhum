@@ -32,6 +32,7 @@ pub enum AppError {
     Prefs(String),
     Model(String),
     AlreadyRecording,
+    DictationDisabled,
     /// Payload is a human-readable message (e.g. "not implemented"), deliberately
     /// **not** exposed via [`AppError::code`] — `code()` returns the opaque wire
     /// code `"internal"` so internal detail never leaks to the frontend.
@@ -52,6 +53,7 @@ impl AppError {
             | AppError::Prefs(c)
             | AppError::Model(c) => c.clone(),
             AppError::AlreadyRecording => "already_recording".to_string(),
+            AppError::DictationDisabled => "dictation_disabled".to_string(),
             AppError::Internal(_) => "internal".to_string(),
         }
     }
@@ -76,6 +78,7 @@ impl std::fmt::Display for AppError {
             AppError::Prefs(e) => write!(f, "prefs error: {e}"),
             AppError::Model(e) => write!(f, "model error: {e}"),
             AppError::AlreadyRecording => write!(f, "already recording"),
+            AppError::DictationDisabled => write!(f, "dictation disabled"),
             AppError::Internal(e) => write!(f, "internal error: {e}"),
         }
     }

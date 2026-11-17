@@ -93,11 +93,13 @@ pub fn get_prefs() -> Result<Prefs, AppError> {
     Ok(prefs::load_prefs())
 }
 
-#[tauri::command]
+// Acquiring control and joining the event tap must never block the UI thread.
+#[tauri::command(async)]
 pub fn set_prefs(
     prefs: Prefs,
     state: tauri::State<'_, crate::state::AppState>,
 ) -> Result<(), AppError> {
+    let _control = state.dictation_control.lock().unwrap();
     save_cleanup_prefs(&state, &prefs, prefs::read_api_key, prefs::save_prefs)?;
     // Best-effort: a flaky/unsigned-dev SMAppService must not block persisting
     // the rest of prefs (which already succeeded above).
@@ -112,13 +114,9 @@ pub fn set_prefs(
     // only after restart. `register` tears down the prior tap and rebinds; the
     // handler installed at startup is retained. Best-effort: a parse/registration
     // failure must not block the rest of prefs (already persisted above).
-    match crate::hotkey::parse_combo(&prefs.hotkey) {
-        Ok(combo) => {
-            if let Err(e) = state.hotkey.register(&combo) {
-                log::warn!("hotkey re-registration failed on set_prefs: {e}");
-            }
-        }
-        Err(e) => log::warn!("invalid hotkey combo on set_prefs: {e}"),
+    let applied = state.cleanup_prefs.lock().unwrap().clone();
+    if let Err(e) = crate::dictation::apply_hotkey(&state, &applied) {
+        log::warn!("hotkey update failed on set_prefs: {e}");
     }
     Ok(())
 }
@@ -132,13 +130,16 @@ fn save_cleanup_prefs(
     persist: impl FnOnce(&Prefs) -> Result<(), prefs::PrefsError>,
 ) -> Result<(), AppError> {
     let mut saved = state.cleanup_prefs.lock().unwrap();
+    // The native menu owns this setting; an open Preferences draft may be stale.
+    let mut prefs = prefs.clone();
+    prefs.dictation_enabled = saved.dictation_enabled;
     let key = if prefs.cleanup_mode == cleanup::CleanupMode::Api {
         read_key(prefs.api_provider)?
     } else {
         None
     };
-    let config = cleanup::build_cleanup_config(prefs, |_| key.clone());
-    persist(prefs)?;
+    let config = cleanup::build_cleanup_config(&prefs, |_| key.clone());
+    persist(&prefs)?;
     *state.cleanup.write().unwrap() = config;
     *saved = prefs.clone();
     Ok(())
@@ -381,6 +382,23 @@ mod tests {
             Ok(())
         })
         .unwrap();
+    }
+
+    #[test]
+    fn stale_preference_draft_cannot_enable_dictation() {
+        let state = stub_app_state(true, true);
+        state.cleanup_prefs.lock().unwrap().dictation_enabled = false;
+        save_cleanup_prefs(
+            &state,
+            &Prefs::default(),
+            |_| Ok(None),
+            |p| {
+                assert!(!p.dictation_enabled);
+                Ok(())
+            },
+        )
+        .unwrap();
+        assert!(!state.cleanup_prefs.lock().unwrap().dictation_enabled);
     }
 
     #[test]
@@ -834,6 +852,8 @@ mod tests {
     /// own tests; these only confirm the IPC wrappers delegate correctly.
     fn stub_app_state(perms_granted: bool, model_ready: bool) -> crate::state::AppState {
         crate::state::AppState {
+            dictation_control: Default::default(),
+            dictation_enabled: std::sync::atomic::AtomicBool::new(true),
             key_actions: Default::default(),
             cleanup_prefs: Default::default(),
             audio: std::sync::Arc::new(StubAudio),

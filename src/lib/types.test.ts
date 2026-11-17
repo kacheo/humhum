@@ -28,6 +28,7 @@ test("Prefs and RecordingPhase are importable from lib/types", () => {
     ollamaBaseUrl: "http://localhost:11434/v1/",
     whisperModel: "base_en",
     launchAtLogin: false,
+    dictationEnabled: true,
     onboardingComplete: false,
   };
   expect(phase).toBe("idle");

@@ -1,6 +1,7 @@
 pub mod audio;
 pub mod cleanup;
 pub mod commands;
+mod dictation;
 pub mod error;
 pub mod events;
 pub mod hotkey;
@@ -19,9 +20,31 @@ pub mod state;
 mod test_support;
 pub mod transcription;
 
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{Emitter, Listener, Manager};
+
+fn refresh_dictation_menu<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    item: &MenuItem<R>,
+    pending: &AtomicBool,
+) {
+    let state = app.state::<state::AppState>();
+    let enabled = state.dictation_enabled.load(Ordering::SeqCst);
+    let _ = item.set_text(if enabled { "Disable" } else { "Enable" });
+    let _ = item.set_enabled(!pending.load(Ordering::SeqCst) && dictation::can_toggle(&state));
+    if let Some(tray) = app.tray_by_id("main") {
+        let _ = tray.set_tooltip(Some(if enabled {
+            profile::APP_NAME
+        } else {
+            "Dictation disabled"
+        }));
+    }
+}
 
 /// Show and focus the preferences window (the only entry point once the app
 /// lives in the menu bar). The window is normally kept alive and merely
@@ -139,23 +162,17 @@ pub fn run() {
                     log::warn!("recording control failed: {}", e.code());
                 }
             }));
-            match hotkey::parse_combo(&prefs::load_prefs().hotkey) {
-                Ok(combo) => {
-                    if let Err(e) = app_state.hotkey.register(&combo) {
-                        log::warn!("hotkey registration failed: {e}");
-                    }
-                }
-                Err(e) => log::warn!("invalid hotkey combo in prefs: {e}"),
-            }
-
-            // Build the initial cleanup config from prefs (Phase 12). Reads any
-            // stored API key from the Keychain; `set_prefs` rebuilds it on change.
+            // Seed canonical state before the first shortcut registration.
             let initial_prefs = prefs::load_prefs();
             let config = cleanup::build_cleanup_config(&initial_prefs, |p| {
                 prefs::read_api_key(p).ok().flatten()
             });
+            app_state.dictation_enabled.store(initial_prefs.dictation_enabled, Ordering::SeqCst);
             *app_state.cleanup.write().unwrap() = config;
             *app_state.cleanup_prefs.lock().unwrap() = initial_prefs;
+            if let Err(e) = dictation::refresh_hotkey(&app_state) {
+                log::warn!("hotkey registration failed: {e}");
+            }
 
             // Seed the preferred input device (Bluetooth-avoidance fix) from
             // prefs; `set_prefs` propagates any later change.
@@ -163,15 +180,127 @@ pub fn run() {
                 .audio
                 .set_preferred_device(prefs::load_prefs().preferred_input_device.clone());
 
+            // Startup model integrity check (LLD / bead 5na.6): hash base.en if
+            // present and drop it if corrupt, so onboarding re-prompts. Hashing
+            // ~148 MB must not block the setup thread, so run it off-pool.
+            tauri::async_runtime::spawn_blocking(models::verify_base_model_on_startup);
+
+            // System tray (LLD §12): the menu-bar presence + the only way to
+            // reopen Preferences or quit once windows are closed.
+            let prefs_item = MenuItem::with_id(app, "preferences", "Preferences…", true, None::<&str>)?;
+            let quit_item = PredefinedMenuItem::quit(app, Some(&format!("Quit {}", profile::APP_NAME)))?;
+            let toggle_item = MenuItem::with_id(app, "toggle-dictation", "Disable", true, None::<&str>)?;
+            let toggle_error = MenuItem::with_id(app, "dictation-error", "", false, None::<&str>)?;
+            let toggle_pending = Arc::new(AtomicBool::new(false));
+            let menu = Menu::with_items(app, &[&toggle_item, &prefs_item, &quit_item])?;
+            let action_menu = menu.clone();
+            let action_toggle = toggle_item.clone();
+            let action_pending = toggle_pending.clone();
+            let tray = TrayIconBuilder::with_id("main");
+            // Platform tray icon. On macOS the menu bar expects a monochrome
+            // "template" glyph that the system auto-tints (white on dark menu
+            // bars, dark on light) like every other icon — so use a black+alpha
+            // glyph of just the bars and flag it as a template. `icon_as_template`
+            // is macOS-only (a silent no-op elsewhere), and a black glyph would be
+            // near-invisible on a Windows/Linux tray, so off macOS keep the
+            // full-color app icon instead.
+            #[cfg(target_os = "macos")]
+            let tray = tray
+                .icon(tauri::include_image!("icons/tray-template.png"))
+                .icon_as_template(true);
+            #[cfg(not(target_os = "macos"))]
+            let tray =
+                tray.icon(app.default_window_icon().expect("bundled default icon").clone());
+            let tray = tray
+                .tooltip(profile::APP_NAME)
+                .menu(&menu)
+                .show_menu_on_left_click(true)
+                .on_menu_event(move |app, event| {
+                    if event.id.as_ref() == "preferences" {
+                        show_prefs_window(app);
+                    } else if event.id.as_ref() == "toggle-dictation"
+                        && !action_pending.swap(true, Ordering::SeqCst)
+                    {
+                        let _ = action_toggle.set_enabled(false);
+                        let app = app.clone();
+                        let menu = action_menu.clone();
+                        let item = action_toggle.clone();
+                        let error_item = toggle_error.clone();
+                        let pending = action_pending.clone();
+                        // Never join the event-tap thread from the main thread:
+                        // its recording listeners may be updating native UI.
+                        tauri::async_runtime::spawn_blocking(move || {
+                            let state = app.state::<state::AppState>();
+                            let enabled = !state.dictation_enabled.load(Ordering::SeqCst);
+                            match dictation::set_enabled(&state, enabled) {
+                                Ok(()) => {
+                                    if menu.get("dictation-error").is_some() {
+                                        let _ = menu.remove(&error_item);
+                                    }
+                                }
+                                Err(e) => {
+                                    log::warn!("dictation toggle failed: {e}");
+                                    let message = if matches!(e, error::AppError::AlreadyRecording) {
+                                        "Dictation is busy — try again when finished"
+                                    } else if enabled {
+                                        "Could not enable — try again"
+                                    } else {
+                                        "Could not disable — try again"
+                                    };
+                                    let _ = error_item.set_text(message);
+                                    if menu.get("dictation-error").is_none() {
+                                        let _ = menu.append(&error_item);
+                                    }
+                                }
+                            }
+                            pending.store(false, Ordering::SeqCst);
+                            refresh_dictation_menu(&app, &item, &pending);
+                        });
+                    }
+                })
+                .build(app)?;
+
+            // Recording indicator: a red dot beside the tray icon while a
+            // capture is live; cleared on stop/cancel. (Transcription/paste run
+            // after `recording-stopped`, so the dot tracks capture, not the
+            // whole pipeline — matches the chosen UX.)
+            //
+            // Clear with `set_title(Some(""))`, NOT `set_title(None)`: on macOS
+            // `tray-icon`'s `set_title` only calls the button's `setTitle` inside
+            // its `Some(..)` branch, so passing `None` is a no-op and would leave
+            // the `●` stuck. `TrayIcon::set_title` already hops to the main thread
+            // internally (Tauri's `run_item_main_thread!`), so these listeners can
+            // call it directly from the emitting (off-main) thread.
+            refresh_dictation_menu(app.handle(), &toggle_item, &toggle_pending);
+            let tray_rec = tray.clone();
+            let recording_app = app.handle().clone();
+            let recording_toggle = toggle_item.clone();
+            let recording_pending = toggle_pending.clone();
+            app.listen_any("recording-started", move |_| {
+                let _ = tray_rec.set_title(Some("●"));
+                refresh_dictation_menu(&recording_app, &recording_toggle, &recording_pending);
+            });
+            let tray_done = tray.clone();
+            app.listen_any("recording-stopped", move |_| {
+                let _ = tray_done.set_title(Some(""));
+            });
+            let tray_cancel = tray.clone();
+            app.listen_any("recording-cancelled", move |_| {
+                let _ = tray_cancel.set_title(Some(""));
+            });
+
             // Permissions monitor: poll every 2s and emit `permissions-changed`
             // only when the grant set actually changes. Reuses the managed
             // `AppState.permissions` handle rather than constructing a second one.
             let mon = app.handle().clone();
             let mon_perms = app_state.permissions.clone();
+            let monitor_toggle = toggle_item.clone();
+            let monitor_pending = toggle_pending.clone();
             tauri::async_runtime::spawn(async move {
                 let mut last = mon_perms.check();
                 loop {
                     tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                    refresh_dictation_menu(&mon, &monitor_toggle, &monitor_pending);
                     let now = mon_perms.check();
                     if now != last {
                         // The global hotkey tap needs BOTH Accessibility and Input
@@ -183,18 +312,8 @@ pub fn run() {
                         let tap_was_ready = last.accessibility && last.input_monitoring;
                         if tap_ready && !tap_was_ready {
                             let st = mon.state::<state::AppState>();
-                            match hotkey::parse_combo(&prefs::load_prefs().hotkey) {
-                                Ok(combo) => match st.hotkey.register(&combo) {
-                                    Ok(()) => log::info!(
-                                        "hotkey auto-registered after permission grant"
-                                    ),
-                                    Err(e) => log::warn!(
-                                        "hotkey auto-registration after grant failed: {e}"
-                                    ),
-                                },
-                                Err(e) => {
-                                    log::warn!("invalid hotkey combo on auto-register: {e}")
-                                }
+                            if let Err(e) = dictation::refresh_hotkey(&st) {
+                                log::warn!("hotkey refresh after permission grant failed: {e}");
                             }
                         }
                         // A required grant was revoked mid-session — surface it for
@@ -223,65 +342,6 @@ pub fn run() {
                 }
             });
 
-            // Startup model integrity check (LLD / bead 5na.6): hash base.en if
-            // present and drop it if corrupt, so onboarding re-prompts. Hashing
-            // ~148 MB must not block the setup thread, so run it off-pool.
-            tauri::async_runtime::spawn_blocking(models::verify_base_model_on_startup);
-
-            // System tray (LLD §12): the menu-bar presence + the only way to
-            // reopen Preferences or quit once windows are closed.
-            let prefs_item = MenuItem::with_id(app, "preferences", "Preferences…", true, None::<&str>)?;
-            let quit_item = PredefinedMenuItem::quit(app, Some(&format!("Quit {}", profile::APP_NAME)))?;
-            let menu = Menu::with_items(app, &[&prefs_item, &quit_item])?;
-            let tray = TrayIconBuilder::with_id("main");
-            // Platform tray icon. On macOS the menu bar expects a monochrome
-            // "template" glyph that the system auto-tints (white on dark menu
-            // bars, dark on light) like every other icon — so use a black+alpha
-            // glyph of just the bars and flag it as a template. `icon_as_template`
-            // is macOS-only (a silent no-op elsewhere), and a black glyph would be
-            // near-invisible on a Windows/Linux tray, so off macOS keep the
-            // full-color app icon instead.
-            #[cfg(target_os = "macos")]
-            let tray = tray
-                .icon(tauri::include_image!("icons/tray-template.png"))
-                .icon_as_template(true);
-            #[cfg(not(target_os = "macos"))]
-            let tray =
-                tray.icon(app.default_window_icon().expect("bundled default icon").clone());
-            let tray = tray
-                .tooltip(profile::APP_NAME)
-                .menu(&menu)
-                .show_menu_on_left_click(true)
-                .on_menu_event(|app, event| {
-                    if event.id.as_ref() == "preferences" {
-                        show_prefs_window(app);
-                    }
-                })
-                .build(app)?;
-
-            // Recording indicator: a red dot beside the tray icon while a
-            // capture is live; cleared on stop/cancel. (Transcription/paste run
-            // after `recording-stopped`, so the dot tracks capture, not the
-            // whole pipeline — matches the chosen UX.)
-            //
-            // Clear with `set_title(Some(""))`, NOT `set_title(None)`: on macOS
-            // `tray-icon`'s `set_title` only calls the button's `setTitle` inside
-            // its `Some(..)` branch, so passing `None` is a no-op and would leave
-            // the `●` stuck. `TrayIcon::set_title` already hops to the main thread
-            // internally (Tauri's `run_item_main_thread!`), so these listeners can
-            // call it directly from the emitting (off-main) thread.
-            let tray_rec = tray.clone();
-            app.listen_any("recording-started", move |_| {
-                let _ = tray_rec.set_title(Some("●"));
-            });
-            let tray_done = tray.clone();
-            app.listen_any("recording-stopped", move |_| {
-                let _ = tray_done.set_title(Some(""));
-            });
-            let tray_cancel = tray.clone();
-            app.listen_any("recording-cancelled", move |_| {
-                let _ = tray_cancel.set_title(Some(""));
-            });
 
             // First run: surface the onboarding window (it renders Onboarding
             // until prefs.onboardingComplete). Afterwards the app stays in the

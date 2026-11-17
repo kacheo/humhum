@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 use tokio::sync::oneshot;
 
@@ -20,6 +20,11 @@ use crate::permissions::Permissions;
 /// here would be dead state. `whisper_ctx` / `model_manager` are deferred to
 /// Phases 9 / 14; `cleanup` holds the Phase-12 cleanup config.
 pub struct AppState {
+    /// Serializes startup, shortcut registration, and dictation toggles.
+    /// Recording callbacks must try_lock: unregister joins their event-tap thread.
+    /// Lock order: dictation_control, then cleanup_prefs.
+    pub dictation_control: Mutex<()>,
+    pub dictation_enabled: AtomicBool,
     pub key_actions: crate::cleanup::keys::KeyActions,
     /// Canonical applied preferences and serialization for configuration writes.
     /// Keychain/disk I/O may hold this mutex, never the recording-facing lock.
@@ -51,6 +56,8 @@ impl AppState {
     /// Wire the live platform handles via the [`crate::platform`] factories.
     pub fn new() -> Self {
         Self {
+            dictation_control: Mutex::new(()),
+            dictation_enabled: AtomicBool::new(true),
             key_actions: Default::default(),
             cleanup_prefs: Default::default(),
             audio: Arc::from(crate::platform::create_audio()),
