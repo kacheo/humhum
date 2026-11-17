@@ -38,6 +38,7 @@ function seededSettingsJson(onboardingComplete: boolean): string {
       ollamaBaseUrl: "http://localhost:11434/v1/",
       whisperModel: "base_en",
       launchAtLogin: false,
+      dictationEnabled: true,
       onboardingComplete,
     },
     null,

@@ -12,6 +12,9 @@ Run these checks on a signed Humhum build before publishing:
 - [ ] Verify & Save uses the selected provider; replacing a key affects the next dictation without restart, and a rejected replacement keeps the prior key.
 - [ ] Remove key clears only the selected provider's key and updates the next dictation. Removing a key while an earlier verification is pending must not let that old request recreate it.
 - [ ] Quitting and reopening preserves Humhum preferences and Keychain keys.
+- [ ] Menu-bar **Disable** changes to **Enable** and releases the configured shortcut for other apps; **Enable** restores dictation.
+- [ ] Disabled dictation stays disabled after quitting/reopening, saving Preferences, and revoking/regranting keyboard permissions.
+- [ ] The toggle is greyed out while recording or processing and becomes available within two seconds of completion or cancellation.
 - [ ] Source and license opens the Humhum GitHub repository.
 - [ ] A second signed Humhum build with the same bundle ID and Team ID retains permission grants.
 

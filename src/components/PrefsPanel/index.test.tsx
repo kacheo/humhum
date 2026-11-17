@@ -44,6 +44,7 @@ const DEFAULTS = {
   ollamaBaseUrl: "http://localhost:11434/v1/",
   whisperModel: "base_en",
   launchAtLogin: false,
+  dictationEnabled: true,
   onboardingComplete: true,
   preferredInputDevice: null,
 } as const;

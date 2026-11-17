@@ -30,6 +30,7 @@ export interface Prefs {
   ollamaBaseUrl: string;
   whisperModel: WhisperModel;
   launchAtLogin: boolean;
+  dictationEnabled: boolean;
   onboardingComplete: boolean;
   // null = auto (avoid a Bluetooth default input when a non-Bluetooth
   // alternative exists); SYSTEM_DEFAULT_INPUT_DEVICE = always use macOS's

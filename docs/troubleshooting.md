@@ -48,3 +48,7 @@ Diagnostic logs may exist in `~/Library/Logs/com.kacheo.humhum`. Check and remov
 Humhum starts fresh and does not import Wipzi settings, downloaded models, or API keys. Grant permissions to Humhum, download models again, and configure cleanup again if desired. Wipzi's data under `~/Library/Application Support/wipzi`, keys under service `wipzi-api`, app, and login registration are left untouched. Quit Wipzi and disable its Launch at Login setting before running Humhum, so both apps do not respond to the same shortcut.
 
 The new bundle identifier is `com.kacheo.humhum`; prior Wipzi grants do not establish Humhum permission status. Unsigned development builds may need permissions re-granted after rebuilding.
+
+## Temporarily disable dictation
+
+Choose **Disable** in the Humhum menu-bar menu to release the dictation shortcut. Choose **Enable** to restore it. This setting survives quitting and reopening Humhum. The toggle is unavailable while recording or processing; wait for the current dictation to finish. Preferences and Quit remain available while disabled.
