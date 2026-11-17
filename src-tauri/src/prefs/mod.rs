@@ -8,6 +8,8 @@ use crate::transcription::WhisperModel;
 #[serde(rename_all = "camelCase")]
 pub struct Prefs {
     pub hotkey: String,
+    #[serde(default = "default_dictation_enabled")]
+    pub dictation_enabled: bool,
     pub cleanup_mode: CleanupMode,
     pub cleanup_aggressiveness: CleanupAggressiveness,
     pub api_provider: ApiProvider,
@@ -27,10 +29,15 @@ pub struct Prefs {
     pub preferred_input_device: Option<String>,
 }
 
+fn default_dictation_enabled() -> bool {
+    true
+}
+
 impl Default for Prefs {
     fn default() -> Self {
         Self {
             hotkey: "Option+Shift+Space".into(),
+            dictation_enabled: true,
             cleanup_mode: CleanupMode::None,
             cleanup_aggressiveness: CleanupAggressiveness::Standard,
             api_provider: ApiProvider::OpenAi,
@@ -219,6 +226,20 @@ pub fn save_prefs(prefs: &Prefs) -> Result<(), PrefsError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn dictation_setting_defaults_on_and_survives_reload() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        let mut old = serde_json::to_value(Prefs::default()).unwrap();
+        old.as_object_mut().unwrap().remove("dictationEnabled");
+        std::fs::write(&path, serde_json::to_vec(&old).unwrap()).unwrap();
+        let mut prefs = load_from(&path);
+        assert!(prefs.dictation_enabled);
+        prefs.dictation_enabled = false;
+        save_to(&path, &prefs).unwrap();
+        assert!(!load_from(&path).dictation_enabled);
+    }
 
     #[test]
     fn removal_rejects_native_false_success_and_unconfirmed_absence() {

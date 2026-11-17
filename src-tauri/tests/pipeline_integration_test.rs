@@ -229,6 +229,8 @@ fn build_state(
     let audio = Arc::new(MockAudio::default());
     let hotkey = Arc::new(MockHotkey::default());
     let state = AppState {
+        dictation_control: Mutex::new(()),
+        dictation_enabled: AtomicBool::new(true),
         key_actions: Default::default(),
         cleanup_prefs: Default::default(),
         audio,
