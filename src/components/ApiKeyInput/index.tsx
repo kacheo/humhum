@@ -10,6 +10,8 @@ interface ApiKeyInputProps {
   provider: ApiProvider;
   disabled?: boolean;
   verificationDisabled?: boolean;
+  verificationDescription?: string;
+  persistenceDescription?: string;
   onTest?: (provider: ApiProvider, key: string) => Promise<void>;
   onBusyChange?: (busy: boolean) => void;
 }
@@ -47,6 +49,8 @@ function ProviderKeyInput({
   provider,
   disabled = false,
   verificationDisabled = false,
+  verificationDescription,
+  persistenceDescription,
   onTest = ipc.testApiKey,
   onBusyChange,
 }: ApiKeyInputProps) {
@@ -144,12 +148,12 @@ function ProviderKeyInput({
         disabled={busy || verificationDisabled}
         onChange={(e) => { setKey(e.target.value); setResult(null); }}
       />
-      <button type="button" disabled={blocked || verificationDisabled || key.trim().length === 0} onClick={() => void run("saving")}>
+      <button className="api-key-input__verify" type="button" aria-describedby={[verificationDescription, persistenceDescription].filter(Boolean).join(" ") || undefined} disabled={blocked || verificationDisabled || key.trim().length === 0} onClick={() => void run("saving")}>
         {action === "saving" ? "Verifying…" : "Verify & Save"}
       </button>
       <span className="api-key-input__note" aria-live="polite">{STATUS_TEXT[status]}</span>
       {(status === "saved" || status === "error") && (
-        <button type="button" disabled={blocked} onClick={() => void run("removing")}>
+        <button type="button" aria-describedby={persistenceDescription} disabled={blocked} onClick={() => void run("removing")}>
           {action === "removing" ? "Removing…" : "Remove key"}
         </button>
       )}

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, vi } from "vitest";
 
 // Stub the hydration hook so the gate is tested in isolation (no IPC).
@@ -49,9 +49,11 @@ test("gates to Onboarding when onboarding is incomplete", () => {
   expect(screen.queryByRole("heading", { name: "Shortcut" })).not.toBeInTheDocument();
 });
 
-test("shows PrefsPanel once onboarding is complete", () => {
+test("shows PrefsPanel once onboarding completion is saved", async () => {
   usePrefsStore.getState().setField("onboardingComplete", true);
   render(<PrefsRoot />);
+  expect(screen.getByRole("heading", { name: "Permissions" })).toBeInTheDocument();
+  await act(async () => usePrefsStore.setState({ savedPrefs: usePrefsStore.getState().prefs }));
   expect(screen.getByRole("tab", { name: "Shortcut" })).toBeInTheDocument();
   expect(screen.queryByText("Onboarding")).not.toBeInTheDocument();
 });

@@ -46,10 +46,10 @@ export function CleanupUsageSection() {
   return (
     <section className="prefs__section">
       <h2 className="prefs__heading">Token usage</h2>
-      {failed ? <p>Usage unavailable</p> : !usage ? <p>Loading usage…</p> : (
+      {failed ? <p className="prefs__hint" role="status">Usage unavailable</p> : !usage ? <p className="prefs__hint" role="status">Loading usage…</p> : (
         <>
           <table className="usage-table">
-            <caption>Reported tokens on this Mac</caption>
+            <caption>Reported cleanup tokens on this device</caption>
             <thead>
               <tr><th scope="col">Cleanup</th><th scope="col">Input</th><th scope="col">Output</th></tr>
             </thead>

@@ -41,7 +41,7 @@ test("a failed download surfaces Error and re-enables retry", async () => {
   act(() => useRecordingStore.getState().setDownloadProgress("base_en", 100));
   act(() => useRecordingStore.getState().setModelStatus("base_en", { error: "insufficient_disk" }));
   expect(screen.getByRole("status")).toHaveTextContent("Error");
-  expect(screen.getByRole("button", { name: "Download" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Retry download" })).toBeEnabled();
   expect(onReady).toHaveBeenLastCalledWith(false);
 });
 

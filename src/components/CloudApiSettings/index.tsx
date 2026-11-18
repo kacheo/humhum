@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { ipc } from "../../lib/ipc";
 import type { ApiProvider, CleanupModelOption } from "../../lib/types";
 import { ApiKeyInput } from "../ApiKeyInput";
@@ -14,18 +14,19 @@ export function CloudApiSettings({ provider, onProviderChange, onBusyChange, onb
   onModelChange?: (model: string) => void;
 }) {
   const [busy, setBusy] = useState(false);
-  const [catalog, setCatalog] = useState<CleanupModelOption[]>([]);
-  const [catalogError, setCatalogError] = useState(false);
+  const [catalog, setCatalog] = useState<CleanupModelOption[] | null>(null);
+  const verificationHintId = useId();
+  const persistenceHintId = useId();
   useEffect(() => {
     if (onboarding) return;
     let active = true;
     ipc.getCleanupModels().then(
       (options) => { if (active) setCatalog(options ?? []); },
-      () => { if (active) setCatalogError(true); },
+      () => { if (active) setCatalog([]); },
     );
     return () => { active = false; };
   }, [onboarding]);
-  const options = catalog.filter((entry) => entry.provider === provider);
+  const options = catalog?.filter((entry) => entry.provider === provider) ?? [];
   const selected = options.find((entry) => entry.id === model)?.id ?? options[0]?.id;
   const handleBusyChange = useCallback((value: boolean) => {
     setBusy(value);
@@ -47,18 +48,29 @@ export function CloudApiSettings({ provider, onProviderChange, onBusyChange, onb
           <label className={row}>
             <span>Cleanup model</span>
             <select value={selected ?? ""} disabled={busy || !selected} onChange={(e) => onModelChange?.(e.target.value)}>
-              {!selected && <option value="">{catalogError ? "Models unavailable" : "Loading models…"}</option>}
+              {!selected && <option value="">{catalog ? "Models unavailable" : "Loading models…"}</option>}
               {options.map((entry) => <option key={entry.id} value={entry.id}>{entry.label}</option>)}
             </select>
           </label>
         )}
       </div>
-      <div className={`${row} ${row}--col`}>
+      <div className={`${row} ${row}--col cloud-credentials`}>
         <span>API key</span>
-        <ApiKeyInput provider={provider} verificationDisabled={!onboarding && !selected} onBusyChange={handleBusyChange} onTest={model && selected ? (p, key) => ipc.testApiKey(p, key, selected) : undefined} />
-        <p className={hint}>Verification sends a short, billable sample. During dictation, your provider receives the transcript.</p>
-        <p className={hint}>Keychain changes take effect immediately. {onboarding ? "Continue to apply your cleanup settings." : "Click Save to apply cleanup settings."}</p>
         {onboarding && <p className={hint}>Cleanup model: {provider === "open_ai" ? "gpt-4o-mini" : "Claude Haiku 4.5"}.</p>}
+        <p className={hint} id={verificationHintId}>
+          Verification sends a short, billable sample to the cleanup model. During dictation, your provider receives the transcript.
+        </p>
+        <ApiKeyInput
+          provider={provider}
+          verificationDisabled={!onboarding && !selected}
+          onBusyChange={handleBusyChange}
+          onTest={selected ? (p, key) => ipc.testApiKey(p, key, selected) : undefined}
+          verificationDescription={verificationHintId}
+          persistenceDescription={persistenceHintId}
+        />
+        <p className={hint} id={persistenceHintId}>
+          Keychain changes take effect immediately. {onboarding ? "Choose Next when your cleanup settings are ready." : "Use Save preferences to apply your cleanup settings."}
+        </p>
       </div>
     </>
   );

@@ -36,7 +36,7 @@ test("shows every permission as granted with no action buttons when all granted"
   });
   render(<PermissionsNotice />);
   await waitFor(() => expect(ipc.checkPermissions).toHaveBeenCalled());
-  expect(screen.getAllByText("Granted ✓")).toHaveLength(3);
+  expect(screen.getAllByText("Granted")).toHaveLength(3);
   expect(screen.queryByRole("button")).toBeNull();
 });
 
@@ -61,7 +61,7 @@ test("a denied keyboard permission deep-links to its settings pane", async () =>
     inputMonitoring: true,
   });
   render(<PermissionsNotice />);
-  const open = await screen.findByRole("button", { name: "Open Settings" });
+  const open = await screen.findByRole("button", { name: "Open Settings for Accessibility" });
   await userEvent.click(open);
   expect(ipc.openAccessibilitySettings).toHaveBeenCalled();
 });
@@ -73,7 +73,7 @@ test("a denied input-monitoring permission deep-links to its settings pane", asy
     inputMonitoring: false,
   });
   render(<PermissionsNotice />);
-  const open = await screen.findByRole("button", { name: "Open Settings" });
+  const open = await screen.findByRole("button", { name: "Open Settings for Input Monitoring" });
   await userEvent.click(open);
   expect(ipc.openInputMonitoringSettings).toHaveBeenCalled();
 });

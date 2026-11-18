@@ -44,6 +44,7 @@ export function AiSection() {
     <>
       <section className="prefs__section">
         <h2 className="prefs__heading">Text cleanup</h2>
+        <p className="prefs__hint">Optionally polish your transcript before it is pasted.</p>
         <label className="prefs__row">
           <span>Mode</span>
           <select
@@ -51,7 +52,7 @@ export function AiSection() {
             disabled={keyBusy}
             onChange={(e) => setField("cleanupMode", e.target.value as CleanupMode)}
           >
-            <option value="none">None</option>
+            <option value="none">Off</option>
             <option value="local">Local (Ollama)</option>
             <option value="api">Cloud API</option>
           </select>
@@ -97,7 +98,6 @@ export function AiSection() {
                 <option value="heavy">Heavy</option>
               </select>
             </label>
-            <p className="prefs__hint">Applies to both Local and Cloud cleanup.</p>
           </>
         )}
       </section>
@@ -105,6 +105,7 @@ export function AiSection() {
 
       <section className="prefs__section">
         <h2 className="prefs__heading">Transcription</h2>
+        <p className="prefs__hint">Speech is transcribed on this device. Downloads start immediately.</p>
         <label className="prefs__row">
           <span>Model</span>
           <select
@@ -143,7 +144,6 @@ export function AiSection() {
             </div>
           );
         })}
-        <p className="prefs__hint">Downloads start immediately. Speech is transcribed on your Mac.</p>
       </section>
 
     </>

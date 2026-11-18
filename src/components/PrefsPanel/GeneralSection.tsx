@@ -20,12 +20,12 @@ export function GeneralSection() {
       <section className="prefs__section">
         <h2 className="prefs__heading">Startup</h2>
         <label className="prefs__row">
+          <span>Launch at login</span>
           <input
             type="checkbox"
             checked={prefs.launchAtLogin}
             onChange={(e) => setField("launchAtLogin", e.target.checked)}
           />
-          <span>Launch at login</span>
         </label>
       </section>
 
@@ -35,6 +35,10 @@ export function GeneralSection() {
           <span>Input device</span>
           <select
             value={prefs.preferredInputDevice ?? ""}
+            title={prefs.preferredInputDevice === SYSTEM_DEFAULT_INPUT_DEVICE
+              ? "System Default"
+              : prefs.preferredInputDevice ?? "Auto (avoid Bluetooth mic switching)"}
+            aria-describedby="prefs-audio-hint"
             onChange={(e) => setField("preferredInputDevice", e.target.value || null)}
           >
             <option value="">Auto (avoid Bluetooth mic switching)</option>
@@ -46,10 +50,8 @@ export function GeneralSection() {
             ))}
           </select>
         </label>
-        <p className="prefs__hint">
-          “Auto” avoids opening a Bluetooth headset’s microphone when a built-in or wired
-          alternative is available, since macOS otherwise switches Bluetooth audio to a
-          lower-quality mode the moment recording starts.
+        <p className="prefs__hint" id="prefs-audio-hint">
+          Auto prefers a built-in or wired microphone when available to preserve Bluetooth playback quality.
         </p>
         <p className="prefs__hint">Recordings automatically stop after five minutes for safety.</p>
       </section>

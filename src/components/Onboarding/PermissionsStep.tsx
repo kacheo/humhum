@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ipc } from "../../lib/ipc";
 import { useTauriEvent } from "../../hooks/useTauriEvent";
 import type { PermissionsState } from "../../lib/types";
+import { Icon } from "../Icon";
 import { PermissionRecoveryHint } from "../PermissionRecoveryHint";
 
 const ALL_FALSE: PermissionsState = { microphone: false, accessibility: false, inputMonitoring: false };
@@ -20,14 +21,16 @@ export function PermissionsStep({ onReady }: { onReady: (ready: boolean) => void
 
   return (
     <section className="onb-step">
-      <h2>Permissions</h2>
-      <p>Humhum needs three macOS permissions to record audio and paste text.</p>
-      <ul className="perm-list">
-        <PermRow label="Microphone" granted={perms.microphone} action="Grant"
+      <h2 tabIndex={-1}>Permissions</h2>
+      <p>Grant these macOS permissions so Humhum can record your voice, detect your shortcut, and paste the transcript.</p>
+      <ul className="perm-list" role="list">
+        <PermRow label="Microphone" granted={perms.microphone} action="Grant" primary
           onClick={() => { void ipc.requestMicrophone().catch(() => {}); }} />
-        <PermRow label="Accessibility" granted={perms.accessibility} action="Open Settings"
+        <PermRow label="Accessibility" granted={perms.accessibility} action="Open Settings" primary={perms.microphone}
+          actionLabel="Open Settings for Accessibility"
           onClick={() => ipc.openAccessibilitySettings()} />
-        <PermRow label="Input Monitoring" granted={perms.inputMonitoring} action="Open Settings"
+        <PermRow label="Input Monitoring" granted={perms.inputMonitoring} action="Open Settings" primary={perms.microphone && perms.accessibility}
+          actionLabel="Open Settings for Input Monitoring"
           onClick={() => ipc.openInputMonitoringSettings()} />
       </ul>
       <PermissionRecoveryHint perms={perms} />
@@ -35,14 +38,22 @@ export function PermissionsStep({ onReady }: { onReady: (ready: boolean) => void
   );
 }
 
-function PermRow({ label, granted, action, onClick }: {
-  label: string; granted: boolean; action: string; onClick: () => void;
+function PermRow({ label, granted, action, actionLabel, primary, onClick }: {
+  label: string; granted: boolean; action: string; actionLabel?: string; primary: boolean; onClick: () => void;
 }) {
   return (
     <li className={`perm-row${granted ? " perm-row--granted" : ""}`}>
       <span className="perm-row__label">{label}</span>
-      <span className="perm-row__status" role="status">{granted ? "Granted ✓" : "Needed"}</span>
-      {!granted && <button type="button" onClick={onClick}>{action}</button>}
+      <span className="perm-row__status" role="status">
+        <span className="onboarding__sr-only">{label}: </span>
+        <Icon name={granted ? "check" : "warning"} size={14} />
+        {granted ? "Granted" : "Needed"}
+      </span>
+      {!granted && (
+        <button type="button" className={primary ? "primary-action" : undefined} aria-label={actionLabel} onClick={onClick}>
+          {action}
+        </button>
+      )}
     </li>
   );
 }

@@ -20,25 +20,28 @@ export function CleanupStep({ onReady, onBusyChange }: {
 
   return (
     <section className="onb-step">
-      <h2>Cleanup</h2>
-      <p>Optionally tidy up transcripts. You can change this anytime in Preferences.</p>
-      <label className="onb-row">
-        <input type="radio" name="cleanup" disabled={busy} checked={prefs.cleanupMode === "none"} onChange={() => setField("cleanupMode", "none")} />
-        <span>Off</span>
-      </label>
-      <label className="onb-row">
-        <input type="radio" name="cleanup" disabled={busy} checked={prefs.cleanupMode === "local"} onChange={() => setField("cleanupMode", "local")} />
-        <span>Local (Ollama)</span>
-      </label>
-      <label className="onb-row">
-        <input type="radio" name="cleanup" disabled={busy} checked={prefs.cleanupMode === "api"} onChange={() => setField("cleanupMode", "api")} aria-label="Cloud API" />
-        <span>Cloud API</span>
-      </label>
+      <h2 tabIndex={-1}>Cleanup</h2>
+      <p>Choose whether Humhum tidies up your transcripts. You can change this in Preferences.</p>
+      <fieldset className="onb-options">
+        <legend>Cleanup mode</legend>
+        <label className="onb-option">
+          <input type="radio" name="cleanup" disabled={busy} checked={prefs.cleanupMode === "none"} onChange={() => setField("cleanupMode", "none")} />
+          <span>Off</span>
+        </label>
+        <label className="onb-option">
+          <input type="radio" name="cleanup" disabled={busy} checked={prefs.cleanupMode === "local"} onChange={() => setField("cleanupMode", "local")} />
+          <span>Local (Ollama)</span>
+        </label>
+        <label className="onb-option">
+          <input type="radio" name="cleanup" disabled={busy} checked={prefs.cleanupMode === "api"} onChange={() => setField("cleanupMode", "api")} />
+          <span>Cloud API</span>
+        </label>
+      </fieldset>
       {prefs.cleanupMode === "api" && (
-        <p className="onb-hint">Requires an API key — enter it below.</p>
+        <p className="onb-hint">Requires an API key. You can add one now or later in Preferences.</p>
       )}
       {prefs.cleanupMode === "local" && (
-        <>
+        <div className="onb-card onb-connection">
           <label className="onb-row">
             <span>Ollama model</span>
             <input aria-label="Ollama model" value={prefs.ollamaModel} onChange={(e) => setField("ollamaModel", e.target.value)} />
@@ -47,10 +50,17 @@ export function CleanupStep({ onReady, onBusyChange }: {
             <span>Ollama URL</span>
             <input aria-label="Ollama URL" value={prefs.ollamaBaseUrl} onChange={(e) => setField("ollamaBaseUrl", e.target.value)} />
           </label>
-        </>
+        </div>
       )}
       {prefs.cleanupMode === "api" && (
-        <CloudApiSettings provider={prefs.apiProvider} onProviderChange={(p) => setField("apiProvider", p)} onBusyChange={handleBusyChange} onboarding />
+        <div className="onb-card onb-connection">
+          <CloudApiSettings
+            provider={prefs.apiProvider}
+            onProviderChange={(provider) => setField("apiProvider", provider)}
+            onBusyChange={handleBusyChange}
+            onboarding
+          />
+        </div>
       )}
     </section>
   );

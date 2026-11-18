@@ -24,13 +24,17 @@ export function HotkeyStep({ onReady }: { onReady: (ready: boolean) => void }) {
 
   return (
     <section className="onb-step">
-      <h2>Shortcut</h2>
-      <p>Pick the keys you'll hold to dictate — hold them in any app to start recording.</p>
-      <HotkeyPicker
-        value={hotkey}
-        onChange={(combo) => { setField("hotkey", combo); setValid(false); }}
-        onValidate={validate}
-      />
+      <h2 tabIndex={-1}>Shortcut</h2>
+      <p>Hold the shortcut in any app to record. Release it to transcribe.</p>
+      <div className="onb-card onb-shortcut">
+        <span className="onb-shortcut__label">Dictation shortcut</span>
+        <HotkeyPicker
+          value={hotkey}
+          onChange={(combo) => { setField("hotkey", combo); setValid(false); }}
+          onValidate={validate}
+        />
+        <p className="onb-hint">Select the shortcut to change it.</p>
+      </div>
     </section>
   );
 }

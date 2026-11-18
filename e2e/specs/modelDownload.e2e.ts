@@ -8,6 +8,7 @@ describe("model download", () => {
   it("downloads the base_en model and reflects live progress", async () => {
     await switchToPrefs();
     await expect($(".prefs")).toBeExisting();
+    await $("#prefs-tab-ai").click();
 
     const downloadBtn = $('[aria-label="Download Base (English)"]');
     const badge = $$(".model-badge")[0];
