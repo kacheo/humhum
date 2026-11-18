@@ -394,6 +394,8 @@ test.each(["verification", "removal"])("cloud %s blocks provider and mode change
 });
 
 test.each(["saving", "removing"])("immediate key %s survives Discard while provider and mode preferences revert", async (action) => {
+  const fixture = "mock";
+  const model = "claude-haiku-4-5-20251001";
   const removing = action === "removing";
   let anthropicSaved = removing;
   vi.mocked(ipc.hasApiKey).mockImplementation(async (provider) => provider === "anthropic" && anthropicSaved);
@@ -404,13 +406,13 @@ test.each(["saving", "removing"])("immediate key %s survives Discard while provi
   await userEvent.selectOptions(screen.getByLabelText("Mode"), "api");
   await userEvent.selectOptions(screen.getByLabelText("Provider"), "anthropic");
   await screen.findByText(removing ? "Key saved in Keychain" : "No key saved");
-  if (!removing) await userEvent.type(screen.getByLabelText("API key"), "anthropic-secret");
+  if (!removing) await userEvent.type(screen.getByLabelText("API key"), fixture);
   await userEvent.click(screen.getByRole("button", { name: removing ? "Remove key" : "Verify & Save" }));
   expect(await screen.findByText(removing ? "Key removed" : "Key verified and saved")).toBeInTheDocument();
   if (removing) expect(ipc.removeApiKey).toHaveBeenCalledWith("anthropic");
-  else expect(ipc.testApiKey).toHaveBeenCalledWith("anthropic", "anthropic-secret", "claude-haiku-4-5-20251001");
+  else expect(ipc.testApiKey).toHaveBeenCalledWith("anthropic", fixture, model);
   expect(ipc.savePrefs).not.toHaveBeenCalled();
-  expect(JSON.stringify(usePrefsStore.getState().prefs)).not.toContain("anthropic-secret");
+  expect(JSON.stringify(usePrefsStore.getState().prefs)).not.toContain(fixture);
   await userEvent.click(screen.getByRole("button", { name: "Discard" }));
   expect(usePrefsStore.getState().prefs.apiProvider).toBe("open_ai");
   expect(screen.getByLabelText("Mode")).toHaveValue("none");
