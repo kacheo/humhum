@@ -43,49 +43,6 @@ export function AiSection() {
   return (
     <>
       <section className="prefs__section">
-        <h2 className="prefs__heading">Transcription</h2>
-        <label className="prefs__row">
-          <span>Model</span>
-          <select
-            value={prefs.whisperModel}
-            onChange={(e) => setField("whisperModel", e.target.value as WhisperModel)}
-          >
-            {MODELS.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        {MODELS.map((m) => {
-          const status = effectiveStatus(m.id);
-          const downloading = typeof status === "object" && "downloading" in status;
-          const failed = typeof status === "object" && "error" in status;
-          return (
-            <div key={m.id} className="prefs__model-row">
-              <span className="prefs__row-label">{m.label}</span>
-              <ModelStatusBadge status={status} />
-              <button
-                type="button"
-                aria-label={`${failed ? "Retry" : "Download"} ${m.label}`}
-                disabled={status === "ready" || downloading}
-                onClick={() => {
-                  useRecordingStore.getState().setDownloadProgress(m.id, 0);
-                  useRecordingStore.getState().setModelStatus(m.id, { downloading: 0 });
-                  void ipc.downloadModel(m.id).catch(() => {
-                    useRecordingStore.getState().setModelStatus(m.id, { error: "Could not start the download. Try again." });
-                  });
-                }}
-              >
-                {status === "ready" ? "Downloaded" : failed ? "Retry" : "Download"}
-              </button>
-            </div>
-          );
-        })}
-        <p className="prefs__hint">Downloads start immediately. Speech is transcribed on your Mac.</p>
-      </section>
-
-      <section className="prefs__section">
         <h2 className="prefs__heading">Text cleanup</h2>
         <label className="prefs__row">
           <span>Mode</span>
@@ -145,6 +102,50 @@ export function AiSection() {
         )}
       </section>
       <CleanupUsageSection />
+
+      <section className="prefs__section">
+        <h2 className="prefs__heading">Transcription</h2>
+        <label className="prefs__row">
+          <span>Model</span>
+          <select
+            value={prefs.whisperModel}
+            onChange={(e) => setField("whisperModel", e.target.value as WhisperModel)}
+          >
+            {MODELS.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        {MODELS.map((m) => {
+          const status = effectiveStatus(m.id);
+          const downloading = typeof status === "object" && "downloading" in status;
+          const failed = typeof status === "object" && "error" in status;
+          return (
+            <div key={m.id} className="prefs__model-row">
+              <span className="prefs__row-label">{m.label}</span>
+              <ModelStatusBadge status={status} />
+              <button
+                type="button"
+                aria-label={`${failed ? "Retry" : "Download"} ${m.label}`}
+                disabled={status === "ready" || downloading}
+                onClick={() => {
+                  useRecordingStore.getState().setDownloadProgress(m.id, 0);
+                  useRecordingStore.getState().setModelStatus(m.id, { downloading: 0 });
+                  void ipc.downloadModel(m.id).catch(() => {
+                    useRecordingStore.getState().setModelStatus(m.id, { error: "Could not start the download. Try again." });
+                  });
+                }}
+              >
+                {status === "ready" ? "Downloaded" : failed ? "Retry" : "Download"}
+              </button>
+            </div>
+          );
+        })}
+        <p className="prefs__hint">Downloads start immediately. Speech is transcribed on your Mac.</p>
+      </section>
+
     </>
   );
 }

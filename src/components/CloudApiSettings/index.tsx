@@ -35,27 +35,29 @@ export function CloudApiSettings({ provider, onProviderChange, onBusyChange, onb
   const hint = onboarding ? "onb-hint" : "prefs__hint";
   return (
     <>
-      <label className={row}>
-        <span>Provider</span>
-        <select value={provider} disabled={busy} onChange={(e) => onProviderChange(e.target.value as ApiProvider)}>
-          <option value="open_ai">OpenAI</option>
-          <option value="anthropic">Anthropic</option>
-        </select>
-      </label>
-      {!onboarding && (
+      <div className={onboarding ? undefined : "cloud-model-fields"}>
         <label className={row}>
-          <span>Cleanup model</span>
-          <select value={selected ?? ""} disabled={busy || !selected} onChange={(e) => onModelChange?.(e.target.value)}>
-            {!selected && <option value="">{catalogError ? "Models unavailable" : "Loading models…"}</option>}
-            {options.map((entry) => <option key={entry.id} value={entry.id}>{entry.label}</option>)}
+          <span>Provider</span>
+          <select value={provider} disabled={busy} onChange={(e) => onProviderChange(e.target.value as ApiProvider)}>
+            <option value="open_ai">OpenAI</option>
+            <option value="anthropic">Anthropic</option>
           </select>
         </label>
-      )}
+        {!onboarding && (
+          <label className={row}>
+            <span>Cleanup model</span>
+            <select value={selected ?? ""} disabled={busy || !selected} onChange={(e) => onModelChange?.(e.target.value)}>
+              {!selected && <option value="">{catalogError ? "Models unavailable" : "Loading models…"}</option>}
+              {options.map((entry) => <option key={entry.id} value={entry.id}>{entry.label}</option>)}
+            </select>
+          </label>
+        )}
+      </div>
       <div className={`${row} ${row}--col`}>
         <span>API key</span>
         <ApiKeyInput provider={provider} disabled={!onboarding && !selected} onBusyChange={handleBusyChange} onTest={model && selected ? (p, key) => ipc.testApiKey(p, key, selected) : undefined} />
-        <p className={hint}>Verification makes a small billable API request using sample text. Cloud cleanup sends transcript text, not audio, to your provider.</p>
-        <p className={hint}>Keys are saved or removed immediately in Keychain; Discard does not undo key actions. {onboarding ? "Your cleanup choice is applied as you continue setup." : "Save applies provider and cleanup-mode changes."}</p>
+        <p className={hint}>Verification sends a short, billable sample. During dictation, your provider receives the transcript.</p>
+        <p className={hint}>Keychain changes take effect immediately. {onboarding ? "Continue to apply your cleanup settings." : "Click Save to apply cleanup settings."}</p>
         {onboarding && <p className={hint}>Cleanup model: {provider === "open_ai" ? "gpt-4o-mini" : "Claude Haiku 4.5"}.</p>}
       </div>
     </>

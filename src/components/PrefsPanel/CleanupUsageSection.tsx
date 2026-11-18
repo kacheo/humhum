@@ -48,21 +48,24 @@ export function CleanupUsageSection() {
       <h2 className="prefs__heading">Token usage</h2>
       {failed ? <p>Usage unavailable</p> : !usage ? <p>Loading usage…</p> : (
         <>
-          <div className="prefs__row">
-            <span>Latest cleanup</span>
-            {latest ? (
-              <div>
-                <div>{providerNames[latest.provider]} · {latest.model}</div>
-                {latest.counts.inputTokens === null && latest.counts.outputTokens === null
-                  ? "Usage unavailable"
-                  : `Input ${format(latest.counts.inputTokens)} · Output ${format(latest.counts.outputTokens)}`}
-              </div>
-            ) : <span>No cleanup attempts yet</span>}
-          </div>
-          <div className="prefs__row">
-            <span>Reported tokens on this Mac</span>
-            <span>Input {format(usage.inputTokens)} · Output {format(usage.outputTokens)}</span>
-          </div>
+          <table className="usage-table">
+            <caption>Reported tokens on this Mac</caption>
+            <thead>
+              <tr><th scope="col">Cleanup</th><th scope="col">Input</th><th scope="col">Output</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Latest cleanup
+                  {latest && <small>{providerNames[latest.provider]} · {latest.model}</small>}
+                </th>
+                {latest ? <>
+                  <td>{format(latest.counts.inputTokens)}</td>
+                  <td>{format(latest.counts.outputTokens)}</td>
+                </> : <td colSpan={2}>No cleanup attempts yet</td>}
+              </tr>
+              <tr><th scope="row">All time</th><td>{format(usage.inputTokens)}</td><td>{format(usage.outputTokens)}</td></tr>
+            </tbody>
+          </table>
         </>
       )}
     </section>

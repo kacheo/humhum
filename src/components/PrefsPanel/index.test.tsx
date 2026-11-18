@@ -439,6 +439,6 @@ test("shows the latest cleanup and cumulative tokens with cleanup disabled", asy
   await renderPanel();
   await userEvent.click(screen.getByRole("tab", { name: "AI" }));
   expect(await screen.findByText("Ollama · llama3")).toBeInTheDocument();
-  expect(screen.getByText("Input 50 · Output Unavailable")).toBeInTheDocument();
-  expect(screen.getByText("Input 125 · Output 35")).toBeInTheDocument();
+  expect(screen.getByRole("cell", { name: "Unavailable" })).toBeInTheDocument();
+  expect(screen.getByRole("row", { name: "All time 125 35" })).toBeInTheDocument();
 });

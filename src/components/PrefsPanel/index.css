@@ -39,3 +39,32 @@
 .prefs__source-error { margin: 6px 0 0; color: var(--color-danger); }
 
 .prefs__version { user-select: text; overflow-wrap: anywhere; }
+
+.usage-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.usage-table caption { text-align: left; color: var(--color-text-secondary); font-size: 12px; padding-bottom: 12px; }
+.usage-table thead { background: var(--color-bg); color: var(--color-text-secondary); }
+.usage-table th, .usage-table td { text-align: right; padding: 9px 10px; }
+.usage-table thead th { font-size: 12px; font-weight: 500; }
+.usage-table th:first-child { text-align: left; }
+.usage-table tbody th { font-weight: 550; }
+.usage-table tbody tr + tr { border-top: 1px solid var(--color-border-subtle); }
+.usage-table td { font-weight: 600; }
+.usage-table td[colspan], .usage-table small { color: var(--color-text-secondary); font-weight: 400; }
+.usage-table small { display: block; overflow-wrap: anywhere; }
+@media (max-width: 620px) {
+  .prefs { grid-template-columns: 125px minmax(0, 1fr); }
+  .prefs__content { padding: 16px; }
+  .usage-table th, .usage-table td { padding-inline: 5px; }
+}
+
+.cloud-model-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(155px, 100%), 1fr));
+  gap: 10px;
+  background: var(--color-bg);
+  border-radius: 8px;
+  padding: 12px;
+}
+.cloud-model-fields .prefs__row { display: grid; gap: 4px; }
+.cloud-model-fields select { width: 100%; }
+.cloud-model-fields span { font-size: 12px; font-weight: 550; }
