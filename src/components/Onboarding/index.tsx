@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { usePrefsStore } from "../../stores/prefs";
+import { Icon } from "../Icon";
 import { PermissionsStep } from "./PermissionsStep";
 import { HotkeyStep } from "./HotkeyStep";
 import { CleanupStep } from "./CleanupStep";
@@ -8,80 +9,130 @@ import { DemoStep } from "./DemoStep";
 import "../../styles/tokens.css";
 import "./index.css";
 
-const STEPS = ["Permissions", "Shortcut", "Cleanup", "Model", "Try it"] as const;
+const STEPS = [
+  { label: "Permissions", icon: "shield" },
+  { label: "Shortcut", icon: "keyboard" },
+  { label: "Cleanup", icon: "sparkles" },
+  { label: "Model", icon: "download" },
+  { label: "Try it", icon: "mic" },
+] as const;
 
-/** First-run wizard. Owns the step index and a single `ready` flag that each
- *  step reports through onReady; Next/Finish is gated on it. On Finish (or the
- *  DemoStep's Skip) it persists onboardingComplete, and the prefs.tsx gate then
- *  swaps to PrefsPanel. */
+/** First-run wizard. Each step reports when the user can advance. */
 export function Onboarding() {
   const [step, setStep] = useState(0);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [preparing, setPreparing] = useState(false);
-  const [prepareError, setPrepareError] = useState<string | null>(null);
-  const preparationInFlight = useRef(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const saveInFlight = useRef(false);
+  const bodyRef = useRef<HTMLElement>(null);
+  const previousStep = useRef(step);
   const isLast = step === STEPS.length - 1;
 
-  async function complete() {
-    usePrefsStore.getState().setField("onboardingComplete", true);
-    await usePrefsStore.getState().savePrefs();
-  }
-  async function next() {
-    if (busy || preparationInFlight.current) return;
-    if (step === STEPS.length - 2) {
-      preparationInFlight.current = true;
-      setPreparing(true);
-      setPrepareError(null);
-      try {
-        // Apply the draft shortcut and cleanup settings before asking the user
-        // to try them. Saving does not complete onboarding.
-        await usePrefsStore.getState().savePrefs();
+  useLayoutEffect(() => {
+    if (previousStep.current === step) return;
+    previousStep.current = step;
+    const body = bodyRef.current;
+    if (!body) return;
+    body.scrollTop = 0;
+    body.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
+  }, [step]);
+
+  async function saveSetup(finish: boolean) {
+    if (busy || saveInFlight.current) return;
+    saveInFlight.current = true;
+    setSaving(true);
+    setSaveError(null);
+    const store = usePrefsStore.getState();
+    try {
+      if (finish) store.setField("onboardingComplete", true);
+      await store.savePrefs();
+      if (!finish) {
+        // Apply the shortcut and cleanup settings before trying dictation.
         setReady(false);
         setStep(STEPS.length - 1);
-      } catch {
-        setPrepareError("Could not apply your settings. Try again before starting dictation.");
-      } finally {
-        preparationInFlight.current = false;
-        setPreparing(false);
       }
+    } catch {
+      if (finish) store.setField("onboardingComplete", false);
+      setSaveError(finish
+        ? "Could not finish setup. Try again."
+        : "Could not apply your settings. Try again before starting dictation.");
+    } finally {
+      saveInFlight.current = false;
+      setSaving(false);
+    }
+  }
+
+  function next() {
+    if (!ready || busy || saveInFlight.current) return;
+    if (step >= STEPS.length - 2) {
+      void saveSetup(isLast);
       return;
     }
-    if (isLast) { void complete(); return; }
     setReady(false);
-    setStep((s) => s + 1);
+    setStep((current) => current + 1);
   }
+
   function back() {
-    if (busy || preparationInFlight.current) return;
-    setPrepareError(null);
+    if (busy || saveInFlight.current) return;
+    setSaveError(null);
     setReady(false);
-    setStep((s) => Math.max(0, s - 1));
+    setStep((current) => Math.max(0, current - 1));
   }
 
   return (
     <div className="onboarding">
-      <header className="onboarding__header"><span className="onboarding__brand">Welcome to Humhum</span><span>Step {step + 1} of {STEPS.length}</span></header>
-      <ol className="onboarding__progress" aria-label="Setup progress">
-        {STEPS.map((label, i) => (
-          <li key={label} aria-current={i === step ? "step" : undefined}
-            className={`onboarding__dot${i === step ? " onboarding__dot--active" : ""}${i < step ? " onboarding__dot--done" : ""}`}>
-            {i < step && <span aria-hidden="true">✓ </span>}{label}
-          </li>
-        ))}
-      </ol>
-      <div className="onboarding__body">
+      <header className="onboarding__sidebar">
+        <div className="onboarding__brand">
+          <span className="onboarding__brand-icon"><Icon name="mic" size={20} /></span>
+          <h1>Set up Humhum</h1>
+        </div>
+        <ol className="onboarding__progress" role="list" aria-label="Setup progress">
+          {STEPS.map(({ label, icon }, index) => (
+            <li
+              key={label}
+              aria-current={index === step ? "step" : undefined}
+              className="onboarding__step-marker"
+            >
+              <span className="onboarding__step-icon">
+                <Icon name={index < step ? "check" : icon} size={16} />
+              </span>
+              {label}
+              {index < step && <span className="onboarding__sr-only"> (completed)</span>}
+            </li>
+          ))}
+        </ol>
+      </header>
+      <main className="onboarding__body" ref={bodyRef}>
         {step === 0 && <PermissionsStep onReady={setReady} />}
         {step === 1 && <HotkeyStep onReady={setReady} />}
         {step === 2 && <CleanupStep onReady={setReady} onBusyChange={setBusy} />}
         {step === 3 && <ModelDownloadStep onReady={setReady} />}
-        {step === 4 && <DemoStep onReady={setReady} onSkip={() => void complete()} />}
-      </div>
-      {prepareError && <p className="onb-error" role="alert">{prepareError}</p>}
-      <footer className="onboarding__nav">
-        <button type="button" onClick={back} disabled={step === 0 || preparing || busy}>Back</button>
-        <button type="button" className="onboarding__next primary-action" onClick={() => void next()} disabled={!ready || preparing || busy}>
-          {preparing ? "Preparing…" : isLast ? "Finish" : "Next"}
-        </button>
+        {step === 4 && <DemoStep onReady={setReady} />}
+      </main>
+      <footer className="onboarding__footer">
+        {saveError && <p className="onb-error" role="alert">{saveError}</p>}
+        <div className="onboarding__nav">
+          <button type="button" onClick={back} disabled={step === 0 || saving || busy}>
+            <Icon name="arrow-left" size={16} /> Back
+          </button>
+          <div className="onboarding__forward">
+            {isLast && (
+              <button type="button" className="demo-skip" onClick={() => void saveSetup(true)} disabled={saving}>
+                Skip for now
+              </button>
+            )}
+            <button
+              type="button"
+              className="onboarding__next primary-action"
+              onClick={next}
+              disabled={!ready || saving || busy}
+            >
+              {saving ? (isLast ? "Finishing…" : "Preparing…") : isLast ? "Finish" : "Next"}
+              <Icon name={isLast ? "check" : "arrow-right"} size={16} />
+            </button>
+          </div>
+        </div>
       </footer>
     </div>
   );

@@ -1,6 +1,8 @@
 import { useEffect } from "react";
+import { useInitialModelStatus } from "../../hooks/useInitialModelStatus";
 import { ipc } from "../../lib/ipc";
 import { useRecordingStore } from "../../stores/recording";
+import { Icon } from "../Icon";
 import { ModelStatusBadge } from "../ModelStatusBadge";
 import type { ModelStatus } from "../../lib/types";
 
@@ -11,11 +13,7 @@ export function ModelDownloadStep({ onReady }: { onReady: (ready: boolean) => vo
   const status = useRecordingStore((s) => s.modelStatus.base_en);
   const pct = useRecordingStore((s) => s.downloadProgress.base_en);
 
-  useEffect(() => {
-    ipc.getModelStatus("base_en")
-      .then((st) => useRecordingStore.getState().setModelStatus("base_en", st))
-      .catch(() => {});
-  }, []);
+  useInitialModelStatus("base_en");
 
   const ready = status === "ready";
   useEffect(() => { onReady(ready); }, [ready, onReady]);
@@ -33,12 +31,14 @@ export function ModelDownloadStep({ onReady }: { onReady: (ready: boolean) => vo
 
   return (
     <section className="onb-step">
-      <h2>Model</h2>
-      <p>Download the Base (English) speech model. It runs fully on-device.</p>
-      <div className="onb-row">
-        <span>Base (English)</span>
-        <ModelStatusBadge status={effective} />
-        <button type="button" disabled={ready || downloading}
+      <h2 tabIndex={-1}>Model</h2>
+      <p>Humhum uses the Base (English) model to transcribe speech on this device.</p>
+      <div className="onb-card onb-model">
+        <div className="onb-model__details">
+          <strong>Base (English)</strong>
+          <ModelStatusBadge status={effective} />
+        </div>
+        {!ready && <button type="button" className="primary-action" disabled={downloading}
           onClick={() => {
             useRecordingStore.getState().setDownloadProgress("base_en", 0);
             useRecordingStore.getState().setModelStatus("base_en", { downloading: 0 });
@@ -46,8 +46,9 @@ export function ModelDownloadStep({ onReady }: { onReady: (ready: boolean) => vo
               useRecordingStore.getState().setModelStatus("base_en", { error: "Could not start the download. Try again." });
             });
           }}>
-          Download
-        </button>
+          <Icon name="download" size={16} />
+          {isError ? "Retry download" : "Download"}
+        </button>}
       </div>
     </section>
   );

@@ -33,6 +33,7 @@ describe("Cloud API credentials", () => {
     const testBtn = $("button=Verify & Save");
     const result = $(".api-key-input .probe-status");
 
+    await keyInput.waitForEnabled({ timeout: 5000 });
     await keyInput.setValue("sk-e2e-test-key");
 
     await setApiKeyResult("success");
@@ -54,7 +55,7 @@ describe("Cloud API credentials", () => {
     await keyInput.setValue("sk-e2e-replacement");
     await testBtn.click();
     await expect(result).toHaveText("Key verified and saved", { wait: 15000 });
-    await $("button=Save").click();
-    await expect($(".prefs__save-feedback")).toHaveText("All changes saved");
+    await $("button=Save preferences").click();
+    await expect($(".prefs__save-feedback")).toHaveText("All preferences saved");
   });
 });

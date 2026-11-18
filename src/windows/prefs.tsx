@@ -11,7 +11,7 @@ import { usePrefsStore } from "../stores/prefs";
 export function PrefsRoot() {
   const { ready } = useAppBootstrap();
   useModelEvents();
-  const onboardingComplete = usePrefsStore((s) => s.prefs.onboardingComplete);
+  const onboardingComplete = usePrefsStore((s) => s.savedPrefs.onboardingComplete);
   if (!ready) return null; // brief: stores not hydrated yet
   return onboardingComplete ? <PrefsPanel /> : <Onboarding />;
 }

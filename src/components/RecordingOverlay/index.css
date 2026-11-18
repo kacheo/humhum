@@ -1,8 +1,51 @@
-.overlay { display: flex; flex-direction: column; justify-content: center; gap: 6px; height: 100vh; padding: 10px 12px; border: 1px solid rgba(255,255,255,.18); border-radius: 12px; background: rgba(28,29,34,.96); color: #f4f5f7; color-scheme: dark; overflow: hidden; }
-.overlay__row { display: flex; align-items: center; gap: 10px; min-height: 24px; }
-.overlay__status { font-size: 13px; color: #e0e2e8; }
-.overlay__error { font-size: 12px; line-height: 17px; color: #ffabb3; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
-.overlay :focus-visible { outline: 2px solid #8bbcff; outline-offset: 1px; }
+/* An opaque dark HUD stays legible over any application beneath it. */
+.overlay {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  height: 100vh;
+  padding: 10px 14px;
+  border: 1px solid #455352;
+  border-radius: 16px;
+  background: #172121;
+  color: #f0f7f6;
+  color-scheme: dark;
+  overflow: hidden;
+}
+
+.overlay__indicator {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  color: #85e0d0;
+  background: #253c3a;
+}
+
+.overlay--error .overlay__indicator {
+  color: #ffc1ba;
+  background: #462e30;
+}
+
+.overlay__status {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.overlay__error {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: #ffc1ba;
+  font-size: 13px;
+  line-height: 17px;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .overlay .waveform__bar, .overlay .transcript-flash { animation: none; }
+  .overlay .waveform__bar,
+  .overlay .transcript-flash { animation: none; }
 }

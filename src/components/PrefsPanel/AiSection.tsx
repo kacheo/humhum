@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useInitialModelStatus } from "../../hooks/useInitialModelStatus";
 import { usePrefsStore } from "../../stores/prefs";
 import { useRecordingStore } from "../../stores/recording";
 import { ipc } from "../../lib/ipc";
@@ -24,14 +25,8 @@ export function AiSection() {
   const downloadProgress = useRecordingStore((s) => s.downloadProgress);
   const setField = usePrefsStore.getState().setField;
 
-  useEffect(() => {
-    for (const { id } of MODELS) {
-      ipc
-        .getModelStatus(id)
-        .then((s) => useRecordingStore.getState().setModelStatus(id, s))
-        .catch(() => {});
-    }
-  }, []);
+  useInitialModelStatus("base_en");
+  useInitialModelStatus("small_en");
 
   function effectiveStatus(id: WhisperModel): ModelStatus {
     const s = modelStatus[id];
@@ -44,6 +39,7 @@ export function AiSection() {
     <>
       <section className="prefs__section">
         <h2 className="prefs__heading">Text cleanup</h2>
+        <p className="prefs__hint">Optionally polish your transcript before it is pasted.</p>
         <label className="prefs__row">
           <span>Mode</span>
           <select
@@ -51,7 +47,7 @@ export function AiSection() {
             disabled={keyBusy}
             onChange={(e) => setField("cleanupMode", e.target.value as CleanupMode)}
           >
-            <option value="none">None</option>
+            <option value="none">Off</option>
             <option value="local">Local (Ollama)</option>
             <option value="api">Cloud API</option>
           </select>
@@ -97,7 +93,6 @@ export function AiSection() {
                 <option value="heavy">Heavy</option>
               </select>
             </label>
-            <p className="prefs__hint">Applies to both Local and Cloud cleanup.</p>
           </>
         )}
       </section>
@@ -105,6 +100,7 @@ export function AiSection() {
 
       <section className="prefs__section">
         <h2 className="prefs__heading">Transcription</h2>
+        <p className="prefs__hint">Speech is transcribed on this device. Downloads start immediately.</p>
         <label className="prefs__row">
           <span>Model</span>
           <select
@@ -126,24 +122,25 @@ export function AiSection() {
             <div key={m.id} className="prefs__model-row">
               <span className="prefs__row-label">{m.label}</span>
               <ModelStatusBadge status={status} />
-              <button
-                type="button"
-                aria-label={`${failed ? "Retry" : "Download"} ${m.label}`}
-                disabled={status === "ready" || downloading}
-                onClick={() => {
-                  useRecordingStore.getState().setDownloadProgress(m.id, 0);
-                  useRecordingStore.getState().setModelStatus(m.id, { downloading: 0 });
-                  void ipc.downloadModel(m.id).catch(() => {
-                    useRecordingStore.getState().setModelStatus(m.id, { error: "Could not start the download. Try again." });
-                  });
-                }}
-              >
-                {status === "ready" ? "Downloaded" : failed ? "Retry" : "Download"}
-              </button>
+              {status !== "ready" && (
+                <button
+                  type="button"
+                  aria-label={`${failed ? "Retry" : "Download"} ${m.label}`}
+                  disabled={downloading}
+                  onClick={() => {
+                    useRecordingStore.getState().setDownloadProgress(m.id, 0);
+                    useRecordingStore.getState().setModelStatus(m.id, { downloading: 0 });
+                    void ipc.downloadModel(m.id).catch(() => {
+                      useRecordingStore.getState().setModelStatus(m.id, { error: "Could not start the download. Try again." });
+                    });
+                  }}
+                >
+                  {failed ? "Retry" : "Download"}
+                </button>
+              )}
             </div>
           );
         })}
-        <p className="prefs__hint">Downloads start immediately. Speech is transcribed on your Mac.</p>
       </section>
 
     </>

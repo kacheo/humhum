@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { beforeEach, vi } from "vitest";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { RecordingOverlay } from ".";
@@ -59,4 +59,18 @@ test("shows the waveform while recording", () => {
   useRecordingStore.setState({ phase: "recording" });
   const { container } = render(<RecordingOverlay />);
   expect(container.querySelector(".waveform")).toBeInTheDocument();
+});
+
+test("updates one status region as dictation moves through processing", () => {
+  useRecordingStore.setState({ phase: "recording" });
+  render(<RecordingOverlay />);
+  const status = screen.getByRole("status");
+
+  expect(status).toHaveTextContent("Recording…");
+  act(() => useRecordingStore.setState({ phase: "transcribing" }));
+  expect(screen.getByRole("status")).toBe(status);
+  expect(status).toHaveTextContent("Transcribing…");
+  act(() => useRecordingStore.setState({ phase: "cleaning" }));
+  expect(screen.getByRole("status")).toBe(status);
+  expect(status).toHaveTextContent("Cleaning…");
 });

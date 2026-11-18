@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 import { usePrefsStore } from "../../stores/prefs";
 import { ipc } from "../../lib/ipc";
 import { openExternal } from "../../lib/opener";
+import { Icon } from "../Icon";
 import { HotkeyPicker } from "../HotkeyPicker";
 import { PermissionsNotice } from "./PermissionsNotice";
 import { AiSection } from "./AiSection";
@@ -35,11 +36,21 @@ export function PrefsPanel() {
   const setField = usePrefsStore.getState().setField;
   const [activeTab, setActiveTab] = useState<TabId>("general");
 
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  function selectTab(tab: TabId) {
+    if (tab !== activeTab && contentRef.current) contentRef.current.scrollTop = 0;
+    setActiveTab(tab);
+  }
+
   return (
     <div className="prefs">
       <aside className="prefs__sidebar">
-        <div className="prefs__brand">Humhum<small>Preferences</small></div>
-        <PrefsTabs active={activeTab} onSelect={setActiveTab} />
+        <div className="prefs__brand">
+          <span className="prefs__brand-mark"><Icon name="mic" /></span>
+          Humhum
+        </div>
+        <PrefsTabs active={activeTab} onSelect={selectTab} />
         <div className="prefs__source">
           {version && <span className="prefs__version">{version}</span>}
           <span>Humhum · AGPLv3</span>
@@ -55,7 +66,7 @@ export function PrefsPanel() {
         </div>
       </aside>
 
-      <div className="prefs__content">
+      <div className="prefs__content" ref={contentRef}>
         <section
           className="prefs__tabpanel"
           role="tabpanel"
@@ -64,7 +75,7 @@ export function PrefsPanel() {
           tabIndex={0}
           hidden={activeTab !== "general"}
         >
-          <header className="page-heading"><h1>General</h1><p>Make Humhum feel at home on your Mac.</p></header>
+          <header className="page-heading"><h1>General</h1></header>
           <GeneralSection />
         </section>
 
@@ -96,7 +107,7 @@ export function PrefsPanel() {
           tabIndex={0}
           hidden={activeTab !== "ai"}
         >
-          <header className="page-heading"><h1>AI</h1><p>Choose how your speech becomes text.</p></header>
+          <header className="page-heading"><h1>AI</h1></header>
           <AiSection />
         </section>
 
@@ -108,7 +119,7 @@ export function PrefsPanel() {
           tabIndex={0}
           hidden={activeTab !== "permissions"}
         >
-          <header className="page-heading"><h1>Permissions</h1><p>Manage the access Humhum needs on your Mac.</p></header>
+          <header className="page-heading"><h1>Permissions</h1></header>
           <div className="prefs__section">
             <PermissionsNotice />
           </div>
@@ -117,7 +128,7 @@ export function PrefsPanel() {
       </div>
 
       <footer className="prefs__footer">
-        <p className="prefs__save-feedback" role={saveError ? "alert" : "status"}>{saveError ?? (isSaving ? "Saving changes…" : isDirty ? "Unsaved changes" : "All changes saved")}</p>
+        <p className="prefs__save-feedback" role={saveError ? "alert" : "status"}>{saveError ?? (isSaving ? "Saving preferences…" : isDirty ? "Unsaved preference changes" : "All preferences saved")}</p>
 
         <button
           type="button"
@@ -136,7 +147,7 @@ export function PrefsPanel() {
             void usePrefsStore.getState().savePrefs().catch(() => setSaveError("Could not save. Your edits are kept. Try again."));
           }}
         >
-          {isSaving ? "Saving…" : "Save"}
+          {isSaving ? "Saving…" : "Save preferences"}
         </button>
       </footer>
     </div>
