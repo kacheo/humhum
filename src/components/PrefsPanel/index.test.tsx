@@ -21,7 +21,11 @@ vi.mock("../../lib/ipc", () => ({
       { provider: "open_ai", id: "gpt-6-luna", label: "GPT-6 Luna" },
       { provider: "anthropic", id: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5" },
     ]),
-    getCleanupUsage: vi.fn().mockResolvedValue({ latest: null, inputTokens: 0, outputTokens: 0 }),
+    getCleanupUsage: vi.fn().mockResolvedValue({
+      month: "2024-02", currentMonth: "2024-02", firstMonth: null, days: {},
+      totals: { inputTokens: null, outputTokens: null },
+      lifetime: { inputTokens: "0", outputTokens: "0" },
+    }),
     getModelStatus: vi.fn().mockResolvedValue("not_downloaded"),
     downloadModel: vi.fn().mockResolvedValue(undefined),
     validateHotkey: vi.fn().mockResolvedValue(undefined),
@@ -442,17 +446,11 @@ test("cleanup model follows the provider and Discard restores the saved choice",
   expect(model).toHaveValue("gpt-6-luna");
 });
 
-test("shows the latest cleanup and cumulative tokens with cleanup disabled", async () => {
-  vi.mocked(ipc.getCleanupUsage).mockResolvedValueOnce({
-    latest: { provider: "ollama", model: "llama3", counts: { inputTokens: 50, outputTokens: null } },
-    inputTokens: 125,
-    outputTokens: 35,
-  });
+test("shows token usage with cleanup disabled", async () => {
   await renderPanel();
   await userEvent.click(screen.getByRole("tab", { name: "AI" }));
-  expect(await screen.findByText("Ollama · llama3")).toBeInTheDocument();
-  expect(screen.getByRole("cell", { name: "Unavailable" })).toBeInTheDocument();
-  expect(screen.getByRole("row", { name: "All time 125 35" })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "February 2024" })).toBeInTheDocument();
+  expect(screen.getByText("All-time usage")).toBeInTheDocument();
 });
 
 test("a failed model catalog blocks verification but allows removing a saved key", async () => {

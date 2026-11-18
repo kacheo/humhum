@@ -14,7 +14,11 @@ vi.mock("../hooks/useAppBootstrap", () => ({
 vi.mock("../lib/ipc", () => ({
   ipc: {
     checkPermissions: vi.fn().mockRejectedValue(new Error("no backend")),
-    getCleanupUsage: vi.fn().mockResolvedValue({ latest: null, inputTokens: 0, outputTokens: 0 }),
+    getCleanupUsage: vi.fn().mockResolvedValue({
+      month: "2024-02", currentMonth: "2024-02", firstMonth: null, days: {},
+      totals: { inputTokens: null, outputTokens: null },
+      lifetime: { inputTokens: "0", outputTokens: "0" },
+    }),
     getModelStatus: vi.fn().mockRejectedValue(new Error("no backend")),
     listInputDevices: vi.fn().mockRejectedValue(new Error("no backend")),
   },

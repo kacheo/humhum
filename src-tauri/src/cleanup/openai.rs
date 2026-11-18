@@ -31,10 +31,6 @@ pub struct OpenAiProvider {
 }
 
 impl CleanupProvider for OpenAiProvider {
-    fn identity(&self) -> Option<(&str, &str)> {
-        Some(("open_ai", &self.model))
-    }
-
     fn clean<'a>(&'a self, text: &'a str) -> BoxFuture<'a, Result<String, CleanupError>> {
         Box::pin(async move {
             if self.model == "gpt-6-luna" {

@@ -30,7 +30,7 @@ export const ipc = {
     invoke<void>("test_api_key", model ? { provider, key, model } : { provider, key }),
 
   getCleanupModels: () => invoke<CleanupModelOption[]>("get_cleanup_models"),
-  getCleanupUsage: () => invoke<CleanupUsage>("get_cleanup_usage"),
+  getCleanupUsage: (month?: string) => invoke<CleanupUsage>("get_cleanup_usage", { month }),
 
   hasApiKey: (provider: ApiProvider) =>
     invoke<boolean>("has_api_key", { provider }),
