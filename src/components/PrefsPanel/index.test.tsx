@@ -442,3 +442,15 @@ test("shows the latest cleanup and cumulative tokens with cleanup disabled", asy
   expect(screen.getByRole("cell", { name: "Unavailable" })).toBeInTheDocument();
   expect(screen.getByRole("row", { name: "All time 125 35" })).toBeInTheDocument();
 });
+
+test("a failed model catalog blocks verification but allows removing a saved key", async () => {
+  vi.mocked(ipc.getCleanupModels).mockRejectedValueOnce(new Error("Catalog unavailable"));
+  vi.mocked(ipc.hasApiKey).mockResolvedValue(true);
+  await renderPanel();
+  await userEvent.click(screen.getByRole("tab", { name: "AI" }));
+  await userEvent.selectOptions(screen.getByLabelText("Mode"), "api");
+  expect(await screen.findByRole("option", { name: "Models unavailable" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Verify & Save" })).toBeDisabled();
+  await userEvent.click(await screen.findByRole("button", { name: "Remove key" }));
+  expect(ipc.removeApiKey).toHaveBeenCalledWith("open_ai");
+});

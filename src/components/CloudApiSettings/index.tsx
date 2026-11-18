@@ -55,7 +55,7 @@ export function CloudApiSettings({ provider, onProviderChange, onBusyChange, onb
       </div>
       <div className={`${row} ${row}--col`}>
         <span>API key</span>
-        <ApiKeyInput provider={provider} disabled={!onboarding && !selected} onBusyChange={handleBusyChange} onTest={model && selected ? (p, key) => ipc.testApiKey(p, key, selected) : undefined} />
+        <ApiKeyInput provider={provider} verificationDisabled={!onboarding && !selected} onBusyChange={handleBusyChange} onTest={model && selected ? (p, key) => ipc.testApiKey(p, key, selected) : undefined} />
         <p className={hint}>Verification sends a short, billable sample. During dictation, your provider receives the transcript.</p>
         <p className={hint}>Keychain changes take effect immediately. {onboarding ? "Continue to apply your cleanup settings." : "Click Save to apply cleanup settings."}</p>
         {onboarding && <p className={hint}>Cleanup model: {provider === "open_ai" ? "gpt-4o-mini" : "Claude Haiku 4.5"}.</p>}

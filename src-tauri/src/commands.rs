@@ -219,8 +219,9 @@ pub fn get_cleanup_models() -> [cleanup::ModelOption; 4] {
 }
 
 #[tauri::command]
-pub fn get_cleanup_usage() -> crate::cleanup::usage::UsageSummary {
+pub fn get_cleanup_usage() -> Result<crate::cleanup::usage::UsageSummary, AppError> {
     crate::cleanup::usage::load()
+        .map_err(|_| AppError::Internal("Could not load cleanup token usage".into()))
 }
 
 /// Report presence only; never return the credential to the webview.

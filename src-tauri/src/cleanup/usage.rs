@@ -57,24 +57,40 @@ fn path() -> Option<PathBuf> {
     Some(crate::profile::data_root(&home).join("cleanup-usage.json"))
 }
 
-fn read_from(path: &Path) -> UsageSummary {
-    std::fs::read(path)
-        .ok()
-        .and_then(|bytes| serde_json::from_slice(&bytes).ok())
-        .unwrap_or_default()
+fn read_from(path: &Path) -> std::io::Result<UsageSummary> {
+    match std::fs::read(path) {
+        Ok(bytes) => serde_json::from_slice(&bytes)
+            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error)),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(UsageSummary::default()),
+        Err(error) => Err(error),
+    }
 }
 
-fn summary() -> &'static Mutex<UsageSummary> {
-    static SUMMARY: OnceLock<Mutex<UsageSummary>> = OnceLock::new();
-    SUMMARY.get_or_init(|| Mutex::new(path().as_deref().map(read_from).unwrap_or_default()))
+fn summary() -> &'static Mutex<std::io::Result<UsageSummary>> {
+    static SUMMARY: OnceLock<Mutex<std::io::Result<UsageSummary>>> = OnceLock::new();
+    SUMMARY.get_or_init(|| {
+        let loaded = path()
+            .ok_or_else(|| std::io::Error::other("Missing home directory"))
+            .and_then(|path| read_from(&path));
+        Mutex::new(loaded)
+    })
 }
 
-pub fn load() -> UsageSummary {
-    summary().lock().unwrap().clone()
+pub fn load() -> std::io::Result<UsageSummary> {
+    summary()
+        .lock()
+        .unwrap()
+        .as_ref()
+        .cloned()
+        .map_err(|error| std::io::Error::from(error.kind()))
 }
 
 pub fn record(attempt: CleanupAttempt) {
-    let mut summary = summary().lock().unwrap();
+    let mut loaded = summary().lock().unwrap();
+    // Keep the load failure for this session so saving cannot replace unreadable data.
+    let Ok(summary) = loaded.as_mut() else {
+        return;
+    };
     summary.input_tokens = summary
         .input_tokens
         .saturating_add(attempt.counts.input_tokens.unwrap_or(0));
@@ -88,7 +104,7 @@ pub fn persist() -> std::io::Result<()> {
     static WRITER: Mutex<()> = Mutex::new(());
     let _guard = WRITER.lock().unwrap();
     let path = path().ok_or_else(|| std::io::Error::other("Missing home directory"))?;
-    write_to(&path, &load())
+    write_to(&path, &load()?)
 }
 
 fn write_to(path: &Path, summary: &UsageSummary) -> std::io::Result<()> {
@@ -109,10 +125,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn usage_survives_reload_and_recovers_from_unreadable_data() {
+    fn usage_survives_reload_and_reports_unreadable_data() {
         let directory = tempfile::tempdir().unwrap();
         let path = directory.path().join("usage.json");
-        assert!(read_from(&path).latest.is_none());
+        assert!(read_from(&path).unwrap().latest.is_none());
         let summary = UsageSummary {
             latest: Some(CleanupAttempt {
                 provider: "ollama".into(),
@@ -126,11 +142,12 @@ mod tests {
             output_tokens: 5,
         };
         write_to(&path, &summary).unwrap();
-        let loaded = read_from(&path);
+        let loaded = read_from(&path).unwrap();
         assert_eq!(loaded.input_tokens, 24);
         assert_eq!(loaded.output_tokens, 5);
         assert_eq!(loaded.latest.unwrap().counts.output_tokens, None);
         std::fs::write(&path, b"invalid json").unwrap();
-        assert!(read_from(&path).latest.is_none());
+        assert!(read_from(&path).is_err());
+        assert_eq!(std::fs::read(&path).unwrap(), b"invalid json");
     }
 }

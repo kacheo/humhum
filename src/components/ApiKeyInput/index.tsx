@@ -9,6 +9,7 @@ import "./index.css";
 interface ApiKeyInputProps {
   provider: ApiProvider;
   disabled?: boolean;
+  verificationDisabled?: boolean;
   onTest?: (provider: ApiProvider, key: string) => Promise<void>;
   onBusyChange?: (busy: boolean) => void;
 }
@@ -45,6 +46,7 @@ export function ApiKeyInput(props: ApiKeyInputProps) {
 function ProviderKeyInput({
   provider,
   disabled = false,
+  verificationDisabled = false,
   onTest = ipc.testApiKey,
   onBusyChange,
 }: ApiKeyInputProps) {
@@ -93,7 +95,7 @@ function ProviderKeyInput({
   const blocked = busy || status === "checking";
 
   async function run(next: "saving" | "removing") {
-    if (blocked || operationInFlight.current) return;
+    if (blocked || operationInFlight.current || (next === "saving" && verificationDisabled)) return;
     operationInFlight.current = true;
     setAction(next);
     onBusyChange?.(true);
@@ -139,10 +141,10 @@ function ProviderKeyInput({
         aria-label="API key"
         placeholder={`${provider === "open_ai" ? "OpenAI" : "Anthropic"} API key`}
         value={key}
-        disabled={busy}
+        disabled={busy || verificationDisabled}
         onChange={(e) => { setKey(e.target.value); setResult(null); }}
       />
-      <button type="button" disabled={blocked || key.trim().length === 0} onClick={() => void run("saving")}>
+      <button type="button" disabled={blocked || verificationDisabled || key.trim().length === 0} onClick={() => void run("saving")}>
         {action === "saving" ? "Verifying…" : "Verify & Save"}
       </button>
       <span className="api-key-input__note" aria-live="polite">{STATUS_TEXT[status]}</span>
