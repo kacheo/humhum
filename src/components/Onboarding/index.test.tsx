@@ -101,6 +101,24 @@ async function reachModel() {
   await clickNext();
 }
 
+test("enables Finish after a successful first dictation and saves setup", async () => {
+  await reachModel();
+  await clickNext();
+  const finish = await screen.findByRole("button", { name: "Finish" });
+  expect(finish).toBeDisabled();
+
+  act(() => handlers.get("transcription-discarded")?.({ payload: undefined }));
+  expect(finish).toBeDisabled();
+  act(() => handlers.get("recording-started")?.({ payload: undefined }));
+  act(() => handlers.get("cleanup-done")?.({ payload: { text: "Hello Humhum." } }));
+  expect(screen.getByRole("status")).toHaveTextContent("Hello Humhum.");
+  await waitFor(() => expect(finish).toBeEnabled());
+  await userEvent.click(finish);
+
+  await waitFor(() => expect(usePrefsStore.getState().savedPrefs.onboardingComplete).toBe(true));
+  expect(ipc.savePrefs).toHaveBeenLastCalledWith(expect.objectContaining({ onboardingComplete: true }));
+});
+
 test("applies the chosen shortcut before entering Try it and prevents duplicate navigation", async () => {
   await reachModel();
   let resolveSave!: () => void;

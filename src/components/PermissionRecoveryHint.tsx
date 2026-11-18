@@ -6,18 +6,13 @@ export function PermissionRecoveryHint({ perms }: { perms: PermissionsState }) {
 
   return (
     <div role="note" aria-label="Permission recovery">
-      <p>
-        If a permission is enabled in System Settings but still says Needed, fully quit Humhum
-        from its menu-bar menu and reopen the installed app in Applications.
-        Closing this window does not quit the app.
-      </p>
-      {!perms.accessibility && (
-        <p>
-          If Accessibility still says Needed, remove Humhum from the Accessibility list using
-          the minus button. Then use Open Settings here and enable Humhum again.
-          Choose the installed app in Applications, rather than a development copy or the app inside the DMG.
-        </p>
-      )}
+      <details>
+        <summary>Permission still marked Needed?</summary>
+        <p>Use the menu-bar menu to fully quit Humhum, then reopen it from Applications.</p>
+        {!perms.accessibility && (
+          <p>If Accessibility still shows Needed, remove Humhum from the system list and add the installed app again.</p>
+        )}
+      </details>
     </div>
   );
 }

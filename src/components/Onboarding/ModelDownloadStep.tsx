@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useInitialModelStatus } from "../../hooks/useInitialModelStatus";
 import { ipc } from "../../lib/ipc";
 import { useRecordingStore } from "../../stores/recording";
 import { Icon } from "../Icon";
@@ -12,11 +13,7 @@ export function ModelDownloadStep({ onReady }: { onReady: (ready: boolean) => vo
   const status = useRecordingStore((s) => s.modelStatus.base_en);
   const pct = useRecordingStore((s) => s.downloadProgress.base_en);
 
-  useEffect(() => {
-    ipc.getModelStatus("base_en")
-      .then((st) => useRecordingStore.getState().setModelStatus("base_en", st))
-      .catch(() => {});
-  }, []);
+  useInitialModelStatus("base_en");
 
   const ready = status === "ready";
   useEffect(() => { onReady(ready); }, [ready, onReady]);

@@ -56,9 +56,9 @@ export function CloudApiSettings({ provider, onProviderChange, onBusyChange, onb
       </div>
       <div className={`${row} ${row}--col cloud-credentials`}>
         <span>API key</span>
-        {onboarding && <p className={hint}>Cleanup model: {provider === "open_ai" ? "gpt-4o-mini" : "Claude Haiku 4.5"}.</p>}
+        {onboarding && <p className={hint}>Default model {provider === "open_ai" ? "gpt-4o-mini" : "Claude Haiku 4.5"}.</p>}
         <p className={hint} id={verificationHintId}>
-          Verification sends a short, billable sample to the cleanup model. During dictation, your provider receives the transcript.
+          Verification sends a billable sample. Cloud cleanup sends transcripts to your provider.
         </p>
         <ApiKeyInput
           provider={provider}
@@ -69,7 +69,7 @@ export function CloudApiSettings({ provider, onProviderChange, onBusyChange, onb
           persistenceDescription={persistenceHintId}
         />
         <p className={hint} id={persistenceHintId}>
-          Keychain changes take effect immediately. {onboarding ? "Choose Next when your cleanup settings are ready." : "Use Save preferences to apply your cleanup settings."}
+          Key changes apply immediately.
         </p>
       </div>
     </>

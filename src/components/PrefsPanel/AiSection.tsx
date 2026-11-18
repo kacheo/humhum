@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useInitialModelStatus } from "../../hooks/useInitialModelStatus";
 import { usePrefsStore } from "../../stores/prefs";
 import { useRecordingStore } from "../../stores/recording";
 import { ipc } from "../../lib/ipc";
@@ -24,14 +25,8 @@ export function AiSection() {
   const downloadProgress = useRecordingStore((s) => s.downloadProgress);
   const setField = usePrefsStore.getState().setField;
 
-  useEffect(() => {
-    for (const { id } of MODELS) {
-      ipc
-        .getModelStatus(id)
-        .then((s) => useRecordingStore.getState().setModelStatus(id, s))
-        .catch(() => {});
-    }
-  }, []);
+  useInitialModelStatus("base_en");
+  useInitialModelStatus("small_en");
 
   function effectiveStatus(id: WhisperModel): ModelStatus {
     const s = modelStatus[id];
@@ -127,20 +122,22 @@ export function AiSection() {
             <div key={m.id} className="prefs__model-row">
               <span className="prefs__row-label">{m.label}</span>
               <ModelStatusBadge status={status} />
-              <button
-                type="button"
-                aria-label={`${failed ? "Retry" : "Download"} ${m.label}`}
-                disabled={status === "ready" || downloading}
-                onClick={() => {
-                  useRecordingStore.getState().setDownloadProgress(m.id, 0);
-                  useRecordingStore.getState().setModelStatus(m.id, { downloading: 0 });
-                  void ipc.downloadModel(m.id).catch(() => {
-                    useRecordingStore.getState().setModelStatus(m.id, { error: "Could not start the download. Try again." });
-                  });
-                }}
-              >
-                {status === "ready" ? "Downloaded" : failed ? "Retry" : "Download"}
-              </button>
+              {status !== "ready" && (
+                <button
+                  type="button"
+                  aria-label={`${failed ? "Retry" : "Download"} ${m.label}`}
+                  disabled={downloading}
+                  onClick={() => {
+                    useRecordingStore.getState().setDownloadProgress(m.id, 0);
+                    useRecordingStore.getState().setModelStatus(m.id, { downloading: 0 });
+                    void ipc.downloadModel(m.id).catch(() => {
+                      useRecordingStore.getState().setModelStatus(m.id, { error: "Could not start the download. Try again." });
+                    });
+                  }}
+                >
+                  {failed ? "Retry" : "Download"}
+                </button>
+              )}
             </div>
           );
         })}

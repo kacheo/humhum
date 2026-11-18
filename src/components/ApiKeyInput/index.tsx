@@ -151,7 +151,7 @@ function ProviderKeyInput({
       <button className="api-key-input__verify" type="button" aria-describedby={[verificationDescription, persistenceDescription].filter(Boolean).join(" ") || undefined} disabled={blocked || verificationDisabled || key.trim().length === 0} onClick={() => void run("saving")}>
         {action === "saving" ? "Verifying…" : "Verify & Save"}
       </button>
-      <span className="api-key-input__note" aria-live="polite">{STATUS_TEXT[status]}</span>
+      <span className="api-key-input__note">{STATUS_TEXT[status]}</span>
       {(status === "saved" || status === "error") && (
         <button type="button" aria-describedby={persistenceDescription} disabled={blocked} onClick={() => void run("removing")}>
           {action === "removing" ? "Removing…" : "Remove key"}

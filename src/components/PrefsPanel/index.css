@@ -290,4 +290,7 @@
   .prefs__brand { padding-inline: 0; }
   .prefs__content, .prefs__footer { padding-inline: var(--space-3); }
   .prefs__save-feedback { flex-basis: 100%; }
+  .prefs .page-heading h1 { font-size: 1.55rem; overflow-wrap: anywhere; }
+  .prefs__perm-row { grid-template-columns: minmax(0, 1fr); }
+  .prefs__perm-row > button { grid-column: 1; grid-row: auto; justify-self: start; }
 }

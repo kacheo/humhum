@@ -6,7 +6,12 @@ import { SYSTEM_DEFAULT_INPUT_DEVICE } from "../../lib/types";
 export function GeneralSection() {
   const prefs = usePrefsStore((s) => s.prefs);
   const setField = usePrefsStore.getState().setField;
-  const [inputDevices, setInputDevices] = useState<string[]>([]);
+  const [inputDevices, setInputDevices] = useState<string[]>();
+  const preferred = prefs.preferredInputDevice;
+  const missingDevice = preferred && preferred !== SYSTEM_DEFAULT_INPUT_DEVICE && !inputDevices?.includes(preferred);
+  const selectedLabel = preferred === SYSTEM_DEFAULT_INPUT_DEVICE ? "System Default"
+    : missingDevice && inputDevices ? `${preferred} (unavailable)`
+    : preferred ?? "Auto";
 
   useEffect(() => {
     ipc
@@ -34,16 +39,15 @@ export function GeneralSection() {
         <label className="prefs__row">
           <span>Input device</span>
           <select
-            value={prefs.preferredInputDevice ?? ""}
-            title={prefs.preferredInputDevice === SYSTEM_DEFAULT_INPUT_DEVICE
-              ? "System Default"
-              : prefs.preferredInputDevice ?? "Auto (avoid Bluetooth mic switching)"}
+            value={preferred ?? ""}
+            title={selectedLabel}
             aria-describedby="prefs-audio-hint"
             onChange={(e) => setField("preferredInputDevice", e.target.value || null)}
           >
-            <option value="">Auto (avoid Bluetooth mic switching)</option>
+            <option value="">Auto</option>
             <option value={SYSTEM_DEFAULT_INPUT_DEVICE}>System Default</option>
-            {inputDevices.map((name) => (
+            {missingDevice && <option value={preferred}>{selectedLabel}</option>}
+            {inputDevices?.map((name) => (
               <option key={name} value={name}>
                 {name}
               </option>

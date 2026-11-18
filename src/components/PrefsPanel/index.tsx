@@ -107,7 +107,7 @@ export function PrefsPanel() {
           tabIndex={0}
           hidden={activeTab !== "ai"}
         >
-          <header className="page-heading"><h1>AI</h1><p>Manage speech transcription and optional text cleanup.</p></header>
+          <header className="page-heading"><h1>AI</h1></header>
           <AiSection />
         </section>
 
@@ -119,7 +119,7 @@ export function PrefsPanel() {
           tabIndex={0}
           hidden={activeTab !== "permissions"}
         >
-          <header className="page-heading"><h1>Permissions</h1><p>Review the permissions required for dictation.</p></header>
+          <header className="page-heading"><h1>Permissions</h1></header>
           <div className="prefs__section">
             <PermissionsNotice />
           </div>

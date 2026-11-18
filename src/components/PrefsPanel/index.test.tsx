@@ -327,6 +327,16 @@ test("selecting an input device is picked up as a dirtying change", async () => 
   );
 });
 
+test("shows a saved microphone as unavailable when it is disconnected", async () => {
+  const prefs = { ...DEFAULTS, preferredInputDevice: "Disconnected USB mic" };
+  usePrefsStore.setState({ prefs, savedPrefs: prefs });
+  await renderPanel();
+  const device = screen.getByLabelText("Input device");
+  expect(device).toHaveValue("Disconnected USB mic");
+  expect(screen.getByRole("option", { name: "Disconnected USB mic (unavailable)" })).toHaveProperty("selected", true);
+  expect(screen.getByRole("button", { name: "Save preferences" })).toBeDisabled();
+});
+
 test("failed save displays feedback and retains edits for retry", async () => {
   vi.mocked(ipc.savePrefs).mockRejectedValueOnce(new Error("Disk unavailable"));
   await renderPanel();
