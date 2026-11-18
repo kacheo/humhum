@@ -2067,6 +2067,7 @@ version = "0.1.8"
 dependencies = [
  "aisdk",
  "block2",
+ "chrono",
  "coreaudio-sys",
  "cpal",
  "keyring",

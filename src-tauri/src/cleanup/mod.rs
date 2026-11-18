@@ -81,10 +81,6 @@ impl std::fmt::Display for CleanupError {
 }
 
 pub trait CleanupProvider: Send + Sync {
-    fn identity(&self) -> Option<(&str, &str)> {
-        None
-    }
-
     fn clean<'a>(&'a self, text: &'a str) -> BoxFuture<'a, Result<String, CleanupError>>;
 }
 
