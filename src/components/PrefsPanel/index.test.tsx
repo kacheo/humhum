@@ -16,6 +16,12 @@ import { openExternal } from "../../lib/opener";
 vi.mock("../../hooks/useTauriEvent", () => ({ useTauriEvent: () => {} }));
 vi.mock("../../lib/ipc", () => ({
   ipc: {
+    getCleanupModels: vi.fn().mockResolvedValue([
+      { provider: "open_ai", id: "gpt-4o-mini", label: "GPT-4o mini (retiring)" },
+      { provider: "open_ai", id: "gpt-6-luna", label: "GPT-6 Luna" },
+      { provider: "anthropic", id: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5" },
+    ]),
+    getCleanupUsage: vi.fn().mockResolvedValue({ latest: null, inputTokens: 0, outputTokens: 0 }),
     getModelStatus: vi.fn().mockResolvedValue("not_downloaded"),
     downloadModel: vi.fn().mockResolvedValue(undefined),
     validateHotkey: vi.fn().mockResolvedValue(undefined),
@@ -405,4 +411,34 @@ test.each(["saving", "removing"])("immediate key %s survives Discard while provi
   expect(screen.getByLabelText("API key")).toHaveValue("");
   expect(ipc.testApiKey).toHaveBeenCalledTimes(removing ? 0 : 1);
   expect(ipc.removeApiKey).toHaveBeenCalledTimes(removing ? 1 : 0);
+});
+
+test("cleanup model follows the provider and Discard restores the saved choice", async () => {
+  await renderPanel();
+  await userEvent.click(screen.getByRole("tab", { name: "AI" }));
+  await userEvent.selectOptions(screen.getByLabelText("Mode"), "api");
+  const model = screen.getByLabelText("Cleanup model");
+  await userEvent.selectOptions(model, "gpt-6-luna");
+  await userEvent.selectOptions(screen.getByLabelText("Provider"), "anthropic");
+  expect(model).toHaveValue("claude-haiku-4-5-20251001");
+  await userEvent.selectOptions(screen.getByLabelText("Provider"), "open_ai");
+  expect(model).toHaveValue("gpt-6-luna");
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
+  await waitFor(() => expect(ipc.savePrefs).toHaveBeenCalledWith(expect.objectContaining({ openAiModel: "gpt-6-luna" })));
+  await userEvent.selectOptions(model, "gpt-4o-mini");
+  await userEvent.click(screen.getByRole("button", { name: "Discard" }));
+  expect(model).toHaveValue("gpt-6-luna");
+});
+
+test("shows the latest cleanup and cumulative tokens with cleanup disabled", async () => {
+  vi.mocked(ipc.getCleanupUsage).mockResolvedValueOnce({
+    latest: { provider: "ollama", model: "llama3", counts: { inputTokens: 50, outputTokens: null } },
+    inputTokens: 125,
+    outputTokens: 35,
+  });
+  await renderPanel();
+  await userEvent.click(screen.getByRole("tab", { name: "AI" }));
+  expect(await screen.findByText("Ollama · llama3")).toBeInTheDocument();
+  expect(screen.getByText("Input 50 · Output Unavailable")).toBeInTheDocument();
+  expect(screen.getByText("Input 125 · Output 35")).toBeInTheDocument();
 });

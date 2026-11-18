@@ -1,6 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
   ApiProvider,
+  CleanupModelOption,
+  CleanupUsage,
   ModelStatus,
   PermissionsState,
   Prefs,
@@ -24,8 +26,11 @@ export const ipc = {
   storeApiKey: (provider: ApiProvider, key: string) =>
     invoke<void>("store_api_key", { provider, key }),
 
-  testApiKey: (provider: ApiProvider, key: string) =>
-    invoke<void>("test_api_key", { provider, key }),
+  testApiKey: (provider: ApiProvider, key: string, model?: string) =>
+    invoke<void>("test_api_key", model ? { provider, key, model } : { provider, key }),
+
+  getCleanupModels: () => invoke<CleanupModelOption[]>("get_cleanup_models"),
+  getCleanupUsage: () => invoke<CleanupUsage>("get_cleanup_usage"),
 
   hasApiKey: (provider: ApiProvider) =>
     invoke<boolean>("has_api_key", { provider }),

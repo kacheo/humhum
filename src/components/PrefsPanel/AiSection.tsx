@@ -3,6 +3,7 @@ import { usePrefsStore } from "../../stores/prefs";
 import { useRecordingStore } from "../../stores/recording";
 import { ipc } from "../../lib/ipc";
 import type { CleanupAggressiveness, CleanupMode, ModelStatus, WhisperModel } from "../../lib/types";
+import { CleanupUsageSection } from "./CleanupUsageSection";
 import { CloudApiSettings } from "../CloudApiSettings";
 import { OllamaTest } from "../OllamaTest";
 import { ModelStatusBadge } from "../ModelStatusBadge";
@@ -117,7 +118,13 @@ export function AiSection() {
         )}
 
         {prefs.cleanupMode === "api" && (
-          <CloudApiSettings provider={prefs.apiProvider} onProviderChange={(p) => setField("apiProvider", p)} onBusyChange={setKeyBusy} />
+          <CloudApiSettings
+            provider={prefs.apiProvider}
+            onProviderChange={(p) => setField("apiProvider", p)}
+            model={prefs.apiProvider === "open_ai" ? prefs.openAiModel : prefs.anthropicModel}
+            onModelChange={(model) => setField(prefs.apiProvider === "open_ai" ? "openAiModel" : "anthropicModel", model)}
+            onBusyChange={setKeyBusy}
+          />
         )}
 
         {prefs.cleanupMode !== "none" && (
@@ -137,6 +144,7 @@ export function AiSection() {
           </>
         )}
       </section>
+      <CleanupUsageSection />
     </>
   );
 }

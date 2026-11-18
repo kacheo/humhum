@@ -23,7 +23,7 @@ Run Ollama locally, install the model selected in Humhum (the default is `llama3
 ## Cloud cleanup and Keychain
 
 1. Open **Preferences → AI → Text cleanup**, select **Cloud API**, and choose **OpenAI** or **Anthropic**. The same controls are available during onboarding.
-2. Enter that provider's API key and click **Verify & Save**. Verification makes a small billable request using fixed sample text against the cleanup model: `gpt-4o-mini` for OpenAI or Claude Haiku 4.5 for Anthropic. OpenAI API billing is separate from a ChatGPT subscription.
+2. Enter that provider's API key and click **Verify & Save**. Verification makes a small billable request using fixed sample text against the selected cleanup model. In onboarding, it uses the provider default. OpenAI API billing is separate from a ChatGPT subscription.
 3. Wait for **Key verified and saved**, then click **Save** to apply provider and cleanup-mode changes. During onboarding, these choices are applied before the Try it step.
 
 Keys are stored separately per provider in macOS Keychain. **Key saved in Keychain** means a credential is stored, not that its current billing or access has been rechecked. The field stays empty after saving or reopening the app. To replace a key, enter a new one and click **Verify & Save**; an unsuccessful verification keeps the previous key. To delete the selected provider's key, click **Remove key**. Saving, replacing, and removing keys take effect immediately for subsequent dictations using the saved provider; **Discard** does not undo those actions. A dictation already processing may finish with its existing configuration.

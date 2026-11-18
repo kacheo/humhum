@@ -28,6 +28,10 @@ pub struct AnthropicProvider {
 }
 
 impl CleanupProvider for AnthropicProvider {
+    fn identity(&self) -> Option<(&str, &str)> {
+        Some(("anthropic", &self.model))
+    }
+
     fn clean<'a>(&'a self, text: &'a str) -> BoxFuture<'a, Result<String, CleanupError>> {
         Box::pin(async move {
             let model = Anthropic::<DynamicModel>::builder()
@@ -36,7 +40,7 @@ impl CleanupProvider for AnthropicProvider {
                 .base_url(&self.base_url)
                 .build()
                 .map_err(map_aisdk_error)?;
-            run_cleanup(model, build_prompt(self.aggressiveness), text).await
+            run_cleanup(model, build_prompt(self.aggressiveness), text, true).await
         })
     }
 }
@@ -61,16 +65,22 @@ mod tests {
     #[tokio::test]
     async fn ok_200_returns_cleaned_text() {
         let mut server = mockito::Server::new_async().await;
-        let body = r#"{"id":"msg_1","content":[{"type":"text","text":"CLEANED ANT"}],"model":"claude-haiku-4-5-20251001","stop_reason":"end_turn","type":"message","usage":{"cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"input_tokens":1,"output_tokens":1,"service_tier":"standard"}}"#;
+        let body = r#"{"id":"msg_1","content":[{"type":"text","text":"CLEANED ANT"}],"model":"claude-haiku-4-5-20251001","stop_reason":"end_turn","type":"message","usage":{"cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"cache_creation_input_tokens":3,"cache_read_input_tokens":5,"input_tokens":1,"output_tokens":1,"service_tier":"standard"}}"#;
         server
             .mock("POST", mockito::Matcher::Any)
+            .match_body(mockito::Matcher::PartialJson(
+                serde_json::json!({"model": "claude-sonnet-4-6"}),
+            ))
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(body)
             .create_async()
             .await;
-        let out = provider(server.url()).clean("messy input").await.unwrap();
-        assert_eq!(out, "CLEANED ANT");
+        let mut provider = provider(server.url());
+        provider.model = "claude-sonnet-4-6".into();
+        let (out, attempt) = super::super::usage::measure(&provider, "messy input").await;
+        assert_eq!(out.unwrap(), "CLEANED ANT");
+        assert_eq!(attempt.unwrap().counts.input_tokens, Some(9));
     }
 
     #[tokio::test]

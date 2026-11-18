@@ -13,6 +13,10 @@ pub struct Prefs {
     pub cleanup_mode: CleanupMode,
     pub cleanup_aggressiveness: CleanupAggressiveness,
     pub api_provider: ApiProvider,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub open_ai_model: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub anthropic_model: Option<String>,
     pub ollama_model: String,
     pub ollama_base_url: String,
     pub whisper_model: WhisperModel,
@@ -33,6 +37,21 @@ fn default_dictation_enabled() -> bool {
     true
 }
 
+impl Prefs {
+    pub fn cloud_model(&self, provider: ApiProvider) -> &str {
+        self.configured_model(provider)
+            .filter(|model| crate::cleanup::validate_model(provider, model).is_ok())
+            .unwrap_or(crate::cleanup::default_model(provider))
+    }
+
+    pub fn configured_model(&self, provider: ApiProvider) -> Option<&str> {
+        match provider {
+            ApiProvider::OpenAi => self.open_ai_model.as_deref(),
+            ApiProvider::Anthropic => self.anthropic_model.as_deref(),
+        }
+    }
+}
+
 impl Default for Prefs {
     fn default() -> Self {
         Self {
@@ -41,6 +60,8 @@ impl Default for Prefs {
             cleanup_mode: CleanupMode::None,
             cleanup_aggressiveness: CleanupAggressiveness::Standard,
             api_provider: ApiProvider::OpenAi,
+            open_ai_model: None,
+            anthropic_model: None,
             ollama_model: "llama3".into(),
             ollama_base_url: "http://localhost:11434/v1/".into(),
             whisper_model: WhisperModel::BaseEn,

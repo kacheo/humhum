@@ -129,6 +129,11 @@ fn save_cleanup_prefs(
     read_key: impl FnOnce(ApiProvider) -> Result<Option<String>, prefs::PrefsError>,
     persist: impl FnOnce(&Prefs) -> Result<(), prefs::PrefsError>,
 ) -> Result<(), AppError> {
+    for provider in [ApiProvider::OpenAi, ApiProvider::Anthropic] {
+        if let Some(model) = prefs.configured_model(provider) {
+            cleanup::validate_model(provider, model)?;
+        }
+    }
     let mut saved = state.cleanup_prefs.lock().unwrap();
     // The native menu owns this setting; an open Preferences draft may be stale.
     let mut prefs = prefs.clone();
@@ -188,16 +193,34 @@ pub fn store_api_key(_provider: String, _key: String) -> Result<(), AppError> {
 pub async fn test_api_key(
     provider: String,
     key: String,
+    model: Option<String>,
     state: tauri::State<'_, crate::state::AppState>,
 ) -> Result<(), AppError> {
     let p = parse_provider(&provider)?;
     let action = state.key_actions.begin(p);
+    if let Some(model) = model.as_deref() {
+        let key = key.trim();
+        cleanup::verify_model_key(p, model, key, &default_base_url(p)).await?;
+        return state.key_actions.complete(action, || {
+            update_api_key(&state, p, Some(key), || prefs::store_api_key(p, key))
+        });
+    }
     run_test_api_key(p, key.trim(), &default_base_url(p), |p, k| {
         state.key_actions.complete(action, || {
             update_api_key(&state, p, Some(k), || prefs::store_api_key(p, k))
         })
     })
     .await
+}
+
+#[tauri::command]
+pub fn get_cleanup_models() -> [cleanup::ModelOption; 4] {
+    cleanup::CLOUD_MODELS
+}
+
+#[tauri::command]
+pub fn get_cleanup_usage() -> crate::cleanup::usage::UsageSummary {
+    crate::cleanup::usage::load()
 }
 
 /// Report presence only; never return the credential to the webview.
@@ -344,7 +367,13 @@ mod tests {
         prefs::remove_api_key(ApiProvider::OpenAi).unwrap();
         assert!(!has_api_key("open_ai".into()).unwrap());
 
-        let result = test_api_key("open_ai".into(), "test-command-key".into(), app.state()).await;
+        let result = test_api_key(
+            "open_ai".into(),
+            "test-command-key".into(),
+            None,
+            app.state(),
+        )
+        .await;
         assert!(has_api_key("open_ai".into()).unwrap());
 
         let stored = prefs::read_api_key(ApiProvider::OpenAi);
@@ -655,7 +684,7 @@ mod tests {
     async fn test_api_key_rejects_invalid_provider() {
         let app = mock_app_with_state(stub_app_state(true, true));
         assert_eq!(
-            test_api_key("not_a_provider".into(), "key".into(), app.state())
+            test_api_key("not_a_provider".into(), "key".into(), None, app.state())
                 .await
                 .unwrap_err()
                 .code(),
@@ -679,7 +708,7 @@ mod tests {
             .create_async()
             .await;
         std::env::set_var("HUMHUM_ANTHROPIC_BASE_URL", server.url());
-        let result = test_api_key("anthropic".into(), "bad-key".into(), app.state()).await;
+        let result = test_api_key("anthropic".into(), "bad-key".into(), None, app.state()).await;
         std::env::remove_var("HUMHUM_ANTHROPIC_BASE_URL");
         let stored = prefs::read_api_key(ApiProvider::Anthropic).unwrap();
         prefs::remove_api_key(ApiProvider::Anthropic).unwrap();

@@ -24,6 +24,7 @@ const KEY_CHANGED_EVENT = "humhum-api-key-changed";
 function keyError(error: unknown): string {
   const code = error instanceof Error ? error.message : String(error);
   switch (code) {
+    case "model_not_found": return "The selected cleanup model is unavailable to this API key.";
     case "key_rejected": return "Key rejected. Check the key and its access to the cleanup model.";
     case "rate_limited": return "Rate limit or quota reached. Check provider billing or try again later.";
     case "keychain_error": return "Could not access Keychain. Unlock your login keychain and try again.";
