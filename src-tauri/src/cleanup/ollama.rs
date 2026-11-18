@@ -32,10 +32,6 @@ pub struct OllamaProvider {
 }
 
 impl CleanupProvider for OllamaProvider {
-    fn identity(&self) -> Option<(&str, &str)> {
-        Some(("ollama", &self.model))
-    }
-
     fn clean<'a>(&'a self, text: &'a str) -> BoxFuture<'a, Result<String, CleanupError>> {
         Box::pin(async move {
             let model = OpenAICompatible::<DynamicModel>::builder()

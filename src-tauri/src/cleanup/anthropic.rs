@@ -28,10 +28,6 @@ pub struct AnthropicProvider {
 }
 
 impl CleanupProvider for AnthropicProvider {
-    fn identity(&self) -> Option<(&str, &str)> {
-        Some(("anthropic", &self.model))
-    }
-
     fn clean<'a>(&'a self, text: &'a str) -> BoxFuture<'a, Result<String, CleanupError>> {
         Box::pin(async move {
             let model = Anthropic::<DynamicModel>::builder()

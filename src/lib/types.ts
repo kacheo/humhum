@@ -99,12 +99,16 @@ export interface CleanupModelOption {
   label: string;
 }
 
+export interface ReportedTokenCounts {
+  inputTokens: string | null;
+  outputTokens: string | null;
+}
+
 export interface CleanupUsage {
-  latest: {
-    provider: "open_ai" | "anthropic" | "ollama";
-    model: string;
-    counts: { inputTokens: number | null; outputTokens: number | null };
-  } | null;
-  inputTokens: number;
-  outputTokens: number;
+  month: string;
+  currentMonth: string;
+  firstMonth: string | null;
+  days: Record<string, ReportedTokenCounts>;
+  totals: ReportedTokenCounts;
+  lifetime: { inputTokens: string; outputTokens: string };
 }
