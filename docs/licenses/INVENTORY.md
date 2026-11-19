@@ -43,6 +43,7 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | cfb | 0.14.0 | MIT | [Source](https://crates.io/api/v1/crates/cfb/0.14.0/download) |
 | cfg-if | 1.0.4 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/cfg-if/1.0.4/download) |
 | cfg_aliases | 0.2.1 | MIT | [Source](https://crates.io/api/v1/crates/cfg_aliases/0.2.1/download) |
+| chrono | 0.4.45 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/chrono/0.4.45/download) |
 | clang-sys | 1.8.1 | Apache-2.0 | [Source](https://crates.io/api/v1/crates/clang-sys/1.8.1/download) |
 | cmake | 0.1.58 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/cmake/0.1.58/download) |
 | const-oid | 0.10.3 | Apache-2.0 OR MIT | [Source](https://crates.io/api/v1/crates/const-oid/0.10.3/download) |
@@ -138,6 +139,7 @@ Production/build dependencies for Apple Silicon. Build-only crates are conservat
 | hyper | 1.10.1 | MIT | [Source](https://crates.io/api/v1/crates/hyper/1.10.1/download) |
 | hyper-tls | 0.6.0 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/hyper-tls/0.6.0/download) |
 | hyper-util | 0.1.20 | MIT | [Source](https://crates.io/api/v1/crates/hyper-util/0.1.20/download) |
+| iana-time-zone | 0.1.65 | MIT OR Apache-2.0 | [Source](https://crates.io/api/v1/crates/iana-time-zone/0.1.65/download) |
 | ico | 0.6.0 | MIT | [Source](https://crates.io/api/v1/crates/ico/0.6.0/download) |
 | icu_collections | 2.2.0 | Unicode-3.0 | [Source](https://crates.io/api/v1/crates/icu_collections/2.2.0/download) |
 | icu_locale_core | 2.2.0 | Unicode-3.0 | [Source](https://crates.io/api/v1/crates/icu_locale_core/2.2.0/download) |

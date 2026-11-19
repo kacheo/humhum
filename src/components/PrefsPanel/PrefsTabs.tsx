@@ -1,13 +1,14 @@
 import { useRef } from "react";
+import { Icon } from "../Icon";
 
 export type TabId = "general" | "shortcut" | "ai" | "permissions";
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: "general", label: "General" },
-  { id: "shortcut", label: "Shortcut" },
-  { id: "ai", label: "AI" },
-  { id: "permissions", label: "Permissions" },
-];
+const TABS = [
+  { id: "general", label: "General", icon: "sliders" },
+  { id: "shortcut", label: "Shortcut", icon: "keyboard" },
+  { id: "ai", label: "AI", icon: "sparkles" },
+  { id: "permissions", label: "Permissions", icon: "shield" },
+] as const;
 
 // Shared naming convention so PrefsPanel's tabpanels can reference the same
 // ids without duplicating the string scheme.
@@ -68,7 +69,8 @@ export function PrefsTabs({ active, onSelect }: { active: TabId; onSelect: (id: 
             onClick={() => onSelect(t.id)}
             onKeyDown={(e) => handleKeyDown(e, i)}
           >
-            {t.label}
+            <Icon name={t.icon} />
+            <span>{t.label}</span>
           </button>
         );
       })}

@@ -9,6 +9,9 @@ import "./index.css";
 interface ApiKeyInputProps {
   provider: ApiProvider;
   disabled?: boolean;
+  verificationDisabled?: boolean;
+  verificationDescription?: string;
+  persistenceDescription?: string;
   onTest?: (provider: ApiProvider, key: string) => Promise<void>;
   onBusyChange?: (busy: boolean) => void;
 }
@@ -24,6 +27,7 @@ const KEY_CHANGED_EVENT = "humhum-api-key-changed";
 function keyError(error: unknown): string {
   const code = error instanceof Error ? error.message : String(error);
   switch (code) {
+    case "model_not_found": return "The selected cleanup model is unavailable to this API key.";
     case "key_rejected": return "Key rejected. Check the key and its access to the cleanup model.";
     case "rate_limited": return "Rate limit or quota reached. Check provider billing or try again later.";
     case "keychain_error": return "Could not access Keychain. Unlock your login keychain and try again.";
@@ -44,6 +48,9 @@ export function ApiKeyInput(props: ApiKeyInputProps) {
 function ProviderKeyInput({
   provider,
   disabled = false,
+  verificationDisabled = false,
+  verificationDescription,
+  persistenceDescription,
   onTest = ipc.testApiKey,
   onBusyChange,
 }: ApiKeyInputProps) {
@@ -92,7 +99,7 @@ function ProviderKeyInput({
   const blocked = busy || status === "checking";
 
   async function run(next: "saving" | "removing") {
-    if (blocked || operationInFlight.current) return;
+    if (blocked || operationInFlight.current || (next === "saving" && verificationDisabled)) return;
     operationInFlight.current = true;
     setAction(next);
     onBusyChange?.(true);
@@ -138,15 +145,15 @@ function ProviderKeyInput({
         aria-label="API key"
         placeholder={`${provider === "open_ai" ? "OpenAI" : "Anthropic"} API key`}
         value={key}
-        disabled={busy}
+        disabled={busy || verificationDisabled}
         onChange={(e) => { setKey(e.target.value); setResult(null); }}
       />
-      <button type="button" disabled={blocked || key.trim().length === 0} onClick={() => void run("saving")}>
+      <button className="api-key-input__verify" type="button" aria-describedby={[verificationDescription, persistenceDescription].filter(Boolean).join(" ") || undefined} disabled={blocked || verificationDisabled || key.trim().length === 0} onClick={() => void run("saving")}>
         {action === "saving" ? "Verifying…" : "Verify & Save"}
       </button>
-      <span className="api-key-input__note" aria-live="polite">{STATUS_TEXT[status]}</span>
+      <span className="api-key-input__note">{STATUS_TEXT[status]}</span>
       {(status === "saved" || status === "error") && (
-        <button type="button" disabled={blocked} onClick={() => void run("removing")}>
+        <button type="button" aria-describedby={persistenceDescription} disabled={blocked} onClick={() => void run("removing")}>
           {action === "removing" ? "Removing…" : "Remove key"}
         </button>
       )}

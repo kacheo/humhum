@@ -2,6 +2,7 @@ pub mod anthropic;
 pub mod keys;
 pub mod ollama;
 pub mod openai;
+pub mod usage;
 
 use std::future::Future;
 use std::pin::Pin;
@@ -96,25 +97,71 @@ pub struct CleanupConfig {
 /// configured mode and provider presence onto a result:
 /// only `Err(NoKeyConfigured)` hard-stops paste; every other `Err` is turned
 /// into a raw-transcript fallback by the pipeline's `cleanup_outcome` mapper.
+#[cfg(test)]
 pub async fn dispatch_cleanup(
     raw: &str,
     mode: CleanupMode,
     provider: Option<&dyn CleanupProvider>,
 ) -> Result<String, CleanupError> {
-    match mode {
-        CleanupMode::None => Ok(raw.to_string()),
-        CleanupMode::Api => match provider {
-            Some(p) => p.clean(raw).await,
-            None => Err(CleanupError::NoKeyConfigured), // cloud selected, no key stored
-        },
-        CleanupMode::Local => match provider {
-            Some(p) => p.clean(raw).await,
-            None => Ok(raw.to_string()), // misconfigured local: no-op, never block paste
-        },
+    dispatch_cleanup_measured(raw, mode, provider).await.0
+}
+
+pub async fn dispatch_cleanup_measured(
+    raw: &str,
+    mode: CleanupMode,
+    provider: Option<&dyn CleanupProvider>,
+) -> (Result<String, CleanupError>, Option<usage::CleanupAttempt>) {
+    match (mode, provider) {
+        (CleanupMode::None, _) | (CleanupMode::Local, None) => (Ok(raw.to_string()), None),
+        (CleanupMode::Api, None) => (Err(CleanupError::NoKeyConfigured), None),
+        (_, Some(provider)) => usage::measure(provider, raw).await,
+    }
+}
+#[derive(Clone, Copy, Serialize)]
+pub struct ModelOption {
+    provider: ApiProvider,
+    id: &'static str,
+    label: &'static str,
+}
+
+pub const CLOUD_MODELS: [ModelOption; 4] = [
+    ModelOption {
+        provider: ApiProvider::OpenAi,
+        id: OPENAI_CLEANUP_MODEL,
+        label: "GPT-4o mini (retiring)",
+    },
+    ModelOption {
+        provider: ApiProvider::OpenAi,
+        id: "gpt-6-luna",
+        label: "GPT-6 Luna",
+    },
+    ModelOption {
+        provider: ApiProvider::Anthropic,
+        id: ANTHROPIC_CLEANUP_MODEL,
+        label: "Claude Haiku 4.5",
+    },
+    ModelOption {
+        provider: ApiProvider::Anthropic,
+        id: "claude-sonnet-4-6",
+        label: "Claude Sonnet 4.6",
+    },
+];
+
+pub fn default_model(provider: ApiProvider) -> &'static str {
+    match provider {
+        ApiProvider::OpenAi => OPENAI_CLEANUP_MODEL,
+        ApiProvider::Anthropic => ANTHROPIC_CLEANUP_MODEL,
     }
 }
 
-/// Default cloud cleanup models (MVP — not user-selectable).
+pub fn validate_model(provider: ApiProvider, model: &str) -> Result<(), CleanupError> {
+    CLOUD_MODELS
+        .iter()
+        .any(|entry| entry.provider == provider && entry.id == model)
+        .then_some(())
+        .ok_or(CleanupError::ModelNotFound)
+}
+
 const OPENAI_CLEANUP_MODEL: &str = "gpt-4o-mini";
 const ANTHROPIC_CLEANUP_MODEL: &str = "claude-haiku-4-5-20251001";
 /// Production cloud base URLs (aisdk defaults; overridable only in tests).
@@ -141,17 +188,18 @@ fn build_cloud_provider(
     provider: ApiProvider,
     key: String,
     aggressiveness: CleanupAggressiveness,
+    model: &str,
 ) -> std::sync::Arc<dyn CleanupProvider> {
     match provider {
         ApiProvider::OpenAi => std::sync::Arc::new(openai::OpenAiProvider {
             api_key: key,
-            model: OPENAI_CLEANUP_MODEL.to_string(),
+            model: model.to_string(),
             base_url: cloud_base_url(provider),
             aggressiveness,
         }),
         ApiProvider::Anthropic => std::sync::Arc::new(anthropic::AnthropicProvider {
             api_key: key,
-            model: ANTHROPIC_CLEANUP_MODEL.to_string(),
+            model: model.to_string(),
             base_url: cloud_base_url(provider),
             aggressiveness,
         }),
@@ -173,8 +221,14 @@ pub fn build_cleanup_config(
             model: prefs.ollama_model.clone(),
             aggressiveness: prefs.cleanup_aggressiveness,
         })),
-        CleanupMode::Api => read_key(prefs.api_provider)
-            .map(|key| build_cloud_provider(prefs.api_provider, key, prefs.cleanup_aggressiveness)),
+        CleanupMode::Api => read_key(prefs.api_provider).map(|key| {
+            build_cloud_provider(
+                prefs.api_provider,
+                key,
+                prefs.cleanup_aggressiveness,
+                prefs.cloud_model(prefs.api_provider),
+            )
+        }),
     };
     CleanupConfig {
         mode: prefs.cleanup_mode,
@@ -224,10 +278,7 @@ pub(crate) fn map_aisdk_error(e: aisdk::Error) -> CleanupError {
         ..
     } = e
     {
-        if code == reqwest::StatusCode::UNAUTHORIZED || code == reqwest::StatusCode::FORBIDDEN {
-            return CleanupError::KeyRejected(code.as_u16().to_string());
-        }
-        return CleanupError::Unavailable(code.as_u16().to_string());
+        return http_error(code);
     }
     // Network/timeout/parse/`MissingField` (empty key) all collapse here. We
     // deliberately use `Unavailable` (→ raw fallback) rather than
@@ -235,6 +286,16 @@ pub(crate) fn map_aisdk_error(e: aisdk::Error) -> CleanupError {
     // (`build_cleanup_config` only builds a provider when a key exists), and
     // when in doubt we never block the paste.
     CleanupError::Unavailable("provider error".to_string())
+}
+
+fn http_error(status: reqwest::StatusCode) -> CleanupError {
+    match status {
+        reqwest::StatusCode::UNAUTHORIZED | reqwest::StatusCode::FORBIDDEN => {
+            CleanupError::KeyRejected(status.as_u16().to_string())
+        }
+        reqwest::StatusCode::NOT_FOUND => CleanupError::ModelNotFound,
+        _ => CleanupError::Unavailable(status.as_u16().to_string()),
+    }
 }
 
 /// Word-count-based bounds for [`estimate_max_output_tokens`]. Cleanup should
@@ -272,6 +333,7 @@ pub(crate) async fn run_cleanup<P>(
     model: P,
     instruction: &str,
     text: &str,
+    include_cached_input: bool,
 ) -> Result<String, CleanupError>
 where
     P: aisdk::core::LanguageModel + aisdk::core::capabilities::TextInputSupport + Send,
@@ -292,31 +354,52 @@ where
         Ok(Err(e)) => Err(map_aisdk_error(e)),
         Ok(Ok(resp)) => {
             let cleaned = resp.text().unwrap_or_default();
-            // A model that returns nothing (None, empty, or whitespace) must not
-            // silently *replace* the dictation with an empty string — fall back
-            // to pasting the raw transcript via the Unavailable arm.
-            if cleaned.trim().is_empty() {
-                Err(CleanupError::Unavailable("empty response".to_string()))
-            } else if is_runaway_length(text, &cleaned) {
-                // Second line of defense beyond the token cap above: a model
-                // that ignores both the cap and the "output only the text"
-                // instruction and rambles/hallucinates is treated the same as
-                // an unavailable provider — fall back to the raw transcript.
-                Err(CleanupError::Unavailable(
-                    "runaway response length".to_string(),
-                ))
-            } else if is_truncated(resp.usage().output_tokens, cap) {
-                // A legitimate long dictation whose cleaned output saturated the
-                // token cap was almost certainly cut off mid-sentence. Pasting a
-                // truncated clean is worse than the complete raw transcript, so
-                // fall back the same way. Checked after `is_runaway_length` so a
-                // rambling model that also hit the cap reports the more
-                // informative "runaway" rather than "truncated".
-                Err(CleanupError::Unavailable("truncated response".to_string()))
-            } else {
-                Ok(cleaned)
-            }
+            let reported = resp.usage();
+            let input_tokens = reported.input_tokens.map(|count| {
+                count.saturating_add(if include_cached_input {
+                    reported.cached_tokens.unwrap_or(0)
+                } else {
+                    0
+                })
+            });
+            usage::report(usage::TokenCounts {
+                input_tokens: input_tokens.map(|count| count as u64),
+                output_tokens: reported.output_tokens.map(|count| count as u64),
+            });
+            validate_output(text, cleaned, reported.output_tokens, cap)
         }
+    }
+}
+
+fn validate_output(
+    text: &str,
+    cleaned: String,
+    output_tokens: Option<usize>,
+    cap: u32,
+) -> Result<String, CleanupError> {
+    // A model that returns nothing (None, empty, or whitespace) must not
+    // silently *replace* the dictation with an empty string — fall back
+    // to pasting the raw transcript via the Unavailable arm.
+    if cleaned.trim().is_empty() {
+        Err(CleanupError::Unavailable("empty response".to_string()))
+    } else if is_runaway_length(text, &cleaned) {
+        // Second line of defense beyond the token cap above: a model
+        // that ignores both the cap and the "output only the text"
+        // instruction and rambles/hallucinates is treated the same as
+        // an unavailable provider — fall back to the raw transcript.
+        Err(CleanupError::Unavailable(
+            "runaway response length".to_string(),
+        ))
+    } else if is_truncated(output_tokens, cap) {
+        // A legitimate long dictation whose cleaned output saturated the
+        // token cap was almost certainly cut off mid-sentence. Pasting a
+        // truncated clean is worse than the complete raw transcript, so
+        // fall back the same way. Checked after `is_runaway_length` so a
+        // rambling model that also hit the cap reports the more
+        // informative "runaway" rather than "truncated".
+        Err(CleanupError::Unavailable("truncated response".to_string()))
+    } else {
+        Ok(cleaned)
     }
 }
 
@@ -351,6 +434,16 @@ pub async fn verify_key(
     key: &str,
     base_url: &str,
 ) -> Result<(), CleanupError> {
+    verify_model_key(provider, default_model(provider), key, base_url).await
+}
+
+pub async fn verify_model_key(
+    provider: ApiProvider,
+    model: &str,
+    key: &str,
+    base_url: &str,
+) -> Result<(), CleanupError> {
+    validate_model(provider, model)?;
     if key.trim().is_empty() {
         return Err(CleanupError::KeyRejected("empty key".into()));
     }
@@ -361,21 +454,24 @@ pub async fn verify_key(
         .map_err(|_| CleanupError::Unavailable("client error".into()))?;
     let base_url = base_url.trim_end_matches('/');
     let req = match provider {
-        ApiProvider::OpenAi => client
-            .post(format!("{base_url}/responses"))
-            .bearer_auth(key)
-            .json(&serde_json::json!({
-                "model": OPENAI_CLEANUP_MODEL,
-                "input": "Reply OK.",
-                "max_output_tokens": 16,
-                "store": false
-            })),
+        ApiProvider::OpenAi => {
+            let mut body = serde_json::json!({
+                "model": model, "input": "Reply OK.", "max_output_tokens": 16, "store": false
+            });
+            if model == "gpt-6-luna" {
+                body["reasoning"] = serde_json::json!({"effort": "none"});
+            }
+            client
+                .post(format!("{base_url}/responses"))
+                .bearer_auth(key)
+                .json(&body)
+        }
         ApiProvider::Anthropic => client
             .post(format!("{base_url}/messages"))
             .header("x-api-key", key)
             .header("anthropic-version", "2023-06-01")
             .json(&serde_json::json!({
-                "model": ANTHROPIC_CLEANUP_MODEL,
+                "model": model,
                 "max_tokens": 1,
                 "messages": [{ "role": "user", "content": "hi" }]
             })),
@@ -394,6 +490,8 @@ pub async fn verify_key(
         || status == reqwest::StatusCode::FORBIDDEN
     {
         Err(CleanupError::KeyRejected(status.as_u16().to_string()))
+    } else if status == reqwest::StatusCode::NOT_FOUND {
+        Err(CleanupError::ModelNotFound)
     } else {
         // Other statuses (429 rate-limit, 5xx, redirects, 2xx-not-200) are
         // ambiguous: don't store on them — verification is inconclusive.

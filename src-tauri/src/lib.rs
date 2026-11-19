@@ -164,6 +164,7 @@ pub fn run() {
             }));
             // Seed canonical state before the first shortcut registration.
             let initial_prefs = prefs::load_prefs();
+            let _ = cleanup::usage::load(None);
             let config = cleanup::build_cleanup_config(&initial_prefs, |p| {
                 prefs::read_api_key(p).ok().flatten()
             });
@@ -372,6 +373,8 @@ pub fn run() {
             commands::get_model_status,
             commands::store_api_key,
             commands::test_api_key,
+            commands::get_cleanup_models,
+            commands::get_cleanup_usage,
             commands::has_api_key,
             commands::remove_api_key,
             commands::test_ollama,

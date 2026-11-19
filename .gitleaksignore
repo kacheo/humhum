@@ -1,0 +1,2 @@
+# Historical mock credential used exclusively by the Preferences API-key test.
+f829d70880e1127cdf5f491392fe16357f743b17:src/components/PrefsPanel/index.test.tsx:generic-api-key:401

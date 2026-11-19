@@ -16,6 +16,16 @@ import { openExternal } from "../../lib/opener";
 vi.mock("../../hooks/useTauriEvent", () => ({ useTauriEvent: () => {} }));
 vi.mock("../../lib/ipc", () => ({
   ipc: {
+    getCleanupModels: vi.fn().mockResolvedValue([
+      { provider: "open_ai", id: "gpt-4o-mini", label: "GPT-4o mini (retiring)" },
+      { provider: "open_ai", id: "gpt-6-luna", label: "GPT-6 Luna" },
+      { provider: "anthropic", id: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5" },
+    ]),
+    getCleanupUsage: vi.fn().mockResolvedValue({
+      month: "2024-02", currentMonth: "2024-02", firstMonth: null, days: {},
+      totals: { inputTokens: null, outputTokens: null },
+      lifetime: { inputTokens: "0", outputTokens: "0" },
+    }),
     getModelStatus: vi.fn().mockResolvedValue("not_downloaded"),
     downloadModel: vi.fn().mockResolvedValue(undefined),
     validateHotkey: vi.fn().mockResolvedValue(undefined),
@@ -174,7 +184,7 @@ test("Aggressiveness is hidden when cleanup mode is None and shown once a backen
 
 test("Save is gated on dirtiness and persists via the store", async () => {
   await renderPanel();
-  const save = screen.getByRole("button", { name: "Save" });
+  const save = screen.getByRole("button", { name: "Save preferences" });
   expect(save).toBeDisabled();
   await userEvent.click(screen.getByLabelText("Launch at login"));
   expect(save).toBeEnabled();
@@ -242,7 +252,7 @@ test("switching the transcription model persists whisperModel", async () => {
   await renderPanel();
   await userEvent.click(screen.getByRole("tab", { name: "AI" }));
   await userEvent.selectOptions(screen.getByLabelText("Model"), "small_en");
-  await userEvent.click(screen.getByRole("button", { name: "Save" }));
+  await userEvent.click(screen.getByRole("button", { name: "Save preferences" }));
   await waitFor(() =>
     expect(ipc.savePrefs).toHaveBeenCalledWith(expect.objectContaining({ whisperModel: "small_en" }))
   );
@@ -260,7 +270,7 @@ test("editing the Ollama model and URL fields updates the store", async () => {
   await userEvent.clear(urlField);
   await userEvent.type(urlField, "http://localhost:9999/v1/");
 
-  await userEvent.click(screen.getByRole("button", { name: "Save" }));
+  await userEvent.click(screen.getByRole("button", { name: "Save preferences" }));
   await waitFor(() =>
     expect(ipc.savePrefs).toHaveBeenCalledWith(
       expect.objectContaining({ ollamaModel: "mistral", ollamaBaseUrl: "http://localhost:9999/v1/" })
@@ -273,13 +283,13 @@ test("changing Aggressiveness persists the new value", async () => {
   await userEvent.click(screen.getByRole("tab", { name: "AI" }));
   await userEvent.selectOptions(screen.getByLabelText("Mode"), "local");
   await userEvent.selectOptions(screen.getByLabelText("Aggressiveness"), "heavy");
-  await userEvent.click(screen.getByRole("button", { name: "Save" }));
+  await userEvent.click(screen.getByRole("button", { name: "Save preferences" }));
   await waitFor(() =>
     expect(ipc.savePrefs).toHaveBeenCalledWith(expect.objectContaining({ cleanupAggressiveness: "heavy" }))
   );
 });
 
-test("clicking Test on the Cloud API key calls test_api_key with the provider and key", async () => {
+test("verifying a key uses the displayed cleanup model for legacy preferences", async () => {
   usePrefsStore.setState({
     prefs: { ...DEFAULTS, cleanupMode: "api" },
     savedPrefs: { ...DEFAULTS, cleanupMode: "api" },
@@ -290,7 +300,7 @@ test("clicking Test on the Cloud API key calls test_api_key with the provider an
   await userEvent.click(screen.getByRole("tab", { name: "AI" }));
   await userEvent.type(screen.getByLabelText("API key"), "sk-live-1");
   await userEvent.click(screen.getByRole("button", { name: "Verify & Save" }));
-  await waitFor(() => expect(ipc.testApiKey).toHaveBeenCalledWith("open_ai", "sk-live-1"));
+  await waitFor(() => expect(ipc.testApiKey).toHaveBeenCalledWith("open_ai", "sk-live-1", "gpt-4o-mini"));
 });
 
 test("cloud provider changes are saved and discarded like other preferences", async () => {
@@ -299,7 +309,7 @@ test("cloud provider changes are saved and discarded like other preferences", as
   await userEvent.selectOptions(screen.getByLabelText("Mode"), "api");
   await userEvent.selectOptions(screen.getByLabelText("Provider"), "anthropic");
   expect(screen.getByPlaceholderText("Anthropic API key")).toBeInTheDocument();
-  await userEvent.click(screen.getByRole("button", { name: "Save" }));
+  await userEvent.click(screen.getByRole("button", { name: "Save preferences" }));
   await waitFor(() => expect(ipc.savePrefs).toHaveBeenCalledWith(expect.objectContaining({ apiProvider: "anthropic", cleanupMode: "api" })));
   await userEvent.selectOptions(screen.getByLabelText("Provider"), "open_ai");
   await userEvent.click(screen.getByRole("button", { name: "Discard" }));
@@ -309,7 +319,7 @@ test("cloud provider changes are saved and discarded like other preferences", as
 test("selecting an input device is picked up as a dirtying change", async () => {
   await renderPanel();
   await waitFor(() => expect(ipc.listInputDevices).toHaveBeenCalled());
-  const save = screen.getByRole("button", { name: "Save" });
+  const save = screen.getByRole("button", { name: "Save preferences" });
   expect(save).toBeDisabled();
   await userEvent.selectOptions(screen.getByLabelText("Input device"), "AirPods Pro");
   expect(save).toBeEnabled();
@@ -321,15 +331,25 @@ test("selecting an input device is picked up as a dirtying change", async () => 
   );
 });
 
+test("shows a saved microphone as unavailable when it is disconnected", async () => {
+  const prefs = { ...DEFAULTS, preferredInputDevice: "Disconnected USB mic" };
+  usePrefsStore.setState({ prefs, savedPrefs: prefs });
+  await renderPanel();
+  const device = screen.getByLabelText("Input device");
+  expect(device).toHaveValue("Disconnected USB mic");
+  expect(screen.getByRole("option", { name: "Disconnected USB mic (unavailable)" })).toHaveProperty("selected", true);
+  expect(screen.getByRole("button", { name: "Save preferences" })).toBeDisabled();
+});
+
 test("failed save displays feedback and retains edits for retry", async () => {
   vi.mocked(ipc.savePrefs).mockRejectedValueOnce(new Error("Disk unavailable"));
   await renderPanel();
   await userEvent.click(screen.getByLabelText("Launch at login"));
-  await userEvent.click(screen.getByRole("button", { name: "Save" }));
+  await userEvent.click(screen.getByRole("button", { name: "Save preferences" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("Could not save");
   expect(screen.getByLabelText("Launch at login")).toBeChecked();
-  expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
-  await userEvent.click(screen.getByRole("button", { name: "Save" }));
+  expect(screen.getByRole("button", { name: "Save preferences" })).toBeEnabled();
+  await userEvent.click(screen.getByRole("button", { name: "Save preferences" }));
   await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
 });
 
@@ -378,6 +398,8 @@ test.each(["verification", "removal"])("cloud %s blocks provider and mode change
 });
 
 test.each(["saving", "removing"])("immediate key %s survives Discard while provider and mode preferences revert", async (action) => {
+  const fixture = "mock";
+  const model = "claude-haiku-4-5-20251001";
   const removing = action === "removing";
   let anthropicSaved = removing;
   vi.mocked(ipc.hasApiKey).mockImplementation(async (provider) => provider === "anthropic" && anthropicSaved);
@@ -388,13 +410,13 @@ test.each(["saving", "removing"])("immediate key %s survives Discard while provi
   await userEvent.selectOptions(screen.getByLabelText("Mode"), "api");
   await userEvent.selectOptions(screen.getByLabelText("Provider"), "anthropic");
   await screen.findByText(removing ? "Key saved in Keychain" : "No key saved");
-  if (!removing) await userEvent.type(screen.getByLabelText("API key"), "anthropic-secret");
+  if (!removing) await userEvent.type(screen.getByLabelText("API key"), fixture);
   await userEvent.click(screen.getByRole("button", { name: removing ? "Remove key" : "Verify & Save" }));
   expect(await screen.findByText(removing ? "Key removed" : "Key verified and saved")).toBeInTheDocument();
   if (removing) expect(ipc.removeApiKey).toHaveBeenCalledWith("anthropic");
-  else expect(ipc.testApiKey).toHaveBeenCalledWith("anthropic", "anthropic-secret");
+  else expect(ipc.testApiKey).toHaveBeenCalledWith("anthropic", fixture, model);
   expect(ipc.savePrefs).not.toHaveBeenCalled();
-  expect(JSON.stringify(usePrefsStore.getState().prefs)).not.toContain("anthropic-secret");
+  expect(JSON.stringify(usePrefsStore.getState().prefs)).not.toContain(fixture);
   await userEvent.click(screen.getByRole("button", { name: "Discard" }));
   expect(usePrefsStore.getState().prefs.apiProvider).toBe("open_ai");
   expect(screen.getByLabelText("Mode")).toHaveValue("none");
@@ -405,4 +427,49 @@ test.each(["saving", "removing"])("immediate key %s survives Discard while provi
   expect(screen.getByLabelText("API key")).toHaveValue("");
   expect(ipc.testApiKey).toHaveBeenCalledTimes(removing ? 0 : 1);
   expect(ipc.removeApiKey).toHaveBeenCalledTimes(removing ? 1 : 0);
+});
+
+test("cleanup model follows the provider and Discard restores the saved choice", async () => {
+  await renderPanel();
+  await userEvent.click(screen.getByRole("tab", { name: "AI" }));
+  await userEvent.selectOptions(screen.getByLabelText("Mode"), "api");
+  const model = screen.getByLabelText("Cleanup model");
+  await userEvent.selectOptions(model, "gpt-6-luna");
+  await userEvent.selectOptions(screen.getByLabelText("Provider"), "anthropic");
+  expect(model).toHaveValue("claude-haiku-4-5-20251001");
+  await userEvent.selectOptions(screen.getByLabelText("Provider"), "open_ai");
+  expect(model).toHaveValue("gpt-6-luna");
+  await userEvent.click(screen.getByRole("button", { name: "Save preferences" }));
+  await waitFor(() => expect(ipc.savePrefs).toHaveBeenCalledWith(expect.objectContaining({ openAiModel: "gpt-6-luna" })));
+  await userEvent.selectOptions(model, "gpt-4o-mini");
+  await userEvent.click(screen.getByRole("button", { name: "Discard" }));
+  expect(model).toHaveValue("gpt-6-luna");
+});
+
+test("shows token usage with cleanup disabled", async () => {
+  await renderPanel();
+  await userEvent.click(screen.getByRole("tab", { name: "AI" }));
+  expect(await screen.findByRole("heading", { name: "February 2024" })).toBeInTheDocument();
+  expect(screen.getByText("All-time usage")).toBeInTheDocument();
+});
+
+test("a failed model catalog blocks verification but allows removing a saved key", async () => {
+  vi.mocked(ipc.getCleanupModels).mockRejectedValueOnce(new Error("Catalog unavailable"));
+  vi.mocked(ipc.hasApiKey).mockResolvedValue(true);
+  await renderPanel();
+  await userEvent.click(screen.getByRole("tab", { name: "AI" }));
+  await userEvent.selectOptions(screen.getByLabelText("Mode"), "api");
+  expect(await screen.findByRole("option", { name: "Models unavailable" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Verify & Save" })).toBeDisabled();
+  await userEvent.click(await screen.findByRole("button", { name: "Remove key" }));
+  expect(ipc.removeApiKey).toHaveBeenCalledWith("open_ai");
+});
+
+test("an empty model catalog is unavailable when loading finishes", async () => {
+  vi.mocked(ipc.getCleanupModels).mockResolvedValueOnce([]);
+  await renderPanel();
+  await userEvent.click(screen.getByRole("tab", { name: "AI" }));
+  await userEvent.selectOptions(screen.getByLabelText("Mode"), "api");
+  expect(await screen.findByRole("option", { name: "Models unavailable" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Verify & Save" })).toBeDisabled();
 });

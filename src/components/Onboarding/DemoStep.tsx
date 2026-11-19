@@ -5,15 +5,14 @@ import { useTauriEvent } from "../../hooks/useTauriEvent";
 import { usePrefsStore } from "../../stores/prefs";
 import type { CleanupDonePayload, PipelineErrorPayload } from "../../lib/types";
 import { formatHotkey } from "../../lib/hotkey";
+import { Icon } from "../Icon";
 
 type Feedback = { kind: "error" | "notice"; message: string };
 
 /** Guided first dictation using the normal recording pipeline. Keep this
  * session's result/errors locally so overlay resets cannot erase the feedback.
  * Transcript text stays in memory/the local DOM and is never logged. */
-export function DemoStep({ onReady, onSkip }: {
-  onReady: (ready: boolean) => void; onSkip: () => void;
-}) {
+export function DemoStep({ onReady }: { onReady: (ready: boolean) => void }) {
   useRecordingEvents();
   const hotkey = usePrefsStore((s) => s.prefs.hotkey);
   const phase = useRecordingStore((s) => s.phase);
@@ -46,15 +45,14 @@ export function DemoStep({ onReady, onSkip }: {
 
   return (
     <section className="onb-step">
-      <h2>Try it</h2>
+      <h2 tabIndex={-1}>Try it</h2>
       <p>Hold <kbd>{formatHotkey(hotkey, "mac")}</kbd>, say a sentence, then release.</p>
       {feedback?.kind === "error" && <p className="onb-error" role="alert">{feedback.message}</p>}
       {done ? (
-        <p className="demo-result" role="status">✓ Heard: “{transcript}”</p>
+        <p className="demo-result" role="status"><Icon name="check" size={16} /> <span>Heard: “{transcript}”</span></p>
       ) : (
-        <p className="demo-waiting" role="status">{progress}</p>
+        <p className="demo-waiting" role="status"><Icon name="mic" size={16} /> <span>{progress}</span></p>
       )}
-      <button type="button" className="demo-skip" onClick={onSkip}>Skip for now</button>
     </section>
   );
 }

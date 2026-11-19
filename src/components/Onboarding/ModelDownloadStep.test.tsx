@@ -10,6 +10,7 @@ vi.mock("../../lib/ipc", () => ({
 }));
 import { ModelDownloadStep } from "./ModelDownloadStep";
 import { ipc } from "../../lib/ipc";
+import type { ModelStatus } from "../../lib/types";
 import { useRecordingStore } from "../../stores/recording";
 
 beforeEach(() => { vi.clearAllMocks(); useRecordingStore.getState().reset(); });
@@ -41,7 +42,7 @@ test("a failed download surfaces Error and re-enables retry", async () => {
   act(() => useRecordingStore.getState().setDownloadProgress("base_en", 100));
   act(() => useRecordingStore.getState().setModelStatus("base_en", { error: "insufficient_disk" }));
   expect(screen.getByRole("status")).toHaveTextContent("Error");
-  expect(screen.getByRole("button", { name: "Download" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Retry download" })).toBeEnabled();
   expect(onReady).toHaveBeenLastCalledWith(false);
 });
 
@@ -49,6 +50,20 @@ test("marks download active before the first progress event", async () => {
   render(<ModelDownloadStep onReady={() => {}} />);
   await waitFor(() => expect(ipc.getModelStatus).toHaveBeenCalled());
   await userEvent.click(screen.getByRole("button", { name: "Download" }));
+  expect(screen.getByRole("button", { name: "Download" })).toBeDisabled();
+  expect(useRecordingStore.getState().modelStatus.base_en).toEqual({ downloading: 0 });
+});
+
+test("a late initial status cannot re-enable Download after a click", async () => {
+  let resolveStatus!: (status: ModelStatus) => void;
+  vi.mocked(ipc.getModelStatus).mockReturnValueOnce(new Promise((resolve) => {
+    resolveStatus = resolve;
+  }));
+  render(<ModelDownloadStep onReady={() => {}} />);
+
+  await userEvent.click(screen.getByRole("button", { name: "Download" }));
+  await act(async () => resolveStatus("not_downloaded"));
+
   expect(screen.getByRole("button", { name: "Download" })).toBeDisabled();
   expect(useRecordingStore.getState().modelStatus.base_en).toEqual({ downloading: 0 });
 });

@@ -50,6 +50,7 @@ const PASTE_TIMEOUT: Duration = Duration::from_secs(5);
 pub trait PipelineEmitter: Send + Sync {
     fn emit_transcript_ready(&self, raw: &str);
     fn emit_cleanup_done(&self, text: &str);
+    fn record_cleanup_usage(&self, _attempt: crate::cleanup::usage::CleanupAttempt) {}
     fn emit_pipeline_error(&self, code: &str, message: &str);
     fn emit_paste_failed(&self, reason: PasteFailReason, text_copied_to_clipboard: bool);
     /// Blank audio (`EmptyResult`) — nothing to paste, returning silently to
@@ -60,6 +61,18 @@ pub trait PipelineEmitter: Send + Sync {
 }
 
 impl<R: tauri::Runtime> PipelineEmitter for tauri::AppHandle<R> {
+    fn record_cleanup_usage(&self, attempt: crate::cleanup::usage::CleanupAttempt) {
+        use crate::cleanup::usage;
+        use tauri::Emitter;
+        usage::record(attempt);
+        let _ = self.emit("cleanup-usage-updated", ());
+        tauri::async_runtime::spawn_blocking(|| {
+            if usage::persist().is_err() {
+                log::warn!("Could not save cleanup token usage");
+            }
+        });
+    }
+
     fn emit_transcript_ready(&self, raw: &str) {
         use tauri::Emitter;
         if let Err(e) = self.emit(
@@ -157,9 +170,10 @@ fn cleanup_fallback_message(mode: CleanupMode, e: &CleanupError) -> String {
     match (mode, e) {
         (CleanupMode::Local, _) => "Cleanup skipped — Ollama unavailable".to_string(),
         (_, CleanupError::KeyRejected(_)) => "Cleanup skipped — API key rejected".to_string(),
-        (_, CleanupError::Unavailable(_) | CleanupError::ModelNotFound) => {
-            "Cleanup skipped — service unavailable".to_string()
+        (_, CleanupError::ModelNotFound) => {
+            "Cleanup skipped — selected model unavailable".to_string()
         }
+        (_, CleanupError::Unavailable(_)) => "Cleanup skipped — service unavailable".to_string(),
         // No other variant reaches the raw-fallback arm; keep the raw Display as a
         // conservative catch-all rather than panicking.
         _ => e.to_string(),
@@ -271,8 +285,12 @@ pub async fn run_pipeline<E: PipelineEmitter>(
 
     // --- Cleanup ---
     set_phase(phase, RecordingPhase::Cleaning);
-    let cleanup_result =
-        crate::cleanup::dispatch_cleanup(&raw, cleanup_mode, cleanup_provider.as_deref()).await;
+    let (cleanup_result, attempt) =
+        crate::cleanup::dispatch_cleanup_measured(&raw, cleanup_mode, cleanup_provider.as_deref())
+            .await;
+    if let Some(attempt) = attempt {
+        emitter.record_cleanup_usage(attempt);
+    }
     let text = match cleanup_outcome(cleanup_result, cleanup_mode) {
         CleanupOutcome::Paste(text) => {
             emitter.emit_cleanup_done(&text);

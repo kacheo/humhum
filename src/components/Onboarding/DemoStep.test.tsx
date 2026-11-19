@@ -1,5 +1,4 @@
 import { render, screen, act } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { beforeEach, afterEach, vi } from "vitest";
 
 const handlers = vi.hoisted(() => new Map<string, Set<(event: { payload: unknown }) => void>>());
@@ -23,7 +22,7 @@ afterEach(() => vi.useRealTimers());
 
 test("real recording events show progress and enable completion for a new transcript", async () => {
   const onReady = vi.fn();
-  render(<DemoStep onReady={onReady} onSkip={() => {}} />);
+  render(<DemoStep onReady={onReady} />);
   expect(onReady).toHaveBeenLastCalledWith(false);
   await fire("recording-started");
   expect(screen.getByRole("status")).toHaveTextContent("Recording");
@@ -41,14 +40,14 @@ test("real recording events show progress and enable completion for a new transc
 test("entering the demo clears an earlier transcript", () => {
   useRecordingStore.getState().setCleanedTranscript("old transcript");
   const onReady = vi.fn();
-  render(<DemoStep onReady={onReady} onSkip={() => {}} />);
+  render(<DemoStep onReady={onReady} />);
   expect(screen.queryByText(/old transcript/)).not.toBeInTheDocument();
   expect(onReady).toHaveBeenLastCalledWith(false);
 });
 
 test.each(["recording-error", "pipeline-error"])("%s stays visible and a new attempt clears it", async (name) => {
   const onReady = vi.fn();
-  render(<DemoStep onReady={onReady} onSkip={() => {}} />);
+  render(<DemoStep onReady={onReady} />);
   vi.useFakeTimers();
   await fire(name, { code: "permission_denied", message: "Microphone permission needed" });
   expect(screen.getByRole("alert")).toHaveTextContent("Microphone permission needed");
@@ -61,7 +60,7 @@ test.each(["recording-error", "pipeline-error"])("%s stays visible and a new att
 
 test("blank speech and cancellation allow retry without finishing", async () => {
   const onReady = vi.fn();
-  render(<DemoStep onReady={onReady} onSkip={() => {}} />);
+  render(<DemoStep onReady={onReady} />);
   await fire("recording-started"); await fire("recording-stopped");
   await fire("transcription-discarded");
   expect(screen.getByRole("status")).toHaveTextContent("No speech detected");
@@ -72,7 +71,7 @@ test("blank speech and cancellation allow retry without finishing", async () => 
 
 test("a second attempt clears the previous result", async () => {
   const onReady = vi.fn();
-  render(<DemoStep onReady={onReady} onSkip={() => {}} />);
+  render(<DemoStep onReady={onReady} />);
   await fire("recording-started"); await fire("cleanup-done", { text: "previous result" });
   expect(onReady).toHaveBeenLastCalledWith(true);
   await fire("recording-started");
@@ -80,15 +79,8 @@ test("a second attempt clears the previous result", async () => {
   expect(onReady).toHaveBeenLastCalledWith(false);
 });
 
-test("Skip for now triggers onSkip", async () => {
-  const onSkip = vi.fn();
-  render(<DemoStep onReady={() => {}} onSkip={onSkip} />);
-  await userEvent.click(screen.getByRole("button", { name: "Skip for now" }));
-  expect(onSkip).toHaveBeenCalled();
-});
-
 test.each(["recording-error", "recording-cancelled", "transcription-discarded"])("retry progress survives the previous %s timeout", async (name) => {
-  render(<DemoStep onReady={() => {}} onSkip={() => {}} />);
+  render(<DemoStep onReady={() => {}} />);
   vi.useFakeTimers();
   await fire(name, { code: "permission_denied", message: "Permission needed" });
   await fire("recording-started");

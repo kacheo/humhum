@@ -13,6 +13,10 @@ pub struct Prefs {
     pub cleanup_mode: CleanupMode,
     pub cleanup_aggressiveness: CleanupAggressiveness,
     pub api_provider: ApiProvider,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub open_ai_model: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub anthropic_model: Option<String>,
     pub ollama_model: String,
     pub ollama_base_url: String,
     pub whisper_model: WhisperModel,
@@ -33,6 +37,21 @@ fn default_dictation_enabled() -> bool {
     true
 }
 
+impl Prefs {
+    pub fn cloud_model(&self, provider: ApiProvider) -> &str {
+        self.configured_model(provider)
+            .filter(|model| crate::cleanup::validate_model(provider, model).is_ok())
+            .unwrap_or(crate::cleanup::default_model(provider))
+    }
+
+    pub fn configured_model(&self, provider: ApiProvider) -> Option<&str> {
+        match provider {
+            ApiProvider::OpenAi => self.open_ai_model.as_deref(),
+            ApiProvider::Anthropic => self.anthropic_model.as_deref(),
+        }
+    }
+}
+
 impl Default for Prefs {
     fn default() -> Self {
         Self {
@@ -41,6 +60,8 @@ impl Default for Prefs {
             cleanup_mode: CleanupMode::None,
             cleanup_aggressiveness: CleanupAggressiveness::Standard,
             api_provider: ApiProvider::OpenAi,
+            open_ai_model: None,
+            anthropic_model: None,
             ollama_model: "llama3".into(),
             ollama_base_url: "http://localhost:11434/v1/".into(),
             whisper_model: WhisperModel::BaseEn,
@@ -186,10 +207,27 @@ fn settings_path() -> Option<std::path::PathBuf> {
 /// Read prefs from `path`, returning [`default_prefs`] on any error (missing,
 /// unreadable, or corrupt) — prefs failure must never block the app (LLD §389).
 fn load_from(path: &std::path::Path) -> Prefs {
-    match std::fs::read_to_string(path) {
-        Ok(contents) => serde_json::from_str(&contents).unwrap_or_else(|_| default_prefs()),
-        Err(_) => default_prefs(),
+    let Some(mut prefs) = std::fs::read_to_string(path)
+        .ok()
+        .and_then(|contents| serde_json::from_str::<Prefs>(&contents).ok())
+    else {
+        return default_prefs();
+    };
+
+    // A model removed from the catalog should fall back to the provider's
+    // default without blocking unrelated edits on the next save.
+    for (provider, model) in [
+        (ApiProvider::OpenAi, &mut prefs.open_ai_model),
+        (ApiProvider::Anthropic, &mut prefs.anthropic_model),
+    ] {
+        if model
+            .as_deref()
+            .is_some_and(|id| crate::cleanup::validate_model(provider, id).is_err())
+        {
+            *model = None;
+        }
     }
+    prefs
 }
 
 /// Atomically write prefs to `path`: serialize, write `{path}.tmp`, then
@@ -534,6 +572,41 @@ mod tests {
         assert_eq!(back.whisper_model, WhisperModel::SmallEn);
         assert!(back.launch_at_login);
         assert_eq!(back.cleanup_mode, prefs.cleanup_mode);
+    }
+
+    #[test]
+    fn load_from_ignores_obsolete_models_and_preserves_other_settings() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        for (provider, open_ai, anthropic) in [
+            (ApiProvider::OpenAi, "obsolete", "claude-sonnet-4-6"),
+            (ApiProvider::Anthropic, "gpt-4o-mini", "obsolete"),
+        ] {
+            let prefs = Prefs {
+                open_ai_model: Some(open_ai.into()),
+                anthropic_model: Some(anthropic.into()),
+                launch_at_login: true,
+                ..Prefs::default()
+            };
+            save_to(&path, &prefs).unwrap();
+
+            let restored = load_from(&path);
+            assert_eq!(restored.configured_model(provider), None);
+            assert_eq!(
+                restored.cloud_model(provider),
+                crate::cleanup::default_model(provider)
+            );
+            let other = if provider == ApiProvider::OpenAi {
+                ApiProvider::Anthropic
+            } else {
+                ApiProvider::OpenAi
+            };
+            assert_eq!(
+                restored.configured_model(other),
+                prefs.configured_model(other)
+            );
+            assert!(restored.launch_at_login);
+        }
     }
 
     #[test]

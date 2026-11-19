@@ -40,7 +40,8 @@ test("the microphone action invokes request_microphone", async () => {
 test("the accessibility and input monitoring actions open their System Settings panes", async () => {
   render(<PermissionsStep onReady={() => {}} />);
   await waitFor(() => expect(ipc.checkPermissions).toHaveBeenCalled());
-  const [accessibilityButton, inputMonitoringButton] = screen.getAllByRole("button", { name: "Open Settings" });
+  const accessibilityButton = screen.getByRole("button", { name: "Open Settings for Accessibility" });
+  const inputMonitoringButton = screen.getByRole("button", { name: "Open Settings for Input Monitoring" });
   await userEvent.click(accessibilityButton);
   expect(ipc.openAccessibilitySettings).toHaveBeenCalled();
   await userEvent.click(inputMonitoringButton);

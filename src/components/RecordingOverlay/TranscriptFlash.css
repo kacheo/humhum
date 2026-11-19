@@ -1,4 +1,26 @@
-.transcript-flash { min-width: 0; animation: transcript-fade 2s ease-out forwards; }
-.transcript-flash__label { font-size: 11px; color: #b6b8c1; }
-.transcript-flash__text { margin: 2px 0 0; font-size: 13px; line-height: 17px; color: #f4f5f7; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
-@keyframes transcript-fade { 0% { opacity: 0; } 15%, 80% { opacity: 1; } 100% { opacity: 0; } }
+.transcript-flash {
+  min-width: 0;
+  animation: transcript-fade 2s ease-out forwards;
+}
+
+.transcript-flash__label {
+  color: #abd2cc;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.transcript-flash__text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  margin: 3px 0 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 17px;
+}
+
+@keyframes transcript-fade {
+  0%, 80% { opacity: 1; }
+  100% { opacity: 0; }
+}

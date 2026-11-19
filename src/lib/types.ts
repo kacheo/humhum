@@ -26,6 +26,8 @@ export interface Prefs {
   cleanupMode: CleanupMode;
   cleanupAggressiveness: CleanupAggressiveness;
   apiProvider: ApiProvider;
+  openAiModel?: string;
+  anthropicModel?: string;
   ollamaModel: string;
   ollamaBaseUrl: string;
   whisperModel: WhisperModel;
@@ -89,4 +91,24 @@ export interface PermissionsState {
   microphone: boolean;
   accessibility: boolean;
   inputMonitoring: boolean;
+}
+
+export interface CleanupModelOption {
+  provider: ApiProvider;
+  id: string;
+  label: string;
+}
+
+export interface ReportedTokenCounts {
+  inputTokens: string | null;
+  outputTokens: string | null;
+}
+
+export interface CleanupUsage {
+  month: string;
+  currentMonth: string;
+  firstMonth: string | null;
+  days: Record<string, ReportedTokenCounts>;
+  totals: ReportedTokenCounts;
+  lifetime: { inputTokens: string; outputTokens: string };
 }

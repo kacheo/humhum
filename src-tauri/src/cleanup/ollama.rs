@@ -40,7 +40,7 @@ impl CleanupProvider for OllamaProvider {
                 .base_url(&self.base_url)
                 .build()
                 .map_err(map_aisdk_error)?;
-            run_cleanup(model, build_prompt(self.aggressiveness), text).await
+            run_cleanup(model, build_prompt(self.aggressiveness), text, false).await
         })
     }
 }
@@ -121,8 +121,12 @@ mod tests {
             .with_body(body)
             .create_async()
             .await;
-        let out = provider(server.url()).clean("messy input").await.unwrap();
-        assert_eq!(out, "CLEANED OLL");
+        let provider = provider(server.url());
+        let (out, attempt) = super::super::usage::measure(&provider, "messy input").await;
+        assert_eq!(out.unwrap(), "CLEANED OLL");
+        let counts = attempt.unwrap().counts;
+        assert_eq!(counts.input_tokens, None);
+        assert_eq!(counts.output_tokens, None);
     }
 
     /// Proves the token cap computed in `run_cleanup` actually reaches the wire

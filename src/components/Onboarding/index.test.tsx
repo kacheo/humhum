@@ -72,6 +72,19 @@ test("Back returns to the previous step", async () => {
   expect(screen.getByRole("heading", { name: "Permissions" })).toBeInTheDocument();
 });
 
+test("moves keyboard focus to the step heading after Next and Back", async () => {
+  render(<Onboarding />);
+  expect(screen.getByRole("heading", { name: "Permissions" })).not.toHaveFocus();
+
+  await clickNext();
+  expect(screen.getByRole("heading", { name: "Shortcut" })).toHaveFocus();
+  expect(screen.getByRole("list", { name: "Setup progress" }).querySelector('[aria-current="step"]'))
+    .toHaveTextContent("Shortcut");
+
+  await userEvent.click(screen.getByRole("button", { name: "Back" }));
+  expect(screen.getByRole("heading", { name: "Permissions" })).toHaveFocus();
+});
+
 async function chooseOptionShortcut() {
   const capture = document.querySelector<HTMLButtonElement>(".hotkey-picker__capture")!;
   await userEvent.click(capture);
@@ -87,6 +100,24 @@ async function reachModel() {
   await clickNext();
   await clickNext();
 }
+
+test("enables Finish after a successful first dictation and saves setup", async () => {
+  await reachModel();
+  await clickNext();
+  const finish = await screen.findByRole("button", { name: "Finish" });
+  expect(finish).toBeDisabled();
+
+  act(() => handlers.get("transcription-discarded")?.({ payload: undefined }));
+  expect(finish).toBeDisabled();
+  act(() => handlers.get("recording-started")?.({ payload: undefined }));
+  act(() => handlers.get("cleanup-done")?.({ payload: { text: "Hello Humhum." } }));
+  expect(screen.getByRole("status")).toHaveTextContent("Hello Humhum.");
+  await waitFor(() => expect(finish).toBeEnabled());
+  await userEvent.click(finish);
+
+  await waitFor(() => expect(usePrefsStore.getState().savedPrefs.onboardingComplete).toBe(true));
+  expect(ipc.savePrefs).toHaveBeenLastCalledWith(expect.objectContaining({ onboardingComplete: true }));
+});
 
 test("applies the chosen shortcut before entering Try it and prevents duplicate navigation", async () => {
   await reachModel();
@@ -115,6 +146,21 @@ test("failed preparation remains on Model and can retry", async () => {
   expect(usePrefsStore.getState().prefs.onboardingComplete).toBe(false);
   await clickNext();
   expect(await screen.findByRole("heading", { name: "Try it" })).toBeInTheDocument();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});
+
+test("a completion failure stays on Try it and lets the user finish setup", async () => {
+  await reachModel();
+  await clickNext();
+  vi.mocked(ipc.savePrefs).mockRejectedValueOnce(new Error("disk unavailable"));
+  const skip = screen.getByRole("button", { name: "Skip for now" });
+  await userEvent.click(skip);
+  expect(await screen.findByRole("alert")).toHaveTextContent("Could not finish setup");
+  expect(screen.getByRole("heading", { name: "Try it" })).toBeInTheDocument();
+  expect(usePrefsStore.getState().prefs.onboardingComplete).toBe(false);
+  expect(skip).toBeEnabled();
+  await userEvent.click(skip);
+  await waitFor(() => expect(usePrefsStore.getState().savedPrefs.onboardingComplete).toBe(true));
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });
 

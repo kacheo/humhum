@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, vi } from "vitest";
 
 // Stub the hydration hook so the gate is tested in isolation (no IPC).
@@ -14,6 +14,11 @@ vi.mock("../hooks/useAppBootstrap", () => ({
 vi.mock("../lib/ipc", () => ({
   ipc: {
     checkPermissions: vi.fn().mockRejectedValue(new Error("no backend")),
+    getCleanupUsage: vi.fn().mockResolvedValue({
+      month: "2024-02", currentMonth: "2024-02", firstMonth: null, days: {},
+      totals: { inputTokens: null, outputTokens: null },
+      lifetime: { inputTokens: "0", outputTokens: "0" },
+    }),
     getModelStatus: vi.fn().mockRejectedValue(new Error("no backend")),
     listInputDevices: vi.fn().mockRejectedValue(new Error("no backend")),
   },
@@ -48,9 +53,11 @@ test("gates to Onboarding when onboarding is incomplete", () => {
   expect(screen.queryByRole("heading", { name: "Shortcut" })).not.toBeInTheDocument();
 });
 
-test("shows PrefsPanel once onboarding is complete", () => {
+test("shows PrefsPanel once onboarding completion is saved", async () => {
   usePrefsStore.getState().setField("onboardingComplete", true);
   render(<PrefsRoot />);
+  expect(screen.getByRole("heading", { name: "Permissions" })).toBeInTheDocument();
+  await act(async () => usePrefsStore.setState({ savedPrefs: usePrefsStore.getState().prefs }));
   expect(screen.getByRole("tab", { name: "Shortcut" })).toBeInTheDocument();
   expect(screen.queryByText("Onboarding")).not.toBeInTheDocument();
 });

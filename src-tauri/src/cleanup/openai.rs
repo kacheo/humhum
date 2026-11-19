@@ -33,20 +33,107 @@ pub struct OpenAiProvider {
 impl CleanupProvider for OpenAiProvider {
     fn clean<'a>(&'a self, text: &'a str) -> BoxFuture<'a, Result<String, CleanupError>> {
         Box::pin(async move {
+            if self.model == "gpt-6-luna" {
+                return self.clean_luna(text).await;
+            }
             let model = OpenAI::<DynamicModel>::builder()
                 .model_name(&self.model)
                 .api_key(&self.api_key)
                 .base_url(&self.base_url)
                 .build()
                 .map_err(map_aisdk_error)?;
-            run_cleanup(model, build_prompt(self.aggressiveness), text).await
+            run_cleanup(model, build_prompt(self.aggressiveness), text, false).await
         })
+    }
+}
+
+impl OpenAiProvider {
+    async fn clean_luna(&self, text: &str) -> Result<String, CleanupError> {
+        use super::{estimate_max_output_tokens, usage, validate_output, CLEANUP_TIMEOUT};
+
+        let cap = estimate_max_output_tokens(text);
+        let client = reqwest::Client::builder()
+            .timeout(CLEANUP_TIMEOUT)
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .map_err(|_| CleanupError::Unavailable("client error".into()))?;
+        let response = client
+            .post(format!(
+                "{}/v1/responses",
+                self.base_url.trim_end_matches('/')
+            ))
+            .bearer_auth(&self.api_key)
+            .json(&serde_json::json!({
+                "model": self.model,
+                "instructions": build_prompt(self.aggressiveness),
+                "input": text,
+                "max_output_tokens": cap,
+                "reasoning": {"effort": "none"},
+                "store": false
+            }))
+            .send()
+            .await
+            .map_err(|_| CleanupError::Unavailable("network or timeout".into()))?;
+        let status = response.status();
+        if !status.is_success() {
+            return Err(super::http_error(status));
+        }
+        let body: serde_json::Value = response
+            .json()
+            .await
+            .map_err(|_| CleanupError::Unavailable("invalid response".into()))?;
+        let input_tokens = body["usage"]["input_tokens"].as_u64();
+        let output_tokens = body["usage"]["output_tokens"].as_u64();
+        usage::report(usage::TokenCounts {
+            input_tokens,
+            output_tokens,
+        });
+        if body["status"] == "incomplete" {
+            return Err(CleanupError::Unavailable("incomplete response".into()));
+        }
+        let cleaned = body["output"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter(|item| item["type"] == "message")
+            .flat_map(|item| item["content"].as_array().into_iter().flatten())
+            .filter(|part| part["type"] == "output_text")
+            .filter_map(|part| part["text"].as_str())
+            .collect::<String>();
+        validate_output(
+            text,
+            cleaned,
+            output_tokens.and_then(|count| usize::try_from(count).ok()),
+            cap,
+        )
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn luna_reports_tokens_even_when_output_is_rejected() {
+        let mut server = mockito::Server::new_async().await;
+        let request = server
+            .mock("POST", "/v1/responses")
+            .match_body(mockito::Matcher::PartialJson(serde_json::json!({
+                "model": "gpt-6-luna", "reasoning": {"effort": "none"}, "store": false
+            })))
+            .with_status(200)
+            .with_body(r#"{"status":"incomplete","usage":{"input_tokens":20,"output_tokens":68}}"#)
+            .create_async()
+            .await;
+        let mut provider = provider(server.url());
+        provider.model = "gpt-6-luna".into();
+        let (result, attempt) = super::super::usage::measure(&provider, "messy input").await;
+        assert!(result.is_err());
+        let counts = attempt.unwrap().counts;
+        assert_eq!(counts.input_tokens, Some(20));
+        assert_eq!(counts.output_tokens, Some(68));
+        request.assert_async().await;
+    }
 
     fn provider(base_url: String) -> OpenAiProvider {
         OpenAiProvider {

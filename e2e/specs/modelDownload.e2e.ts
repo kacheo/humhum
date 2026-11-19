@@ -3,11 +3,12 @@ import { switchToPrefs } from "../support/prefsWindow.ts";
 // Manual-checklist flow: model download progress. onboardingComplete seeded
 // true + HUMHUM_E2E_SHOW_PREFS_ON_STARTUP=1 lands directly on PrefsPanel
 // (no tray to click). Asserts the Base (English) row's badge cycles
-// Not downloaded -> Downloading n% -> Ready and the Download button disables.
+// Not downloaded -> Downloading n% -> Ready and the action disappears when ready.
 describe("model download", () => {
   it("downloads the base_en model and reflects live progress", async () => {
     await switchToPrefs();
     await expect($(".prefs")).toBeExisting();
+    await $("#prefs-tab-ai").click();
 
     const downloadBtn = $('[aria-label="Download Base (English)"]');
     const badge = $$(".model-badge")[0];
@@ -27,6 +28,6 @@ describe("model download", () => {
       timeout: 30000,
       timeoutMsg: "base_en model never reached Ready",
     });
-    await expect(downloadBtn).toBeDisabled();
+    await expect(downloadBtn).not.toBeExisting();
   });
 });

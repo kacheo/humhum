@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useInitialModelStatus } from "../../hooks/useInitialModelStatus";
 import { usePrefsStore } from "../../stores/prefs";
 import { useRecordingStore } from "../../stores/recording";
 import { ipc } from "../../lib/ipc";
 import type { CleanupAggressiveness, CleanupMode, ModelStatus, WhisperModel } from "../../lib/types";
+import { CleanupUsageSection } from "./CleanupUsageSection";
 import { CloudApiSettings } from "../CloudApiSettings";
 import { OllamaTest } from "../OllamaTest";
 import { ModelStatusBadge } from "../ModelStatusBadge";
@@ -23,14 +25,8 @@ export function AiSection() {
   const downloadProgress = useRecordingStore((s) => s.downloadProgress);
   const setField = usePrefsStore.getState().setField;
 
-  useEffect(() => {
-    for (const { id } of MODELS) {
-      ipc
-        .getModelStatus(id)
-        .then((s) => useRecordingStore.getState().setModelStatus(id, s))
-        .catch(() => {});
-    }
-  }, []);
+  useInitialModelStatus("base_en");
+  useInitialModelStatus("small_en");
 
   function effectiveStatus(id: WhisperModel): ModelStatus {
     const s = modelStatus[id];
@@ -42,50 +38,8 @@ export function AiSection() {
   return (
     <>
       <section className="prefs__section">
-        <h2 className="prefs__heading">Transcription</h2>
-        <label className="prefs__row">
-          <span>Model</span>
-          <select
-            value={prefs.whisperModel}
-            onChange={(e) => setField("whisperModel", e.target.value as WhisperModel)}
-          >
-            {MODELS.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        {MODELS.map((m) => {
-          const status = effectiveStatus(m.id);
-          const downloading = typeof status === "object" && "downloading" in status;
-          const failed = typeof status === "object" && "error" in status;
-          return (
-            <div key={m.id} className="prefs__model-row">
-              <span className="prefs__row-label">{m.label}</span>
-              <ModelStatusBadge status={status} />
-              <button
-                type="button"
-                aria-label={`${failed ? "Retry" : "Download"} ${m.label}`}
-                disabled={status === "ready" || downloading}
-                onClick={() => {
-                  useRecordingStore.getState().setDownloadProgress(m.id, 0);
-                  useRecordingStore.getState().setModelStatus(m.id, { downloading: 0 });
-                  void ipc.downloadModel(m.id).catch(() => {
-                    useRecordingStore.getState().setModelStatus(m.id, { error: "Could not start the download. Try again." });
-                  });
-                }}
-              >
-                {status === "ready" ? "Downloaded" : failed ? "Retry" : "Download"}
-              </button>
-            </div>
-          );
-        })}
-        <p className="prefs__hint">Downloads start immediately. Speech is transcribed on your Mac.</p>
-      </section>
-
-      <section className="prefs__section">
         <h2 className="prefs__heading">Text cleanup</h2>
+        <p className="prefs__hint">Optionally polish your transcript before it is pasted.</p>
         <label className="prefs__row">
           <span>Mode</span>
           <select
@@ -93,7 +47,7 @@ export function AiSection() {
             disabled={keyBusy}
             onChange={(e) => setField("cleanupMode", e.target.value as CleanupMode)}
           >
-            <option value="none">None</option>
+            <option value="none">Off</option>
             <option value="local">Local (Ollama)</option>
             <option value="api">Cloud API</option>
           </select>
@@ -117,7 +71,13 @@ export function AiSection() {
         )}
 
         {prefs.cleanupMode === "api" && (
-          <CloudApiSettings provider={prefs.apiProvider} onProviderChange={(p) => setField("apiProvider", p)} onBusyChange={setKeyBusy} />
+          <CloudApiSettings
+            provider={prefs.apiProvider}
+            onProviderChange={(p) => setField("apiProvider", p)}
+            model={prefs.apiProvider === "open_ai" ? prefs.openAiModel : prefs.anthropicModel}
+            onModelChange={(model) => setField(prefs.apiProvider === "open_ai" ? "openAiModel" : "anthropicModel", model)}
+            onBusyChange={setKeyBusy}
+          />
         )}
 
         {prefs.cleanupMode !== "none" && (
@@ -133,10 +93,56 @@ export function AiSection() {
                 <option value="heavy">Heavy</option>
               </select>
             </label>
-            <p className="prefs__hint">Applies to both Local and Cloud cleanup.</p>
           </>
         )}
       </section>
+      <CleanupUsageSection />
+
+      <section className="prefs__section">
+        <h2 className="prefs__heading">Transcription</h2>
+        <p className="prefs__hint">Speech is transcribed on this device. Downloads start immediately.</p>
+        <label className="prefs__row">
+          <span>Model</span>
+          <select
+            value={prefs.whisperModel}
+            onChange={(e) => setField("whisperModel", e.target.value as WhisperModel)}
+          >
+            {MODELS.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        {MODELS.map((m) => {
+          const status = effectiveStatus(m.id);
+          const downloading = typeof status === "object" && "downloading" in status;
+          const failed = typeof status === "object" && "error" in status;
+          return (
+            <div key={m.id} className="prefs__model-row">
+              <span className="prefs__row-label">{m.label}</span>
+              <ModelStatusBadge status={status} />
+              {status !== "ready" && (
+                <button
+                  type="button"
+                  aria-label={`${failed ? "Retry" : "Download"} ${m.label}`}
+                  disabled={downloading}
+                  onClick={() => {
+                    useRecordingStore.getState().setDownloadProgress(m.id, 0);
+                    useRecordingStore.getState().setModelStatus(m.id, { downloading: 0 });
+                    void ipc.downloadModel(m.id).catch(() => {
+                      useRecordingStore.getState().setModelStatus(m.id, { error: "Could not start the download. Try again." });
+                    });
+                  }}
+                >
+                  {failed ? "Retry" : "Download"}
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </section>
+
     </>
   );
 }

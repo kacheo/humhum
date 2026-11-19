@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ipc } from "../../lib/ipc";
 import { useTauriEvent } from "../../hooks/useTauriEvent";
 import type { PermissionsState } from "../../lib/types";
+import { Icon } from "../Icon";
 import { PermissionRecoveryHint } from "../PermissionRecoveryHint";
 
 // Optimistic default so granted rows don't flash "Needed" before the first
@@ -51,16 +52,25 @@ export function PermissionsNotice() {
         return (
           <li key={r.key} className={`prefs__perm-row${granted ? "" : " prefs__perm-row--missing"}`}>
             <span className="prefs__perm-label">{r.label}</span>
-            <span className="prefs__perm-status" role="status">{granted ? "Granted ✓" : "Needed"}</span>
+            <span className="prefs__perm-status" role="status">
+              <Icon name={granted ? "check" : "warning"} size={16} />
+              {granted ? "Granted" : "Needed"}
+            </span>
             {!granted && (
-              <button type="button" onClick={r.run}>{r.action}</button>
+              <button
+                type="button"
+                aria-label={r.key === "microphone" ? undefined : `Open Settings for ${r.label}`}
+                onClick={r.run}
+              >
+                {r.action}
+              </button>
             )}
           </li>
         );
       })}
       {!allGranted && (
         <li className="prefs__perm-hint">
-          Microphone is needed to record; Accessibility and Input Monitoring run the global shortcut.
+          Microphone access lets Humhum record. Accessibility and Input Monitoring let the shortcut work across apps.
         </li>
       )}
       {(!perms.accessibility || !perms.inputMonitoring) && (
